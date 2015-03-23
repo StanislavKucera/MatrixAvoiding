@@ -13,8 +13,11 @@ void main(int argc, char** argv)
 	//matrix<int> pattern(2, 2, 1);
 	//for (size_t i = 0; i < 1; i++)	{ pattern.at(1, i) = 0; }
 	
+
 	walking_pattern pat(pattern, N);
-	matrix<int> result(MCMCgenerator(N, iter, pat));
+	grandfather_pattern* ppat = &pat;
+	
+	matrix<int> result(MCMCgenerator(N, iter, ppat));
 	std::cout << result.Print();
 	std::cout << "\nAvoids:\n\n";
 	std::cout << pattern.Print();

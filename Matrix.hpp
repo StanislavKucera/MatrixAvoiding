@@ -96,9 +96,9 @@ public:
 	{
 		std::stringstream out;
 		out.precision(3);
-		for (int i = 0; i < row_; i++)
+		for (size_t i = 0; i < row_; i++)
 		{
-			for (int j = 0; j < col_; j++)
+			for (size_t j = 0; j < col_; j++)
 			{
 				if (j != 0)
 					out << " ";

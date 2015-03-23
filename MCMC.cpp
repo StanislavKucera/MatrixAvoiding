@@ -5,7 +5,7 @@
 #include <random>
 
 // Generates random-ish matrix of given size, which is avoiding given pattern. Uses iter iterations on markov chain.
-matrix<int> MCMCgenerator(const size_t n, const size_t iter, walking_pattern& test)
+matrix<int> MCMCgenerator(const size_t n, const size_t iter, grandfather_pattern* test)
 {
 	matrix<int> N(n, n, 0);		// generatated matrix
 
@@ -20,10 +20,10 @@ matrix<int> MCMCgenerator(const size_t n, const size_t iter, walking_pattern& te
 		r = uni(rng);
 		c = uni(rng);
 		N.at(r, c) = N.at(r, c) ? 0 : 1;	// switch 0 and 1 entry of the element
-		if (!test.avoid(r, c, N))			// avoid returns true, if pattern avoids the matrix
+		if (!test->avoid(r, c, N))			// avoid returns true, if pattern avoids the matrix
 		{
 			N.at(r, c) = N.at(r, c) ? 0 : 1;
-			test.avoid(r, c, N);
+			test->avoid(r, c, N);
 		}
 	}
 	return N;
