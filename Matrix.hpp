@@ -7,6 +7,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 
 template< typename T>
 class matrix

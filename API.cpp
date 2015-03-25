@@ -6,13 +6,13 @@
 #include "MCMC.hpp"
 #include <iostream>
 
-void main(int argc, char** argv)
+int main(int argc, char** argv)
 {
 	size_t N = 15, iter = 50000, type = 1;
 	matrix<int> pattern("input.txt");
 	//matrix<int> pattern(2, 2, 1);
 	//for (size_t i = 0; i < 1; i++)	{ pattern.at(1, i) = 0; }
-	
+	type += 0;
 
 	walking_pattern pat(pattern, N);
 	grandfather_pattern* ppat = &pat;
@@ -22,6 +22,7 @@ void main(int argc, char** argv)
 	std::cout << "\nAvoids:\n\n";
 	std::cout << pattern.Print();
 	getchar();
+	return 0;
 }
 
 #endif

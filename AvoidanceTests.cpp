@@ -114,6 +114,7 @@
 			if (max_walk_part_.at(current).second != old_c_h && current.second + 1 < N.getCol())
 				q.push(pair(current.first, current.second + 1));
 		}
+		return true;
 	}
 
 #endif
