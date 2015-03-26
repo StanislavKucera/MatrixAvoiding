@@ -22,6 +22,9 @@
 				// when I find 1 entry or find myself on the last diagonal
 				if (pattern.at(i, j) || sum == pattern.getRow() + pattern.getCol() - 2)
 				{
+					// last visited element is 0 and I did not find any 1 entries
+					if (!pattern.at(i, j) && last_i == 0 && last_j == 0 && !pattern.at(last_i, last_j)) 
+						throw std::invalid_argument("Pattern has no one entries.");
 					if (j < last_j || i < last_i)
 						throw std::invalid_argument("Pattern is not a walking pattern type.");
 					// need to find, which elements will be a part of the walk
