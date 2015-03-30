@@ -22,11 +22,10 @@ int main(int argc, char* argv[])
 	//for (size_t i = 0; i < 1; i++)	{ pattern.at(1, i) = 0; }
 	type += 0;
 
-	grandfather_pattern* ppat;
 	walking_pattern pat1(pattern, N);
-	ppat = &pat1;
+	grandfather_pattern& rpat = pat1;
 
-	matrix<int> result(MCMCgenerator(N, iter, ppat));
+	matrix<int> result(MCMCgenerator(N, iter, rpat));
 	std::cout << result.Print();
 	std::cout << "\nAvoids:\n\n";
 	std::cout << pattern.Print();

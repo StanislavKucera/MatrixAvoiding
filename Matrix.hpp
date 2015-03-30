@@ -55,7 +55,7 @@ public:
 		std::copy(m.data_.begin(), m.data_.end(), data_.begin());
 		return *this;
 	}
-	matrix& operator=(matrix&& m)
+	matrix& operator=(matrix<T>&& m)
 	{
 		row_ = m.row_;
 		col_ = m.col_;

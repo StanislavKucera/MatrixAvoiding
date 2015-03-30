@@ -7,6 +7,7 @@ class grandfather_pattern
 {
 public:
 	virtual bool avoid(const size_t r, const size_t c, const matrix<int>& N) { return 0; }
+	bool revert(const size_t r, const size_t c, const matrix<int>& N) { return avoid(r, c, N); }
 };
 
 // General matrix pattern
