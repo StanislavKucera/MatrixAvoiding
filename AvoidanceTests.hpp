@@ -15,12 +15,14 @@ class general_pattern
 	: public grandfather_pattern
 {
 public:
-	explicit general_pattern(const matrix<int>& p) : pattern_(p) {}
-	explicit general_pattern(matrix<int>&& p) : pattern_(std::move(p)) {}
+	explicit general_pattern(const matrix<int>& pattern, const size_t n);
 
 	virtual bool avoid(const size_t r, const size_t c, const matrix<int>& N); // not implemented yet - hopefully I will find more efficient way than brute force
 private:
-	matrix<int> pattern_;
+	matrix<std::pair<std::vector<bool>, std::vector<bool> > > max_pat_part_;	// table of calculated [c_v,c_h] for all elements
+	// indexed by index of v_i, the element of the walk, gives the direction of the next element (0 for vertical) and value of v_i.
+	std::vector<size_t> value_;
+	size_t row_, col_;
 };
 
 // A matrix pattern in which exists a walk from left-upper corner to right-bottom corner, which contains all 1 entries (may contain 0 entries too)
