@@ -13,8 +13,6 @@ template< typename T>
 class matrix
 {
 public:
-	typedef typename std::vector<T>::iterator		iterator;
-	typedef typename std::vector<T>::const_iterator const_iterator;
 	// constructs a matrix of given size with default value in each element
 	matrix(size_t r, size_t c) : row_(r), col_(c), data_(r*c) {}
 	// constructs a matrix of given size with given value in each element
@@ -111,12 +109,6 @@ public:
 		}
 		return out.str();
 	}
-	iterator begin()				{ return data_.begin(); }
-	const_iterator begin() const	{ return data_.cbegin(); }
-	const_iterator cbegin() const	{ return data_.cbegin(); }
-	iterator end()					{ return data_.end(); }
-	const_iterator end() const		{ return data_.cend(); }
-	const_iterator cend() const		{ return data_.cend(); }
 private:
 	size_t row_, col_;
 	std::vector<T> data_;

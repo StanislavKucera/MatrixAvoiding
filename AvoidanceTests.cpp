@@ -4,88 +4,6 @@
 #include "AvoidanceTests.hpp"
 #include <queue>
 
-/* General pattern */
-	general_pattern::general_pattern(const matrix<int>& pattern, const size_t n)
-		: max_pat_part_(n, n, std::vector<bool>(pattern.getCol()*pattern.getRow() + 1, false)), 
-		value_(pattern.getCol()*pattern.getCol() + 1), row_(pattern.getRow()), col_(pattern.getCol())
-	{
-		size_t one_entries = 0;
-		auto it2 = value_.begin() + 1;
-		for (auto it = pattern.cbegin(); it != pattern.cend(); ++it, ++it2)
-		{
-			*it2 = *it;
-			if (*it)
-				one_entries++;
-		}
-		if (one_entries == 0)
-			throw std::invalid_argument("Pattern has no one-entries.");
-	}
-
-	bool general_pattern::avoid(const size_t r, const size_t c, const matrix<int>& N)
-	{
-		typedef std::pair<size_t, size_t> pair;
-		std::queue<pair> q;						// queue for elements of the matrix that are supposed to be updated
-		pair current;							// [x,y] of the currently updated element
-		std::vector<bool> old_val, c_val;	// c_v and c_h before an update, c_v of element to the top of current, c_h of element to the left
-
-		q.push(pair(r, c));
-		while (!q.empty())
-		{
-			current = q.front();
-			q.pop();
-
-			old_val = max_pat_part_.at(current);
-
-			if (current.first == 0)		// element in the first row
-				c_val = std::vector<bool>(row_ * col_ + 1, false);
-			else
-				c_val = max_pat_part_.at(current.first - 1, current.second);
-			if (current.second != 0)	// element not in the first column
-			{
-				auto it2 = max_pat_part_.at(current.first, current.second - 1).begin();
-				for (auto it = c_val.begin(); it != c_val.end(); ++it, ++it2)
-					if (*it2)
-						*it = true;
-			}				
-
-			// Initialization - copying those already found walks
-			max_pat_part_.at(current) = c_val;
-
-			// Search for longer part of the pattern
-			for (size_t i = 1; i < row_ * col_ + 1; i++)
-			{
-				if (max_pat_part_.at(current)[i]) continue; // I have already found this part of the pattern
-				if (i == 1 && (!value_[i] || N.at(current)))
-				{
-					max_pat_part_.at(current)[i] = true;
-					break; // there won't be any other part of the pattern since its first element was not found earlier
-				}
-				if (i <= col_) // first row of the pattern
-					if (current.first != 0 && max_pat_part_.at(current.first - 1, current.second)[i - 1] && (!value_[i] || N.at(current)))
-						max_pat_part_.at(current)[i] = true;
-				else if (i % col_ == 0) // first column of the pattern
-					if (current.second != 0 && max_pat_part_.at(current.first, current.second - 1)[i - col_] && (!value_[i] || N.at(current)))
-						max_pat_part_.at(current)[i] = true;
-				else
-					if (current.first != 0 && current.second != 0 && max_pat_part_.at(current.first - 1, current.second)[i - 1] && 
-						max_pat_part_.at(current.first, current.second - 1)[i - col_] && (!value_[i] || N.at(current)))
-						max_pat_part_.at(current)[i] = true;
-			}
-			if (max_pat_part_.at(current)[value_.size() - 1]) // I have found the last element of the walk
-				return false;
-			if (max_pat_part_.at(current) != old_val)
-			{
-				if (current.first + 1 < N.getRow())
-					// if queue is not empty, check whether the element wasn't added before
-					if (q.empty() || q.back() != pair(current.first + 1, current.second))
-						q.push(pair(current.first + 1, current.second));
-				if (current.second + 1 < N.getCol())
-					q.push(pair(current.first, current.second + 1));
-			}
-		}
-		return true;
-	}
-
 /* Walking pattern */
 	walking_pattern::walking_pattern(const matrix<int>& pattern, const size_t n)
 		: max_walk_part_(n, n, std::pair<int, int>(0, 0))
@@ -106,7 +24,7 @@
 				{
 					// last visited element is 0 and I did not find any 1 entries
 					if (!pattern.at(i, j) && last_i == 0 && last_j == 0 && !pattern.at(last_i, last_j)) 
-						throw std::invalid_argument("Pattern has no one-entries.");
+						throw std::invalid_argument("Pattern has no one entries.");
 					if (j < last_j || i < last_i)
 						throw std::invalid_argument("Pattern is not a walking pattern type.");
 					// need to find, which elements will be a part of the walk
