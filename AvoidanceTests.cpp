@@ -4,9 +4,123 @@
 #include "AvoidanceTests.hpp"
 #include <queue>
 
+/* General pattern */
+general_pattern::general_pattern(const matrix<size_t>& pattern, const size_t N)
+	: k(pattern.getCol()),
+	  rows_(k),
+	  cols_(k),
+	  lines_(k << 1),
+	  orders_(k << 1),
+	  what_to_remember_(k << 1),
+	  building_tree_(k << 1)
+{
+	for (size_t i = 0; i < k; i++)
+	{
+		for (size_t j = 0; j < k; j++)
+		{
+			if (pattern.at(i, j))
+			{
+				rows_[i] |= 1 << j;
+				cols_[j] |= 1 << i;
+				lines_[i] |= 1 << j;
+				lines_[j + k] |= 1 << i;
+			}
+		}
+	}
+	// TODO find Orders
+	for (size_t i = 0; i < orders_.size(); i++)
+	{
+		orders_[i] = i;
+		if (i > 0)
+			what_to_remember_[i] = what_to_remember_[i - 1] + i;
+	}
+	// TODO what to remember
+}
+
+bool general_pattern::avoid(const size_t r, const size_t c, const matrix<size_t>& N)
+{
+	// I'm not using the fact I know the position which has changed
+	for (size_t i = 0; i < building_tree_.size(); i++) // main loop through added lines (loops 2*k times)
+	{
+		if (i != 0 && building_tree_[i].size() == 0)
+			return true;
+		for (size_t m = 0; m < building_tree_[i].size(); m++) // loop through the mappings found in the last iteration
+		{
+			// find boundaries of added line:
+			size_t	bot = 0 - 1,	// index to the lower bound for currently added line in map vector
+					top = 0 - 1,	// index to the upper bound for currently added line in map vector
+					i_top = 0,		// index of the line of the pattern which is a upper bound of currently added line 
+					i_bot = 0 - 1;	// index of the line of the pattern which is a lower bound of currently added line
+			for (i_top = 0; i_top < orders_.size(); i_top++)
+			{
+				if ((((orders_[i] << 1) < orders_.size()) && ((i_top << 1) < orders_.size())) ||		// iterating through rows and adding a row
+					(((orders_[i] << 1) >= orders_.size()) && ((i_top << 1) >= orders_.size())) &&	// iterating through columns and adding a column
+					((what_to_remember_[i] >> i_top) & 1))											// I remember this line
+				{
+					if (i_top < orders_[i])
+					{
+						i_bot = i_top;
+						bot++;
+					}
+					else
+					{
+						top = bot + 1;
+						break;
+					}
+				}
+				else if ((what_to_remember_[i] >> i_top) & 1)										// I need to remeber this line, but I'm adding column and going through rows or vice versa
+					bot++;
+				else if ((((orders_[i] << 1) < orders_.size()) && (((i_top + 1) << 1) == orders_.size())) ||
+						 (((orders_[i] << 1) >= orders_.size()) && (i_top + 1 == orders_.size())))	// if there is no upper bound
+				{
+					i_top = 0 - 1;
+					break;
+				}
+			}
+			// i have parallel boundaries 
+			// TODO make boundaries for unbounded lines
+			// TODO +-1 errors
+			size_t l = 0, end = k;
+			bool mapped;
+			if (orders_[i] < k)
+			{
+				l = k; 
+				end = k << 1;
+			}
+			for (size_t j = building_tree_[i][m] - i_bot + orders_[i]; j < building_tree_[i][m] - i_top + orders_[i]; j++) // map orders_[i] to j-th line of N if possible
+			{	
+				mapped = true;
+				for (; l < end; l++)
+				{
+					if ((lines_[l] >> l) & 1)						// there is a 1 entry at the l-th position of added line in the pattern
+					{
+						if ((what_to_remember_[i] >> l) & 1)		// I remember the l-th line
+						{
+							if (!N.at(orders_[i], j))				// and there is no 1-entry at their intersection
+							{
+								mapped = false;						// so I can't map the line here
+								break;
+							}
+						}
+						else
+							// TODO find boundaries for j-th line and check if there is enough 1 entries
+							;
+					}
+				}
+				if (mapped)
+					// TODO find out what to remember and add new mapping to next layer if it doesn't belong to the same class as one of previsously added mappings
+					;
+			}
+		}
+	}
+	if (building_tree_[(k << 1) - 1].empty())
+		return true;
+	return false;
+}
+
 /* Walking pattern */
-	walking_pattern::walking_pattern(const matrix<int>& pattern, const size_t n)
-		: max_walk_part_(n, n, std::pair<int, int>(0, 0))
+	walking_pattern::walking_pattern(const matrix<size_t>& pattern, const size_t n)
+		: max_walk_part_(n, n, std::pair<size_t, size_t>(0, 0))
 	{
 		size_t last_i = 0, last_j = 0, j;	// coords of the last visited 1 entry, index for the columns
 		// all elements on the same diagonal have the same sum of their coordinates
@@ -47,7 +161,7 @@
 		value_.push_back(pattern.at(last_i, last_j));
 	}
 
-	bool walking_pattern::avoid(const size_t r, const size_t c, const matrix<int>& N)
+	bool walking_pattern::avoid(const size_t r, const size_t c, const matrix<size_t>& N)
 	{
 		typedef std::pair<size_t, size_t> pair;
 		std::queue<pair> q;						// queue for elements of the matrix that are supposed to be updated

@@ -5,9 +5,9 @@
 #include <random>
 
 // Generates random-ish matrix of given size, which is avoiding given pattern. Uses iter iterations on markov chain.
-matrix<int> MCMCgenerator(const size_t n, const size_t iter, grandfather_pattern& test)
+matrix<size_t> MCMCgenerator(const size_t n, const size_t iter, grandfather_pattern& test)
 {
-	matrix<int> N(n, n, 0);		// generatated matrix
+	matrix<size_t> N(n, n, 0);		// generatated matrix
 
 	// random generator from uniform distribution [0, n-1]
 	std::random_device rd;    
