@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
 	//for (size_t i = 0; i < 1; i++)	{ pattern.at(1, i) = 0; }
 	type += 0;
 
-	general_pattern pat3(pattern, N);
+	general_pattern pat3(pattern, N);	// debugging purposes
 	walking_pattern pat1(pattern, N);
 	grandfather_pattern& rpat = pat1;
 

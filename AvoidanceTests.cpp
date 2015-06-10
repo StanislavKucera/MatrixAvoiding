@@ -27,19 +27,22 @@ general_pattern::general_pattern(const matrix<size_t>& pattern, const size_t N)
 			}
 		}
 	}
-	// TODO find Orders
 	for (size_t i = 0; i < orders_.size(); i++)
 	{
 		orders_[i] = i;
 		if (i > 0)
 			what_to_remember_[i] = what_to_remember_[i - 1] + i;
 	}
+	find_DESC_orders();
+	// TODO find orders (DAG and DESC)
+	find_what_to_remember();
 	// TODO what to remember
 }
 
 bool general_pattern::avoid(const size_t r, const size_t c, const matrix<size_t>& N)
 {
 	// I'm not using the fact I know the position which has changed
+	// TODO should i become 2k - 1?
 	for (size_t i = 0; i < building_tree_.size(); i++) // main loop through added lines (loops 2*k times)
 	{
 		if (i != 0 && building_tree_[i].size() == 0)
@@ -47,47 +50,17 @@ bool general_pattern::avoid(const size_t r, const size_t c, const matrix<size_t>
 		for (size_t m = 0; m < building_tree_[i].size(); m++) // loop through the mappings found in the last iteration
 		{
 			// find boundaries of added line:
-			size_t	bot = 0 - 1,	// index to the lower bound for currently added line in map vector
-					top = 0 - 1,	// index to the upper bound for currently added line in map vector
-					i_top = 0,		// index of the line of the pattern which is a upper bound of currently added line 
-					i_bot = 0 - 1;	// index of the line of the pattern which is a lower bound of currently added line
-			for (i_top = 0; i_top < orders_.size(); i_top++)
-			{
-				if ((((orders_[i] << 1) < orders_.size()) && ((i_top << 1) < orders_.size())) ||		// iterating through rows and adding a row
-					(((orders_[i] << 1) >= orders_.size()) && ((i_top << 1) >= orders_.size())) &&	// iterating through columns and adding a column
-					((what_to_remember_[i] >> i_top) & 1))											// I remember this line
-				{
-					if (i_top < orders_[i])
-					{
-						i_bot = i_top;
-						bot++;
-					}
-					else
-					{
-						top = bot + 1;
-						break;
-					}
-				}
-				else if ((what_to_remember_[i] >> i_top) & 1)										// I need to remeber this line, but I'm adding column and going through rows or vice versa
-					bot++;
-				else if ((((orders_[i] << 1) < orders_.size()) && (((i_top + 1) << 1) == orders_.size())) ||
-						 (((orders_[i] << 1) >= orders_.size()) && (i_top + 1 == orders_.size())))	// if there is no upper bound
-				{
-					i_top = 0 - 1;
-					break;
-				}
-			}
-			// i have parallel boundaries 
-			// TODO make boundaries for unbounded lines
-			// TODO +-1 errors
+			size_t from, to;
+			find_parallel_bounds(i, m, N.getRow(), N.getCol(), from, to);
+
 			size_t l = 0, end = k;
 			bool mapped;
 			if (orders_[i] < k)
 			{
-				l = k; 
+				l = k;
 				end = k << 1;
 			}
-			for (size_t j = building_tree_[i][m] - i_bot + orders_[i]; j < building_tree_[i][m] - i_top + orders_[i]; j++) // map orders_[i] to j-th line of N if possible
+			for (size_t j = from; j <= to; j++) // map orders_[i] to j-th line of N if possible
 			{	
 				mapped = true;
 				for (; l < end; l++)
@@ -108,14 +81,108 @@ bool general_pattern::avoid(const size_t r, const size_t c, const matrix<size_t>
 					}
 				}
 				if (mapped)
-					// TODO find out what to remember and add new mapping to next layer if it doesn't belong to the same class as one of previsously added mappings
-					;
+				{
+					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line
+					std::vector<size_t> extended;
+					size_t index = 0;
+					for (size_t l = 0; l < (k << 1); l++)
+					{
+						if ((what_to_remember_[i] >> l) & 1)
+						{
+							if ((what_to_remember_[i + 1] >> l) & 1)
+								extended.push_back(building_tree_[i][m][l]);
+							index++;
+						}
+						else if ((what_to_remember_[i + 1] >> l) & 1)	// this only happens when I need to remember currenly added line
+							extended.push_back(j);
+					}
+					for (size_t m2 = 0; m2 < building_tree_[i + 1].size(); m2++)
+					{
+						mapped = true;
+						for (size_t l2 = 0; l2 < building_tree_[i + 1][0].size(); l2++)
+						{
+							if (extended[l2] != building_tree_[i + 1][m2][l2])
+							{
+								mapped = false;
+								break;
+							}
+						}
+						if (mapped)	// extended has already been added (atleast its different class)
+							break;
+					}
+					if (!mapped)
+						building_tree_[i + 1].push_back(extended);
+				}
 			}
 		}
 	}
 	if (building_tree_[(k << 1) - 1].empty())
 		return true;
 	return false;
+}
+
+void general_pattern::find_DESC_orders()
+{
+	// TODO is there an instruction which does this?
+	// TODO bucket sort
+}
+
+void general_pattern::find_what_to_remember()
+{
+	// TODO what to remember for given orders
+}
+
+void general_pattern::find_parallel_bounds(size_t i, size_t m, size_t rows, size_t columns, size_t& from, size_t& to)
+{
+	size_t	bot = 0 - 1,	// index to the lower bound for currently added line in map vector
+			top = 0 - 1,	// index to the upper bound for currently added line in map vector
+			i_top = 0,		// index of the line of the pattern which is a upper bound of currently added line 
+			i_bot = 0 - 1;	// index of the line of the pattern which is a lower bound of currently added line
+	for (i_top = 0; i_top < orders_.size(); i_top++)
+	{
+		if ((((orders_[i] << 1) < orders_.size()) && ((i_top << 1) < orders_.size())) ||		// iterating through rows and adding a row
+			(((orders_[i] << 1) >= orders_.size()) && ((i_top << 1) >= orders_.size())) &&		// iterating through columns and adding a column
+			((what_to_remember_[i] >> i_top) & 1))												// I remember this line
+		{
+			if (i_top < orders_[i])
+			{
+				i_bot = i_top;
+				bot++;
+			}
+			else
+			{
+				top = bot + 1;
+				break;
+			}
+		}
+		else if ((what_to_remember_[i] >> i_top) & 1)										// I need to remeber this line, but I'm adding column and going through rows or vice versa
+			bot++;
+		else if ((((orders_[i] << 1) < orders_.size()) && (((i_top + 1) << 1) == orders_.size())) ||
+			(((orders_[i] << 1) >= orders_.size()) && (i_top + 1 == orders_.size())))	// if there is no upper bound
+		{
+			i_top = 0 - 1;
+			break;
+		}
+	}
+	// i have parallel boundaries
+	if (bot == 0 - 1)
+	{
+		if (orders_[i] < k)
+			from = 0 + orders_[i];
+		else
+			from = rows + orders_[i] - k;
+	}
+	else
+		from = building_tree_[i][m][bot] - i_bot + orders_[i];
+	if (top == 0 - 1)
+	{
+		if (orders_[i] < k)
+			to = rows - orders_[i];
+		else
+			to = rows + columns - orders_[i] + k;
+	}
+	else
+		building_tree_[i][m][top] - i_top + orders_[i];
 }
 
 /* Walking pattern */
