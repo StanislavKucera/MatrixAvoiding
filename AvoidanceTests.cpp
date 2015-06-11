@@ -3,6 +3,7 @@
 
 #include "AvoidanceTests.hpp"
 #include <queue>
+#include <algorithm>
 
 /* General pattern */
 general_pattern::general_pattern(const matrix<size_t>& pattern, const size_t N)
@@ -27,16 +28,9 @@ general_pattern::general_pattern(const matrix<size_t>& pattern, const size_t N)
 			}
 		}
 	}
-	for (size_t i = 0; i < orders_.size(); i++)
-	{
-		orders_[i] = i;
-		if (i > 0)
-			what_to_remember_[i] = what_to_remember_[i - 1] + i;
-	}
 	find_DESC_orders();
-	// TODO find orders (DAG and DESC)
+	// TODO find orders (DAG method)
 	find_what_to_remember();
-	// TODO what to remember
 }
 
 bool general_pattern::avoid(const size_t r, const size_t c, const matrix<size_t>& N)
@@ -123,13 +117,47 @@ bool general_pattern::avoid(const size_t r, const size_t c, const matrix<size_t>
 
 void general_pattern::find_DESC_orders()
 {
-	// TODO is there an instruction which does this?
-	// TODO bucket sort
+	std::vector<std::pair<size_t, size_t> > pairs(k << 1);
+	for (size_t i = 0; i < k << 1; i++)
+	{
+		pairs[i] = std::make_pair((k << 1) - bit_count(lines_[i]), i);
+	}
+	std::sort(pairs.begin(), pairs.end());
+	// maybe TODO bucket sort instead (n >> k*log k > k)
+	for (size_t i = 0; i < k << 1; i++)
+	{
+		orders_[i] = pairs[i].second;
+	}
 }
 
 void general_pattern::find_what_to_remember()
 {
-	// TODO what to remember for given orders
+	// what to remember for given orders
+	size_t what_do_I_know = orders_[0];
+	what_to_remember_[0] = orders_[0];
+	for (size_t i = 1; i < k << 1; i++)
+	{
+		what_do_I_know |= orders_[i];
+		what_to_remember_[i] = what_to_remember_[i - 1] | orders_[i];
+		for (size_t j = 0; j < k << 1; j++)
+		{
+			if ((what_to_remember_[i] >> j) & 1)
+			{
+				if (((j == 0 || j == k) && !((what_do_I_know >> (j + 1)) & 1))					// the first row or column and I don't remember the second one 
+					||
+					((j == k - 1 || j == (k << 1) - 1) && !((what_do_I_know >> (j - 1)) & 1))	// the last row or column and I don't remember the previous one
+					||
+					(!((what_do_I_know >> (j - 1)) & 1) || !((what_do_I_know >> (j - 1)) & 1)))	// I don't remember either the previous line or the next one
+					continue;
+				for (size_t l = 0; l < k; l++)
+				{
+					if (!((lines_[j] >> l) & 1) || !((what_do_I_know >> l) & 1))
+						continue;
+				}
+				what_to_remember_[i] ^= j;
+			}
+		}
+	}
 }
 
 void general_pattern::find_parallel_bounds(size_t i, size_t m, size_t rows, size_t columns, size_t& from, size_t& to)
@@ -182,7 +210,7 @@ void general_pattern::find_parallel_bounds(size_t i, size_t m, size_t rows, size
 			to = rows + columns - orders_[i] + k;
 	}
 	else
-		building_tree_[i][m][top] - i_top + orders_[i];
+		to = building_tree_[i][m][top] - i_top + orders_[i];
 }
 
 /* Walking pattern */

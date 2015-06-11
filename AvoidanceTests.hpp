@@ -44,4 +44,11 @@ private:
 	std::vector<size_t> direction_, value_;
 };
 
+inline size_t bit_count(size_t n)	// I have used a function from the internet which counts number of one entries of a binary number in constant time
+// http://blogs.msdn.com/b/jeuge/archive/2005/06/08/hakmem-bit-count.aspx
+{
+	size_t uCount = n - ((n >> 1) & 033333333333) - ((n >> 2) & 011111111111);
+	return ((uCount + (uCount >> 3)) & 030707070707) % 63;
+}
+
 #endif
