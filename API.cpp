@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
 
 	general_pattern pat3(pattern, N);	// debugging purposes
 	walking_pattern pat1(pattern, N);
-	grandfather_pattern& rpat = pat1;
+	grandfather_pattern& rpat = pat3;
 
 	matrix<size_t> result(MCMCgenerator(N, iter, rpat));
 	std::cout << result.Print();
