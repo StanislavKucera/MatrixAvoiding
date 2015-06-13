@@ -13,6 +13,8 @@ template< typename T>
 class matrix
 {
 public:
+	// constructs an empty 0x0 matrix 
+	matrix() {}
 	// constructs a matrix of given size with default value in each element
 	matrix(size_t r, size_t c) : row_(r), col_(c), data_(r*c) {}
 	// constructs a matrix of given size with given value in each element
