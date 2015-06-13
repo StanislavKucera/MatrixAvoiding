@@ -13,7 +13,7 @@
 
 int main(int argc, char* argv[])
 {
-	size_t N = 15, iter = 100;
+	size_t N = 15, iter = 500;
 	enum Type { general, walking };
 	Type type = general;
 	clock_t t = 0;

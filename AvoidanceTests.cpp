@@ -8,6 +8,7 @@
 /* General pattern */
 general_pattern::general_pattern(const matrix<size_t>& pattern)
 	: k(pattern.getCol()),
+	  steps(k << 1),
 	  lines_(k << 1),
 	  orders_(k << 1),
 	  what_to_remember_((k << 1) + 1),
@@ -39,8 +40,7 @@ bool general_pattern::avoid(const matrix<size_t>& N)
 	size_t from, to;
 	building_tree_[0].push_back(std::vector<size_t>(0));
 
-	// TODO should i become 2k - 1?
-	for (size_t i = 0; i < k << 1; i++) // main loop through added lines (loops 2*k times)
+	for (size_t i = 0; i < steps; i++) // main loop through added lines (loops 2*k times)
 	{
 		if (building_tree_[i].size() == 0)
 			return true;
@@ -51,7 +51,7 @@ bool general_pattern::avoid(const matrix<size_t>& N)
 
 			for (size_t j = from; j < to; j++) // map orders_[i] to j-th line of N if possible
 			{	
-				if (map(i, j, m, N))
+				if (map(i, j, m, N)) // if currenly added line can be mapped to j in mapping m
 				{
 					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line
 					extend(i, j, m);
@@ -59,7 +59,7 @@ bool general_pattern::avoid(const matrix<size_t>& N)
 			}
 		}
 	}
-	if (building_tree_[k << 1].empty())
+	if (building_tree_[steps].empty())
 		return true;
 	return false;
 }
@@ -72,11 +72,21 @@ void general_pattern::find_DESC_orders()
 		pairs[i] = std::make_pair((k << 1) - bit_count(lines_[i]), i);
 	}
 	std::sort(pairs.begin(), pairs.end());
-	// maybe TODO bucket sort instead (n >> k*log k > k)
+	// maybe bucket sort instead (n >> k*log k > k)
 	for (size_t i = 0; i < k << 1; i++)
 	{
 		orders_[i] = pairs[i].second;
+		if (lines_[orders_[i]] == 0)	// since it is sorted, as soon as I want to add empty line, I would be only adding empty lines and there is no reason to do that
+		{
+			steps = i;
+			break;
+		}
 	}
+}
+
+void general_pattern::find_DAG_orders()
+{
+	// TODO
 }
 
 void general_pattern::find_what_to_remember()
@@ -183,7 +193,6 @@ bool general_pattern::map(const size_t i, const size_t j, const size_t m, const 
 			if (((orders_[i] < k) && ((what_to_remember_[i] >> (l + k)) & 1)) ||
 				((orders_[i] >= k) && ((what_to_remember_[i] >> l) & 1)))		// I remember the l-th line
 			{
-				// TODO where did I map l to?
 				size_t index = 0, j2 = 0;
 				for (; j2 < k << 1; j2++)
 				{
@@ -200,8 +209,21 @@ bool general_pattern::map(const size_t i, const size_t j, const size_t m, const 
 			}
 			else
 			{
-				// TODO find boundaries for l-th line and check if there is enough 1 entries
-				;
+				// TODO check if there is enough 1 entries - now I only check if there is atleast 1, but I might use that one for more than one (could be cutting more)
+				size_t from, to;
+				find_parallel_bounds((orders_[i] < k) ? l + k : l, i, m, N.getRow(), N.getCol(), from, to);
+				bool atleast1 = false;
+				for (size_t j2 = from; j2 < to; j2++)
+				{
+					if (((orders_[i] < k) && N.at(j, j2 - N.getRow())) ||
+						((orders_[i] >= k) && N.at(j2, j - N.getRow())))
+					{
+						atleast1 = true;
+						break;
+					}
+				}
+				if (!atleast1)
+					return false;
 			}
 		}
 	}
