@@ -32,6 +32,10 @@ general_pattern::general_pattern(const matrix<size_t>& pattern)
 bool general_pattern::avoid(const matrix<size_t>& N)
 {
 	// I'm not using the fact I know the position which has changed
+	for (size_t i = 0; i <= k << 1; i++)
+	{
+		building_tree_[i].clear();
+	}	
 	size_t from, to;
 	building_tree_[0].push_back(std::vector<size_t>(0));
 
@@ -149,7 +153,7 @@ void general_pattern::find_parallel_bounds(const size_t line, const size_t i, co
 		}
 	}
 	// i have parallel boundaries
-	if (bot == 0 - 1)
+	if (bot == (size_t)(0 - 1))
 	{
 		if (line < k)
 			from = 0 + line;
@@ -158,7 +162,7 @@ void general_pattern::find_parallel_bounds(const size_t line, const size_t i, co
 	}
 	else
 		from = building_tree_[i][m][bot] - i_bot + line;
-	if (top == 0 - 1)
+	if (top == (size_t)(0 - 1))
 	{
 		if (line < k)
 			to = rows - k + line + 1;
@@ -195,8 +199,10 @@ bool general_pattern::map(const size_t i, const size_t j, const size_t m, const 
 				}
 			}
 			else
+			{
 				// TODO find boundaries for l-th line and check if there is enough 1 entries
 				;
+			}
 		}
 	}
 	return true;

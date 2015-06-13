@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
 #include <exception>
 #include <time.h>
 
@@ -17,14 +18,25 @@ int main(int argc, char* argv[])
 	Type type = general;
 	clock_t t = 0;
 
+	std::istringstream convert;
 	if (argc > 1)
-		N = (size_t)std::stoull(argv[1]);
+	{
+		convert.str(argv[1]);
+		convert >> N;
+	}
 	if (argc > 2)
-		iter = (size_t)std::stoull(argv[2]);
+	{
+		convert.str(argv[1]);
+		convert >> iter;
+	}
 	if (argc > 3)
-		type = (Type)std::stoull(argv[3]);
+	{
+		convert.str(argv[1]);
+		convert >> N;
+	}
 
 	matrix<size_t> pattern("input.txt");
+	//matrix<size_t> pattern("input2.txt");
 	//matrix<size_t> pattern(2, 2, 1);
 	//for (size_t i = 0; i < 1; i++)	{ pattern.at(1, i) = 0; }
 	matrix<size_t> result;
