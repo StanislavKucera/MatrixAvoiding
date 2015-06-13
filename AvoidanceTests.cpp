@@ -8,12 +8,10 @@
 /* General pattern */
 general_pattern::general_pattern(const matrix<size_t>& pattern, const size_t N)
 	: k(pattern.getCol()),
-	  rows_(k),
-	  cols_(k),
 	  lines_(k << 1),
 	  orders_(k << 1),
-	  what_to_remember_(k << 1),
-	  building_tree_(k << 1)
+	  what_to_remember_((k << 1) + 1),
+	  building_tree_((k << 1) + 1)
 {
 	for (size_t i = 0; i < k; i++)
 	{
@@ -21,8 +19,6 @@ general_pattern::general_pattern(const matrix<size_t>& pattern, const size_t N)
 		{
 			if (pattern.at(i, j))
 			{
-				rows_[i] |= 1 << j;
-				cols_[j] |= 1 << i;
 				lines_[i] |= 1 << j;
 				lines_[j + k] |= 1 << i;
 			}
@@ -36,98 +32,30 @@ general_pattern::general_pattern(const matrix<size_t>& pattern, const size_t N)
 bool general_pattern::avoid(const size_t r, const size_t c, const matrix<size_t>& N)
 {
 	// I'm not using the fact I know the position which has changed
+	size_t from, to;
+	building_tree_[0].push_back(std::vector<size_t>(0));
+
 	// TODO should i become 2k - 1?
-	building_tree_[0].push_back(std::vector<size_t>(1, 0));
-	for (size_t i = 0; i < building_tree_.size(); i++) // main loop through added lines (loops 2*k times)
+	for (size_t i = 0; i < k << 1; i++) // main loop through added lines (loops 2*k times)
 	{
 		if (building_tree_[i].size() == 0)
 			return true;
 		for (size_t m = 0; m < building_tree_[i].size(); m++) // loop through the mappings found in the last iteration
 		{
 			// find boundaries of added line:
-			size_t from, to;
-			if (i == 0)
-			{
-				if (orders_[0] < k)
-				{
-					from = orders_[0];
-					to = N.getRow() - k + orders_[0];
-				}
-				else
-				{
-					from = N.getRow() + orders_[0] - k;
-					to = N.getRow() + N.getCol() - (k << 1) + orders_[0];
-				}
-			}
-			else
-				find_parallel_bounds(i, m, N.getRow(), N.getCol(), from, to);
+			find_parallel_bounds(orders_[i], i, m, N.getRow(), N.getCol(), from, to);
 
-			size_t l = 0, end = k;
-			bool mapped;
-			if (orders_[i] < k)
-			{
-				l = k;
-				end = k << 1;
-			}
-			// TODO < or <=
 			for (size_t j = from; j < to; j++) // map orders_[i] to j-th line of N if possible
 			{	
-				mapped = true;
-				for (; l < end; l++)
-				{
-					if ((lines_[l] >> l) & 1)						// there is a 1 entry at the l-th position of added line in the pattern
-					{
-						if ((what_to_remember_[i] >> l) & 1)		// I remember the l-th line
-						{
-							if (!N.at(orders_[i], j))				// and there is no 1-entry at their intersection
-							{
-								mapped = false;						// so I can't map the line here
-								break;
-							}
-						}
-						else
-							// TODO find boundaries for l-th line and check if there is enough 1 entries
-							;
-					}
-				}
-				if (mapped)
+				if (map(i, j, m, N))
 				{
 					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line
-					std::vector<size_t> extended;
-					size_t index = 0;
-					for (size_t l = 0; l < (k << 1); l++)
-					{
-						if ((what_to_remember_[i] >> l) & 1)
-						{
-							if ((what_to_remember_[i + 1] >> l) & 1)
-								extended.push_back(building_tree_[i][m][l]);
-							index++;
-						}
-						else if ((what_to_remember_[i + 1] >> l) & 1)	// this only happens when I need to remember currenly added line
-							extended.push_back(j);
-					}
-					mapped = false;
-					for (size_t m2 = 0; m2 < building_tree_[i + 1].size(); m2++)
-					{
-						mapped = true;
-						for (size_t l2 = 0; l2 < building_tree_[i + 1][0].size(); l2++)
-						{
-							if (extended[l2] != building_tree_[i + 1][m2][l2])
-							{
-								mapped = false;
-								break;
-							}
-						}
-						if (mapped)	// extended has already been added (atleast its different class)
-							break;
-					}
-					if (!mapped)
-						building_tree_[i + 1].push_back(extended);
+					extend(i, j, m);
 				}
 			}
 		}
 	}
-	if (building_tree_[(k << 1) - 1].empty())
+	if (building_tree_[k << 1].empty())
 		return true;
 	return false;
 }
@@ -151,27 +79,27 @@ void general_pattern::find_what_to_remember()
 {
 	// what to remember for given orders
 	bool needed;
-	size_t what_do_I_know = 1 << orders_[0];
-	what_to_remember_[0] = 1 << orders_[0];
-	for (size_t i = 1; i < k << 1; i++)
+	size_t what_do_I_know = 0;
+	what_to_remember_[0] = 0;
+	for (size_t i = 1; i <= k << 1; i++)
 	{
-		what_do_I_know |= 1 << orders_[i];
-		what_to_remember_[i] = what_to_remember_[i - 1] | (1 << orders_[i]);
+		what_do_I_know |= 1 << orders_[i - 1];
+		what_to_remember_[i] = what_to_remember_[i - 1] | (1 << orders_[i - 1]);
 		for (size_t j = 0; j < k << 1; j++)
 		{
 			if ((what_to_remember_[i] >> j) & 1)
 			{
-				if (((j == 0 || j == k) && !((what_do_I_know >> (j + 1)) & 1))					// the first row or column and I don't remember the second one 
+				if (((j == 0 || j == k) && !((what_do_I_know >> (j + 1)) & 1))					// I'm adding the first row or column and I don't remember the second one 
 					||
-					((j == k - 1 || j == (k << 1) - 1) && !((what_do_I_know >> (j - 1)) & 1))	// the last row or column and I don't remember the previous one
+					((j == k - 1 || j == (k << 1) - 1) && !((what_do_I_know >> (j - 1)) & 1))	// I'm adding the last row or column and I don't remember the previous one
 					||
 					(((j > 0 && j < k) || (j > k && j < k << 1)) &&
-					(!((what_do_I_know >> (j - 1)) & 1) || !((what_do_I_know >> (j + 1)) & 1))))	// I don't remember either the previous line or the next one
+					(!((what_do_I_know >> (j - 1)) & 1) || !((what_do_I_know >> (j + 1)) & 1))))// I don't remember either the previous line or the next one
 					continue;
 				needed = false;
-				for (size_t l = 0; l < k; l++)
+				for (size_t l = 0; l < k; l++) // TODO k << 1
 				{
-					if (((lines_[j] >> l) & 1) && !((what_do_I_know >> l) & 1))
+					if (((lines_[j] >> l) & 1) && (((j < k) && !((what_do_I_know >> (l + k)) & 1)) || ((j < k) && !((what_do_I_know >> (l + k)) & 1))))
 					{
 						needed = true;
 						break;
@@ -185,35 +113,36 @@ void general_pattern::find_what_to_remember()
 	}
 }
 
-void general_pattern::find_parallel_bounds(size_t i, size_t m, size_t rows, size_t columns, size_t& from, size_t& to) // TODO kill all bugs
+void general_pattern::find_parallel_bounds(const size_t line, const size_t i, const size_t m, const size_t rows, const size_t columns,
+		size_t& from, size_t& to) // TODO kill all bugs
 {
 	size_t	index = 0 - 1,	// index into map m
-			bot = 0 - 1,	// index to the lower bound for currently added line in map vector
-			top = 0 - 1,	// index to the upper bound for currently added line in map vector
-			i_top = 0,		// index of the line of the pattern which is a upper bound of currently added line 
-			i_bot = 0 - 1;	// index of the line of the pattern which is a lower bound of currently added line
+		bot = 0 - 1,	// index to the lower bound for currently added line in map vector
+		top = 0 - 1,	// index to the upper bound for currently added line in map vector
+		i_top = 0,		// index of the line of the pattern which is a upper bound of currently added line 
+		i_bot = 0 - 1;	// index of the line of the pattern which is a lower bound of currently added line
 	for (i_top = 0; i_top < k << 1; i_top++)
 	{
-		if ((((orders_[i] << 1) < orders_.size()) && ((i_top << 1) < orders_.size())) ||		// iterating through rows and adding a row
-			(((orders_[i] << 1) >= orders_.size()) && ((i_top << 1) >= orders_.size())) &&		// iterating through columns and adding a column
-			((what_to_remember_[i - 1] >> i_top) & 1))											// I remember this line
+		if (((((line << 1) < orders_.size()) && ((i_top << 1) < orders_.size())) ||		// iterating through rows and adding a row
+			(((line << 1) >= orders_.size()) && ((i_top << 1) >= orders_.size()))) &&	// iterating through columns and adding a column
+			((what_to_remember_[i] >> i_top) & 1))										// I remember this line
 		{
 			index++;
-			if (i_top < orders_[i]) // I might change top a few times (up to k times)
+			if (i_top < line) // I might change top a few times (up to k times)
 			{
 				i_bot = i_top;
 				bot = index;
 			}
-			else					// I only set top once
+			else if (i_top > line)		// I only set top once
 			{
 				top = index;
 				break;
 			}
 		}
-		else if ((what_to_remember_[i - 1] >> i_top) & 1)										// I need to remeber this line, but I'm adding column and going through rows or vice versa
+		else if ((what_to_remember_[i] >> i_top) & 1)								// I need to remeber this line, but I'm adding column and going through rows or vice versa
 			index++;
-		else if ((((orders_[i] << 1) < orders_.size()) && (((i_top + 1) << 1) == orders_.size())) ||
-			(((orders_[i] << 1) >= orders_.size()) && (i_top + 1 == orders_.size())))	// if there is no upper bound
+		else if ((((line << 1) < orders_.size()) && (((i_top + 1) << 1) == orders_.size())) ||
+			(((line << 1) >= orders_.size()) && (i_top + 1 == orders_.size())))	// if there is no upper bound
 		{
 			i_top = 0 - 1;
 			break;
@@ -222,22 +151,89 @@ void general_pattern::find_parallel_bounds(size_t i, size_t m, size_t rows, size
 	// i have parallel boundaries
 	if (bot == 0 - 1)
 	{
-		if (orders_[i] < k)
-			from = 0 + orders_[i];
+		if (line < k)
+			from = 0 + line;
 		else
-			from = rows + orders_[i] - k;
+			from = rows - k + line;
 	}
 	else
-		from = building_tree_[i][m][bot] - i_bot + orders_[i];
+		from = building_tree_[i][m][bot] - i_bot + line;
 	if (top == 0 - 1)
 	{
-		if (orders_[i] < k)
-			to = rows - orders_[i];
+		if (line < k)
+			to = rows - k + line + 1;
 		else
-			to = rows + columns - orders_[i] + k;
+			to = rows + columns - (k << 1) + line + 1;
 	}
 	else
-		to = building_tree_[i][m][top] - i_top + orders_[i];
+		to = building_tree_[i][m][top] - i_top + line + 1;
+	
+}
+
+bool general_pattern::map(const size_t i, const size_t j, const size_t m, const matrix<size_t>& N)
+{
+	for (size_t l = 0; l < k; l++)
+	{
+		if ((lines_[orders_[i]] >> l) & 1)						// there is a 1 entry at the l-th position of added line in the pattern
+		{
+			if (((orders_[i] < k) && ((what_to_remember_[i] >> (l + k)) & 1)) ||
+				((orders_[i] >= k) && ((what_to_remember_[i] >> l) & 1)))		// I remember the l-th line
+			{
+				// TODO where did I map l to?
+				size_t index = 0, j2 = 0;
+				for (; j2 < k << 1; j2++)
+				{
+					if (j2 == l)
+						break;
+					if ((what_to_remember_[i] >> j2) & 1)
+						index++;
+				}
+				if (((orders_[i] < k) && (!N.at(j, building_tree_[i][m][j2] - N.getRow()))) ||
+					((orders_[i] >= k) && (!N.at(building_tree_[i][m][j2], j - N.getRow()))))				// and there is no 1-entry at their intersection
+				{
+					return false;						// so I can't map the line here
+				}
+			}
+			else
+				// TODO find boundaries for l-th line and check if there is enough 1 entries
+				;
+		}
+	}
+	return true;
+}
+
+void general_pattern::extend(const size_t i, const size_t j, const size_t m)
+{
+	std::vector<size_t> extended;
+	size_t index = 0;
+	for (size_t l = 0; l < (k << 1); l++)
+	{
+		if ((what_to_remember_[i] >> l) & 1)
+		{
+			if ((what_to_remember_[i + 1] >> l) & 1)
+				extended.push_back(building_tree_[i][m][index]);
+			index++;
+		}
+		else if ((what_to_remember_[i + 1] >> l) & 1)	// this only happens when I need to remember currenly added line
+			extended.push_back(j);
+	}
+	bool mapped = false;
+	for (size_t m2 = 0; m2 < building_tree_[i + 1].size(); m2++)
+	{
+		mapped = true;
+		for (size_t l2 = 0; l2 < building_tree_[i + 1][0].size(); l2++)
+		{
+			if (extended[l2] != building_tree_[i + 1][m2][l2])
+			{
+				mapped = false;
+				break;
+			}
+		}
+		if (mapped)	// extended has already been added (atleast its different class)
+			break;
+	}
+	if (!mapped)
+		building_tree_[i + 1].push_back(extended);
 }
 
 /* Walking pattern */

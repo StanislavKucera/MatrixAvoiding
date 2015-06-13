@@ -20,12 +20,14 @@ public:
 	virtual bool avoid(const size_t r, const size_t c, const matrix<size_t>& N);
 private:
 	size_t k;
-	std::vector<size_t> rows_, cols_, lines_, orders_, what_to_remember_;
+	std::vector<size_t> lines_, orders_, what_to_remember_;
 	std::vector<std::vector<std::vector<size_t> > > building_tree_;		// vector through layers - vector through mappings on each layer - vector through indices of mapped lines
 
-	void find_parallel_bounds(size_t i, size_t m, size_t rows, size_t columns, size_t& from, size_t& to);
+	void find_parallel_bounds(const size_t, const size_t, const size_t, const size_t, const size_t, size_t&, size_t&);
 	void find_DESC_orders();
 	void find_what_to_remember();
+	bool map(const size_t, const size_t, const size_t, const matrix<size_t>&);
+	void extend(const size_t, const size_t, const size_t);
 };
 
 // A matrix pattern in which exists a walk from left-upper corner to right-bottom corner, which contains all 1 entries (may contain 0 entries too)
