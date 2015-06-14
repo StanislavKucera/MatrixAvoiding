@@ -16,27 +16,32 @@ int main(int argc, char* argv[])
 	size_t N = 15, iter = 500;
 	enum Type { general, walking };
 	Type type = general;
+	std::string input = "input.txt", output = "";
 	clock_t t = 0;
 
-	std::istringstream convert;
 	if (argc > 1)
 	{
-		convert.str(argv[1]);
+		std::istringstream convert(argv[1]);
 		convert >> N;
 	}
 	if (argc > 2)
 	{
-		convert.str(argv[1]);
+		std::istringstream convert(argv[2]);
 		convert >> iter;
 	}
 	if (argc > 3)
 	{
-		convert.str(argv[1]);
-		convert >> N;
+		std::istringstream convert(argv[3]);
+		short typ;
+		convert >> typ;
+		type = (Type)typ;
 	}
+	if (argc > 4)
+		input = argv[4];
+	if (argc > 5)
+		output = argv[5];
 
-	matrix<size_t> pattern("input.txt");
-	//matrix<size_t> pattern("input2.txt");
+	matrix<size_t> pattern(input);
 	//matrix<size_t> pattern(2, 2, 1);
 	//for (size_t i = 0; i < 1; i++)	{ pattern.at(1, i) = 0; }
 	matrix<size_t> result;
@@ -62,11 +67,12 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	/*	If you want the result matrix to be in a text file
-	std::ofstream oFile("output.txt");
-	oFile << result.Print();
-	oFile.close();
-	*/
+	if (output != "")
+	{
+		std::ofstream oFile(output);
+		oFile << result.Print();
+		oFile.close();
+	}
 
 	std::cout << result.Print();
 	std::cout << "\nAvoiding pattern:\n\n";
