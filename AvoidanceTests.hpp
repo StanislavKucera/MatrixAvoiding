@@ -14,15 +14,15 @@ private:
 	size_t	k,														// size of a matrix (k x k)
 			steps;													// number of steps I'm going to do
 	std::vector<size_t> lines_,										// binary number for each line of a pattern having one at i-th position if the pattern has one-entry there
-						orders_,									// order of lines in which I am going to be mapping them
+						order_,									// order of lines in which I am going to be mapping them
 						what_to_remember_;							// for each adding line I know which of them I still need to remember for next mapping
 	std::vector<std::vector<std::vector<size_t> > > building_tree_;	// vector through layers - vector through mappings on each layer - vector through indices of mapped lines
 
 	// for given index of mapped line returns (last two arguments) indices of big matrix which line can be mapped in [from, to)
-	void find_parallel_bounds(const size_t, const size_t, const size_t, const size_t, const size_t, size_t&, size_t&);
+	void find_parallel_bounds(const size_t, const size_t, const size_t, const size_t, const size_t, size_t&, size_t&, size_t&);
 	// orders lines of the pattern according to the number of one-entries descendingly
-	void find_DESC_orders();
-	void find_DAG_orders();
+	void find_DESC_order();
+	void find_DAG_order();
 	// for given order computes, which already mapped lines need to be stored and which can be forgotten
 	void find_what_to_remember();
 	// returns true if given line of the pattern can be mapped into a given line of the big matrix

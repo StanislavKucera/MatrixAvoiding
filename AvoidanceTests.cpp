@@ -10,7 +10,7 @@ general_pattern::general_pattern(const matrix<size_t>& pattern)
 	: k(pattern.getCol()),
 	  steps(k << 1),
 	  lines_(k << 1),
-	  orders_(k << 1),
+	  order_(k << 1),
 	  what_to_remember_((k << 1) + 1),
 	  building_tree_((k << 1) + 1)
 {
@@ -25,8 +25,8 @@ general_pattern::general_pattern(const matrix<size_t>& pattern)
 			}
 		}
 	}
-	find_DESC_orders();
-	// TODO find orders (DAG method)
+	find_DESC_order();
+	// TODO find order (DAG method)
 	find_what_to_remember();
 }
 
@@ -37,7 +37,7 @@ bool general_pattern::avoid(const matrix<size_t>& N)
 	{
 		building_tree_[i].clear();
 	}	
-	size_t from, to;
+	size_t from, to, dont_care;
 	building_tree_[0].push_back(std::vector<size_t>(0));
 
 	for (size_t i = 0; i < steps; i++) // main loop through added lines (loops 2*k times)
@@ -47,7 +47,7 @@ bool general_pattern::avoid(const matrix<size_t>& N)
 		for (size_t m = 0; m < building_tree_[i].size(); m++) // loop through the mappings found in the last iteration
 		{
 			// find boundaries of added line:
-			find_parallel_bounds(orders_[i], i, m, N.getRow(), N.getCol(), from, to);
+			find_parallel_bounds(order_[i], i, m, N.getRow(), N.getCol(), from, to, dont_care);
 
 			for (size_t j = from; j < to; j++) // map orders_[i] to j-th line of N if possible
 			{	
@@ -64,7 +64,7 @@ bool general_pattern::avoid(const matrix<size_t>& N)
 	return false;
 }
 
-void general_pattern::find_DESC_orders()
+void general_pattern::find_DESC_order()
 {
 	std::vector<std::pair<size_t, size_t> > pairs(k << 1);
 	for (size_t i = 0; i < k << 1; i++)
@@ -75,8 +75,8 @@ void general_pattern::find_DESC_orders()
 	// maybe bucket sort instead (n >> k*log k > k)
 	for (size_t i = 0; i < k << 1; i++)
 	{
-		orders_[i] = pairs[i].second;
-		if (lines_[orders_[i]] == 0)	// since it is sorted, as soon as I want to add empty line, I would be only adding empty lines and there is no reason to do that
+		order_[i] = pairs[i].second;
+		if (lines_[order_[i]] == 0)	// since it is sorted, as soon as I want to add empty line, I would be only adding empty lines and there is no reason to do that
 		{
 			steps = i;
 			break;
@@ -84,7 +84,7 @@ void general_pattern::find_DESC_orders()
 	}
 }
 
-void general_pattern::find_DAG_orders()
+void general_pattern::find_DAG_order()
 {
 	// TODO
 }
@@ -97,8 +97,8 @@ void general_pattern::find_what_to_remember()
 	what_to_remember_[0] = 0;
 	for (size_t i = 1; i <= k << 1; i++)
 	{
-		what_do_I_know |= 1 << orders_[i - 1];
-		what_to_remember_[i] = what_to_remember_[i - 1] | (1 << orders_[i - 1]);
+		what_do_I_know |= 1 << order_[i - 1];
+		what_to_remember_[i] = what_to_remember_[i - 1] | (1 << order_[i - 1]);
 		for (size_t j = 0; j < k << 1; j++)
 		{
 			if ((what_to_remember_[i] >> j) & 1)
@@ -111,9 +111,11 @@ void general_pattern::find_what_to_remember()
 					(!((what_do_I_know >> (j - 1)) & 1) || !((what_do_I_know >> (j + 1)) & 1))))// I don't remember either the previous line or the next one
 					continue;
 				needed = false;
-				for (size_t l = 0; l < k; l++) // TODO k << 1
+				for (size_t l = 0; l < k; l++)
 				{
-					if (((lines_[j] >> l) & 1) && (((j < k) && !((what_do_I_know >> (l + k)) & 1)) || ((j < k) && !((what_do_I_know >> (l + k)) & 1))))
+					if (((lines_[j] >> l) & 1) && 
+						(((j < k) && !((what_do_I_know >> (l + k)) & 1)) || 
+						 ((j >= k) && !((what_do_I_know >> l) & 1))))
 					{
 						needed = true;
 						break;
@@ -128,17 +130,17 @@ void general_pattern::find_what_to_remember()
 }
 
 void general_pattern::find_parallel_bounds(const size_t line, const size_t i, const size_t m, const size_t rows, const size_t columns,
-		size_t& from, size_t& to) // TODO kill all bugs
+		size_t& from, size_t& to, size_t& top_bound)
 {
 	size_t	index = 0 - 1,	// index into map m
-		bot = 0 - 1,	// index to the lower bound for currently added line in map vector
-		top = 0 - 1,	// index to the upper bound for currently added line in map vector
-		i_top = 0,		// index of the line of the pattern which is a upper bound of currently added line 
-		i_bot = 0 - 1;	// index of the line of the pattern which is a lower bound of currently added line
+			bot = 0 - 1,	// index to the lower bound for currently added line in map vector
+			top = 0 - 1,	// index to the upper bound for currently added line in map vector
+			i_top = 0,		// index of the line of the pattern which is a upper bound of currently added line 
+			i_bot = 0 - 1;	// index of the line of the pattern which is a lower bound of currently added line
 	for (i_top = 0; i_top < k << 1; i_top++)
 	{
-		if (((((line << 1) < orders_.size()) && ((i_top << 1) < orders_.size())) ||		// iterating through rows and adding a row
-			(((line << 1) >= orders_.size()) && ((i_top << 1) >= orders_.size()))) &&	// iterating through columns and adding a column
+		if (((((line << 1) < order_.size()) && ((i_top << 1) < order_.size())) ||		// iterating through rows and adding a row
+			(((line << 1) >= order_.size()) && ((i_top << 1) >= order_.size()))) &&	// iterating through columns and adding a column
 			((what_to_remember_[i] >> i_top) & 1))										// I remember this line
 		{
 			index++;
@@ -155,8 +157,8 @@ void general_pattern::find_parallel_bounds(const size_t line, const size_t i, co
 		}
 		else if ((what_to_remember_[i] >> i_top) & 1)								// I need to remeber this line, but I'm adding column and going through rows or vice versa
 			index++;
-		else if ((((line << 1) < orders_.size()) && (((i_top + 1) << 1) == orders_.size())) ||
-			(((line << 1) >= orders_.size()) && (i_top + 1 == orders_.size())))	// if there is no upper bound
+		else if ((((line << 1) < order_.size()) && (((i_top + 1) << 1) == order_.size())) ||
+				 (((line << 1) >= order_.size()) && (i_top + 1 == order_.size())))	// if there is no upper bound
 		{
 			i_top = 0 - 1;
 			break;
@@ -175,54 +177,79 @@ void general_pattern::find_parallel_bounds(const size_t line, const size_t i, co
 	if (top == (size_t)(0 - 1))
 	{
 		if (line < k)
+		{
 			to = rows - k + line + 1;
+			top_bound = k;
+		}
 		else
+		{
 			to = rows + columns - (k << 1) + line + 1;
+			top_bound = k << 1;
+		}
 	}
 	else
+	{
 		to = building_tree_[i][m][top] - i_top + line + 1;
-	
+		top_bound = i_top;
+	}
 }
 
 bool general_pattern::map(const size_t i, const size_t j, const size_t m, const matrix<size_t>& N)
 {
+	size_t from, to, top_bound = 0, last_one;
 	for (size_t l = 0; l < k; l++)
 	{
-		if ((lines_[orders_[i]] >> l) & 1)						// there is a 1 entry at the l-th position of added line in the pattern
+		if ((lines_[order_[i]] >> l) & 1)						// there is a 1 entry at the l-th position of added line in the pattern
 		{
-			if (((orders_[i] < k) && ((what_to_remember_[i] >> (l + k)) & 1)) ||
-				((orders_[i] >= k) && ((what_to_remember_[i] >> l) & 1)))		// I remember the l-th line
+			if (((order_[i] < k) && ((what_to_remember_[i] >> (l + k)) & 1)) ||
+				((order_[i] >= k) && ((what_to_remember_[i] >> l) & 1)))		// I remember the l-th line
 			{
 				size_t index = 0, j2 = 0;
 				for (; j2 < k << 1; j2++)
 				{
-					if (j2 == l)
+					if (((order_[i] < k) && (j2 == l + k)) ||
+						((order_[i] >= k) && (j2 == l)))
 						break;
 					if ((what_to_remember_[i] >> j2) & 1)
 						index++;
 				}
-				if (((orders_[i] < k) && (!N.at(j, building_tree_[i][m][j2] - N.getRow()))) ||
-					((orders_[i] >= k) && (!N.at(building_tree_[i][m][j2], j - N.getRow()))))				// and there is no 1-entry at their intersection
+				if (((order_[i] < k) && (!N.at(j, building_tree_[i][m][index] - N.getRow()))) ||
+					((order_[i] >= k) && (!N.at(building_tree_[i][m][index], j - N.getRow()))))				// and there is no 1-entry at their intersection
 				{
 					return false;						// so I can't map the line here
 				}
 			}
-			else
+			else if (((order_[i] < k) && ((l + k) < top_bound)) ||
+					 ((order_[i] >= k) && (l < top_bound)))		// I have the bounds from previously found one-entry, need to find another one from the "last one" to "to"
 			{
-				// TODO check if there is enough 1 entries - now I only check if there is atleast 1, but I might use that one for more than one (could be cutting more)
-				size_t from, to;
-				find_parallel_bounds((orders_[i] < k) ? l + k : l, i, m, N.getRow(), N.getCol(), from, to);
+				last_one++;		// I don't want to find the same one-entry again
 				bool atleast1 = false;
-				for (size_t j2 = from; j2 < to; j2++)
+				for (; last_one < to; last_one++)
 				{
-					if (((orders_[i] < k) && N.at(j, j2 - N.getRow())) ||
-						((orders_[i] >= k) && N.at(j2, j - N.getRow())))
+					if (((order_[i] < k) && N.at(j, last_one - N.getRow())) ||
+						((order_[i] >= k) && N.at(last_one, j - N.getRow())))
 					{
 						atleast1 = true;
 						break;
 					}
 				}
-				if (!atleast1)
+				if (!atleast1)		// there is not enough one-entries in the interval (last_one, to)
+					return false;
+			}
+			else
+			{				
+				find_parallel_bounds((order_[i] < k) ? l + k : l, i, m, N.getRow(), N.getCol(), from, to, top_bound);
+				bool atleast1 = false;
+				for (last_one = from; last_one < to; last_one++)
+				{
+					if (((order_[i] < k) && N.at(j, last_one - N.getRow())) ||
+						((order_[i] >= k) && N.at(last_one, j - N.getRow())))
+					{
+						atleast1 = true;
+						break;
+					}
+				}
+				if (!atleast1)		// there is not enough one-entries in the interval [from, to)
 					return false;
 			}
 		}
