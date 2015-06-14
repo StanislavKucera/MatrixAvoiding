@@ -51,7 +51,7 @@ bool general_pattern::avoid(const matrix<size_t>& N)
 
 			for (size_t j = from; j < to; j++) // map orders_[i] to j-th line of N if possible
 			{	
-				if (map(i, j, m, N)) // if currenly added line can be mapped to j in mapping m
+				if (map(true, order_[i], i, j, m, N)) // if currenly added line can be mapped to j in mapping m
 				{
 					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line
 					extend(i, j, m);
@@ -194,43 +194,48 @@ void general_pattern::find_parallel_bounds(const size_t line, const size_t i, co
 	}
 }
 
-bool general_pattern::map(const size_t i, const size_t j, const size_t m, const matrix<size_t>& N)
+bool general_pattern::map(const bool backtrack, const size_t line, const size_t i, const size_t j, const size_t m, const matrix<size_t>& N)
 {
 	size_t from, to, top_bound = 0, last_one;
 	for (size_t l = 0; l < k; l++)
 	{
-		if ((lines_[order_[i]] >> l) & 1)						// there is a 1 entry at the l-th position of added line in the pattern
+		if ((lines_[line] >> l) & 1)						// there is a 1 entry at the l-th position of added line in the pattern
 		{
-			if (((order_[i] < k) && ((what_to_remember_[i] >> (l + k)) & 1)) ||
-				((order_[i] >= k) && ((what_to_remember_[i] >> l) & 1)))		// I remember the l-th line
+			if (((line < k) && ((what_to_remember_[i] >> (l + k)) & 1)) ||
+				((line >= k) && ((what_to_remember_[i] >> l) & 1)))		// I remember the l-th line
 			{
 				size_t index = 0, j2 = 0;
 				for (; j2 < k << 1; j2++)
 				{
-					if (((order_[i] < k) && (j2 == l + k)) ||
-						((order_[i] >= k) && (j2 == l)))
+					if (((line < k) && (j2 == l + k)) ||
+						((line >= k) && (j2 == l)))
 						break;
 					if ((what_to_remember_[i] >> j2) & 1)
 						index++;
 				}
-				if (((order_[i] < k) && (!N.at(j, building_tree_[i][m][index] - N.getRow()))) ||
-					((order_[i] >= k) && (!N.at(building_tree_[i][m][index], j - N.getRow()))))				// and there is no 1-entry at their intersection
+				if (((line < k) && (!N.at(j, building_tree_[i][m][index] - N.getRow()))) ||
+					((line >= k) && (!N.at(building_tree_[i][m][index], j - N.getRow()))))				// and there is no 1-entry at their intersection
 				{
 					return false;						// so I can't map the line here
 				}
 			}
-			else if (((order_[i] < k) && ((l + k) < top_bound)) ||
-					 ((order_[i] >= k) && (l < top_bound)))		// I have the bounds from previously found one-entry, need to find another one from the "last one" to "to"
+			else if (!backtrack)
+				continue;
+			else if (((line < k) && ((l + k) < top_bound)) ||
+					 ((line >= k) && (l < top_bound)))		// I have the bounds from previously found one-entry, need to find another one from the "last one" to "to"
 			{
 				last_one++;		// I don't want to find the same one-entry again
 				bool atleast1 = false;
 				for (; last_one < to; last_one++)
 				{
-					if (((order_[i] < k) && N.at(j, last_one - N.getRow())) ||
-						((order_[i] >= k) && N.at(last_one, j - N.getRow())))
+					if (((line < k) && N.at(j, last_one - N.getRow())) ||
+						((line >= k) && N.at(last_one, j - N.getRow())))
 					{
-						atleast1 = true;
-						break;
+						//if (map(false, (line < k) ? (l + k) : l, i, last_one, m, N))
+						//{
+							atleast1 = true;
+							break;
+						//}
 					}
 				}
 				if (!atleast1)		// there is not enough one-entries in the interval (last_one, to)
@@ -238,15 +243,18 @@ bool general_pattern::map(const size_t i, const size_t j, const size_t m, const 
 			}
 			else
 			{				
-				find_parallel_bounds((order_[i] < k) ? l + k : l, i, m, N.getRow(), N.getCol(), from, to, top_bound);
+				find_parallel_bounds((line < k) ? l + k : l, i, m, N.getRow(), N.getCol(), from, to, top_bound);
 				bool atleast1 = false;
 				for (last_one = from; last_one < to; last_one++)
 				{
-					if (((order_[i] < k) && N.at(j, last_one - N.getRow())) ||
-						((order_[i] >= k) && N.at(last_one, j - N.getRow())))
+					if (((line < k) && N.at(j, last_one - N.getRow())) ||
+						((line >= k) && N.at(last_one, j - N.getRow())))
 					{
-						atleast1 = true;
-						break;
+						//if (map(false, (line < k) ? (l + k) : l, i, last_one, m, N))
+						//{
+							atleast1 = true;
+							break;
+						//}
 					}
 				}
 				if (!atleast1)		// there is not enough one-entries in the interval [from, to)

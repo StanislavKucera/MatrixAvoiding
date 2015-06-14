@@ -26,7 +26,7 @@ private:
 	// for given order computes, which already mapped lines need to be stored and which can be forgotten
 	void find_what_to_remember();
 	// returns true if given line of the pattern can be mapped into a given line of the big matrix
-	bool map(const size_t, const size_t, const size_t, const matrix<size_t>&);
+	bool map(const bool, const size_t, const size_t, const size_t, const size_t, const matrix<size_t>&);
 	// adds given mapping to the vector of all mappings if it is not already in there
 	void extend(const size_t, const size_t, const size_t);
 };
