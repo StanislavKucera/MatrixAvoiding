@@ -90,11 +90,11 @@ public:
 			throw std::out_of_range("Index out of bounds.");
 		return data_[index.first * col_ + index.second];
 	}
-	// returns number of rows
+	// returns the number of rows
 	size_t getRow() const	{ return row_; }
-	// returns number of columns
+	// returns the number of columns
 	size_t getCol()	const	{ return col_; }
-	// returns string containing formatted matrix
+	// returns a formatted string containing the matrix
 	std::string Print()
 	{
 		std::stringstream out;

@@ -19,16 +19,19 @@ int main(int argc, char* argv[])
 	std::string input = "input.txt", output = "";
 	clock_t t = 0;
 
+	// the size of resulting matrix is given
 	if (argc > 1)
 	{
 		std::istringstream convert(argv[1]);
 		convert >> N;
 	}
+	// the number of iterations is given
 	if (argc > 2)
 	{
 		std::istringstream convert(argv[2]);
 		convert >> iter;
 	}
+	// the type of the pattern is given
 	if (argc > 3)
 	{
 		std::istringstream convert(argv[3]);
@@ -36,14 +39,15 @@ int main(int argc, char* argv[])
 		convert >> typ;
 		type = (Type)typ;
 	}
+	// the input pattern file is given
 	if (argc > 4)
 		input = argv[4];
+	// the output result file is given
 	if (argc > 5)
 		output = argv[5];
 
+	// create a pattern from the file - it has a constructor from initializer lists as well
 	matrix<size_t> pattern(input);
-	//matrix<size_t> pattern(2, 2, 1);
-	//for (size_t i = 0; i < 1; i++)	{ pattern.at(1, i) = 0; }
 	matrix<size_t> result;
 	
 	if (type == general)
@@ -55,6 +59,7 @@ int main(int argc, char* argv[])
 	}
 	else if (type == walking)
 	{
+		// there is a possibility, that pattern is not a walking pattern
 		try { 
 			walking_pattern wp(pattern, N);
 			t = clock();
@@ -67,9 +72,11 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	// if output file is specified
 	if (output != "")
 	{
 		std::ofstream oFile(output);
+		// print the resulting matrix into it
 		oFile << result.Print();
 		oFile.close();
 	}
