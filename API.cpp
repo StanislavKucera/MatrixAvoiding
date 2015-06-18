@@ -13,7 +13,7 @@
 
 int main(int argc, char* argv[])
 {
-	size_t N = 15, iter = 500;
+	size_t N = 20, iter = 1000;
 	enum Type { general, walking };
 	Type type = general;
 	std::string input = "input.txt", output = "";

@@ -20,7 +20,7 @@ private:
 	std::vector<std::vector<std::vector<size_t> > > building_tree_;	// vector through layers - vector through mappings on each layer - vector through indices of mapped lines
 
 	// for given index of mapped line returns (last two arguments) indices of big matrix which line can be mapped in [from, to)
-	void find_parallel_bounds(const size_t, const size_t, const size_t, const size_t, const size_t, size_t&, size_t&, size_t&);
+	void find_parallel_bounds(const size_t, const size_t, const size_t, const size_t, const size_t, size_t&, size_t&);
 	
 	// orders lines of the pattern according to the number of one-entries descendingly
 	void find_DESC_order();

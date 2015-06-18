@@ -28,8 +28,8 @@ general_pattern::general_pattern(const matrix<size_t>& pattern)
 	}
 
 	// finding the best order of line mapping
-	//find_DESC_order();
-	find_DAG_order();	
+	find_DESC_order();
+	//find_DAG_order();				
 	// finding mapped lines I need to remember after each line mapping
 	find_what_to_remember();		
 }
@@ -45,7 +45,7 @@ bool general_pattern::avoid(const matrix<size_t>& N)
 	// I start with empty mapping - no lines are mapped
 	building_tree_[0].push_back(std::vector<size_t>(0));	
 
-	size_t from, to, dont_care;
+	size_t from, to;
 
 	// main loop through added lines (loops 2*k times)
 	for (size_t i = 0; i < steps; i++)
@@ -58,7 +58,7 @@ bool general_pattern::avoid(const matrix<size_t>& N)
 		for (size_t m = 0; m < building_tree_[i].size(); m++) 
 		{
 			// find boundaries of added line:
-			find_parallel_bounds(order_[i], i, m, N.getRow(), N.getCol(), from, to, dont_care);
+			find_parallel_bounds(order_[i], i, m, N.getRow(), N.getCol(), from, to);
 
 			// map orders_[i] to j-th line of N if possible
 			for (size_t j = from; j < to; j++) 
@@ -273,7 +273,7 @@ void general_pattern::find_what_to_remember()
 }
 
 void general_pattern::find_parallel_bounds(const size_t line, const size_t i, const size_t m, const size_t rows, const size_t columns,
-		size_t& from, size_t& to, size_t& top_bound)
+		size_t& from, size_t& to)
 {
 	size_t	index = 0 - 1,	// index into map m
 			bot = 0 - 1,	// index to the lower bound for currently added line in map vector
@@ -338,28 +338,20 @@ void general_pattern::find_parallel_bounds(const size_t line, const size_t i, co
 	{
 		// and "line" is a row
 		if (line < k)
-		{
 			to = rows - k + line + 1;
-			top_bound = k;
-		}
 		// "line" is a column
 		else
-		{
 			to = rows + columns - (k << 1) + line + 1;
-			top_bound = k << 1;
-		}
 	}
 	// else return found upper bound with offset, which ensures there at least enough lines in the big matrix to map those from the pattern, which are in between
 	else
-	{
 		to = building_tree_[i][m][top] - i_top + line + 1;
-		top_bound = i_top;
-	}
 }
 
 bool general_pattern::map(const bool backtrack, const size_t line, const size_t i, const size_t j, const size_t m, const matrix<size_t>& N)
 {
-	size_t from, to, top_bound = 0, last_one;
+	size_t from, to, last_one;
+	bool know_bounds = false, atleast1;
 
 	// go through all elements of "line"
 	for (size_t l = 0; l < k; l++)
@@ -372,6 +364,7 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 				((line >= k) && ((what_to_remember_[i] >> l) & 1)))		
 			{
 				size_t index = 0, j2 = 0;
+				know_bounds = false;
 
 				// go through line and find the l-th one - I do this to find the index of l-th line in the mapping
 				for (; j2 < k << 1; j2++)
@@ -396,12 +389,12 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 			else if (!backtrack)
 				continue;
 			// I have the bounds from previously found one-entry, need to find another one from the "last one" to "to"
-			else if (((line < k) && ((l + k) < top_bound)) ||
-					 ((line >= k) && (l < top_bound)))		
+			else if (know_bounds)
 			{
 				// I don't want to find the same one-entry again, so I increment the index of the line
 				last_one++;		
-				bool atleast1 = false;
+				find_parallel_bounds((line < k) ? l + k : l, i, m, N.getRow(), N.getCol(), from, to);
+				atleast1 = false;
 
 				// go through all possible lines of the big matrix and find a one-entry if there is any
 				for (; last_one < to; last_one++)
@@ -410,11 +403,13 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 					if (((line < k) && N.at(j, last_one - N.getRow())) ||
 						((line >= k) && N.at(last_one, j - N.getRow())))
 					{
-						//if (map(false, (line < k) ? (l + k) : l, i, last_one, m, N))
-						//{
+						// can l-th line be mapped to last_one?
+						if (map(false, (line < k) ? (l + k) : l, i, last_one, m, N))
+						{
+							// yes, it can
 							atleast1 = true;
 							break;
-						//}
+						}
 					}
 				}
 
@@ -426,8 +421,9 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 			else
 			{		
 				// find the bounds
-				find_parallel_bounds((line < k) ? l + k : l, i, m, N.getRow(), N.getCol(), from, to, top_bound);
-				bool atleast1 = false;
+				find_parallel_bounds((line < k) ? l + k : l, i, m, N.getRow(), N.getCol(), from, to);
+				know_bounds = true;
+				atleast1 = false;
 
 				// go through the lines of a big matrix, where I can map l to and check if there is a one-entry 
 				for (last_one = from; last_one < to; last_one++)
@@ -436,11 +432,13 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 					if (((line < k) && N.at(j, last_one - N.getRow())) ||
 						((line >= k) && N.at(last_one, j - N.getRow())))
 					{
-						//if (map(false, (line < k) ? (l + k) : l, i, last_one, m, N))
-						//{
+						// can l-th line be mapped to last_one?
+						if (map(false, (line < k) ? (l + k) : l, i, last_one, m, N))
+						{
+							// yes, it can
 							atleast1 = true;
 							break;
-						//}
+						}
 					}
 				}
 
