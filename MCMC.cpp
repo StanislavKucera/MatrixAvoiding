@@ -26,8 +26,8 @@ matrix<size_t> MCMCgenerator(const size_t n, const size_t iter, general_pattern&
 		// switch 0 and 1 entry of the element
 		N.at(r, c) = N.at(r, c) ? 0 : 1;	
 
-		// test if the changed matrix still avoids the pattern
-		if (!test.avoid(N))					
+		// test if the changed matrix still avoids the pattern, it obviously holds, when one-entry changes to zero-entry
+		if (N.at(r, c) && !test.avoid(N))					
 			// if not return to the previous step
 			N.at(r, c) = N.at(r, c) ? 0 : 1;
 	}
