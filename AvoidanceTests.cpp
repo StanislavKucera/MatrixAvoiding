@@ -58,7 +58,7 @@ bool general_pattern::avoid(const matrix<size_t>& N)
 			find_parallel_bounds(order_[i], i, m, N.getRow(), N.getCol(), from, to);
 
 			// map orders_[i] to j-th line of N if possible
-#pragma omp parallel for
+//#pragma omp parallel for
 			for (size_t j = from; j < to; j++) 
 			{	
 				// if currenly added line can be mapped to j in mapping m
