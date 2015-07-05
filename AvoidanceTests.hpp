@@ -13,7 +13,8 @@ public:
 	// returns true if matrix N avoids general pattern this as a submatrix
 	bool avoid(const matrix<size_t>& N);
 private:
-	size_t	k,														// size of a matrix (k x k)
+	size_t	row_,													// number of rows of the pattern
+			col_,													// number of columns of the pattern
 			steps;													// number of steps I'm going to do
 	std::vector<size_t> lines_,										// binary number for each line of a pattern having one at i-th position if the pattern has one-entry there
 						order_,										// order of lines in which I am going to be mapping them
@@ -23,7 +24,7 @@ private:
 	std::vector<std::vector<size_t> > extending_order_;
 
 	// for given index of mapped line returns (last two arguments) indices of big matrix which line can be mapped in [from, to)
-	void find_parallel_bounds(const size_t, const size_t, const size_t, const size_t, const size_t, size_t&, size_t&);
+	void find_parallel_bounds(const size_t, const size_t, const std::vector<size_t>&, const size_t, const size_t, size_t&, size_t&);
 	
 	// orders lines of the pattern according to the number of one-entries descendingly
 	void find_DESC_order();
@@ -44,10 +45,10 @@ private:
 	void find_extending_order();
 	
 	// returns true if given line of the pattern can be mapped into a given line of the big matrix
-	bool map(const bool, const size_t, const size_t, const size_t, const size_t, const matrix<size_t>&);
+	bool map(const bool, const size_t, const size_t, const size_t, const std::vector<size_t>&, const matrix<size_t>&);
 	
 	// adds given mapping to the vector of all mappings if it is not already in there
-	void extend(const size_t, const size_t, const size_t);
+	void extend(const size_t, const size_t, const std::vector<size_t>&);
 };
 
 // A matrix pattern in which exists a walk from left-upper corner to right-bottom corner, which contains all 1 entries (may contain 0 entries too)

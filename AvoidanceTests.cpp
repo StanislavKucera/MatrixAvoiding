@@ -7,24 +7,25 @@
 
 /* General pattern */
 general_pattern::general_pattern(const matrix<size_t>& pattern)
-	: k(pattern.getCol()),
-	  steps(2 * k),
-	  lines_(2 * k),
-	  order_(2 * k),
-	  what_to_remember_(2 * k + 1),
+	: row_(pattern.getRow()),
+	  col_(pattern.getCol()),
+	  steps(row_ + col_),
+	  lines_(row_ + col_),
+	  order_(row_ + col_),
+	  what_to_remember_(row_ + col_ + 1),
 	  building_tree_(2),
-	  parallel_bound_indices_(2 * k),
-	  extending_order_(2 * k)
+	  parallel_bound_indices_(row_ + col_),
+	  extending_order_(row_ + col_)
 {
-	for (size_t i = 0; i < k; i++)
+	for (size_t i = 0; i < row_; i++)
 	{
-		for (size_t j = 0; j < k; j++)
+		for (size_t j = 0; j < col_; j++)
 		{
 			// reading lines of pattern and storing them memory efficiently
 			if (pattern.at(i, j))	
 			{
 				lines_[i] |= 1 << j;
-				lines_[j + k] |= 1 << i;
+				lines_[j + row_] |= 1 << i;
 			}
 		}
 	}
@@ -56,7 +57,7 @@ bool general_pattern::avoid(const matrix<size_t>& N)
 		building_tree_[(i + 1) % 2].clear();
 
 		// loop through the mappings found in the last iteration
-		for (size_t m = 0; m < building_tree_[i % 2].size(); m++)
+		for (auto& m : building_tree_[i % 2])
 		{
 			// find boundaries of added line:
 			find_parallel_bounds(order_[i], i, m, N.getRow(), N.getCol(), from, to);
@@ -86,11 +87,11 @@ bool general_pattern::avoid(const matrix<size_t>& N)
 void general_pattern::find_DESC_order()
 {
 	// vector of pairs (number of one-entries, line_ID)
-	std::vector<std::pair<size_t, size_t> > pairs(2 * k);
+	std::vector<std::pair<size_t, size_t> > pairs(row_ + col_);
 
-	for (size_t i = 0; i < 2 * k; i++)
+	for (size_t i = 0; i < row_ + col_; i++)
 	{
-		pairs[i] = std::make_pair(2 * k - bit_count(lines_[i]), i);
+		pairs[i] = std::make_pair(row_ + col_ - bit_count(lines_[i]), i);
 	}
 
 	// sorts the vector according to the first elements of each pair
@@ -98,7 +99,7 @@ void general_pattern::find_DESC_order()
 	std::sort(pairs.begin(), pairs.end());	
 
 	// I just take the ordered vector as a order of mapping
-	for (size_t i = 0; i < 2 * k; i++)
+	for (size_t i = 0; i < row_ + col_; i++)
 	{
 		order_[i] = pairs[i].second;
 
@@ -119,11 +120,11 @@ void general_pattern::find_DAG_order()
 	q.push(0);
 
 	// vector of distances for each subset of all lines indices - distance is a number of mapped lines I need to remember throughout the whole algorithm
-	std::vector<size_t> distances(1 << (2 * k), (size_t)-1);
+	std::vector<size_t> distances(1 << (row_ + col_), (size_t)-1);
 	distances[0] = 0;
 
 	// vector for retrieving the order of line mapped after I find the shortest path from 0 lines mapped to all lines mapped
-	std::vector<size_t> back_trace(1 << (2 * k), (size_t)-1);
+	std::vector<size_t> back_trace(1 << (row_ + col_), (size_t)-1);
 
 	while (!q.empty())
 	{
@@ -131,7 +132,7 @@ void general_pattern::find_DAG_order()
 		q.pop();
 
 		// extend current subset by one if possible
-		for (size_t i = 0; i < 2 * k; i++)
+		for (size_t i = 0; i < row_ + col_; i++)
 		{
 			// this line is already an element of the subset
 			if ((current >> i) & 1)
@@ -155,12 +156,12 @@ void general_pattern::find_DAG_order()
 		}
 	}
 
-	size_t position = (1 << (2 * k)) - 1;
+	size_t position = (1 << (row_ + col_)) - 1;
 
 	// get the best order backtracing found shortest path from 0 lines to all lines
-	for (size_t i = 0; i < 2 * k; i++)
+	for (size_t i = 0; i < row_ + col_; i++)
 	{
-		order_[(2 * k) - 1 - i] = back_trace[position];
+		order_[row_ + col_ - 1 - i] = back_trace[position];
 		position = position - (1 << back_trace[position]);
 	}
 }
@@ -171,19 +172,19 @@ size_t general_pattern::count_what_to_remember(size_t current)
 	size_t count = bit_count(current);
 
 	// go through all lines
-	for (size_t j = 0; j < 2 * k; j++)
+	for (size_t j = 0; j < row_ + col_; j++)
 	{
 		// if the line is not an element of current, then do not care about it
 		if ((current >> j) & 1)
 		{
 				// I'm adding the first row or column and I don't remember the second one 
-			if (((j == 0 || j == k) && !((current >> (j + 1)) & 1))					
+			if (((j == 0 || j == row_) && !((current >> (j + 1)) & 1))					
 				||
 				// I'm adding the last row or column and I don't remember the previous one
-				((j == k - 1 || j == 2 * k - 1) && !((current >> (j - 1)) & 1))
+				((j == row_ - 1 || j == row_ + col_ - 1) && !((current >> (j - 1)) & 1))
 				||
 				// I don't remember either the previous line or the next one
-				(((j > 0 && j < k) || (j > k && j < 2 * k)) &&
+				(((j > 0 && j < row_) || (j > row_ && j < row_ + col_)) &&
 				(!((current >> (j - 1)) & 1) || !((current >> (j + 1)) & 1))))
 				// I cannot forget this line
 				continue;
@@ -191,12 +192,12 @@ size_t general_pattern::count_what_to_remember(size_t current)
 			needed = false;
 
 			// go through the line's elements
-			for (size_t l = 0; l < k; l++)
+			for (size_t l = 0; l < row_; l++)
 			{
 				// if I find a one-entry and I don't remember the line, which itersects with computed line at the one-entry
 				if (((lines_[j] >> l) & 1) &&
-					(((j < k) && !((current >> (l + k)) & 1)) ||
-					((j >= k) && !((current >> l) & 1))))
+					((j < row_ && !((current >> (l + row_)) & 1)) ||
+					(j >= row_ && !((current >> l) & 1))))
 				{
 					// I cannot forget the line
 					needed = true;
@@ -230,19 +231,19 @@ void general_pattern::find_what_to_remember()
 		what_to_remember_[i] = what_to_remember_[i - 1] | (1 << order_[i - 1]);
 
 		// go through each line and if it is something I believe I need to remember, try if I can forget it
-		for (size_t j = 0; j < 2 * k; j++)
+		for (size_t j = 0; j < row_ + col_; j++)
 		{
 			// if the line is not an element of current, then do not care about it
 			if ((what_to_remember_[i] >> j) & 1)
 			{	
 					// I'm adding the first row or column and I don't remember the second one 
-				if (((j == 0 || j == k) && !((what_do_I_know >> (j + 1)) & 1))					
+				if (((j == 0 || j == row_) && !((what_do_I_know >> (j + 1)) & 1))					
 					||
 					// I'm adding the last row or column and I don't remember the previous one
-					((j == k - 1 || j == 2 * k - 1) && !((what_do_I_know >> (j - 1)) & 1))
+					((j == row_ - 1 || j == row_ + col_ - 1) && !((what_do_I_know >> (j - 1)) & 1))
 					||
 					// I don't remember either the previous line or the next one
-					(((j > 0 && j < k) || (j > k && j < 2 * k)) &&
+					(((j > 0 && j < row_) || (j > row_ && j < row_ + col_)) &&
 					(!((what_do_I_know >> (j - 1)) & 1) || !((what_do_I_know >> (j + 1)) & 1))))
 					// I cannot forget this line
 					continue;
@@ -250,12 +251,12 @@ void general_pattern::find_what_to_remember()
 				needed = false;
 
 				// go through the line's elements
-				for (size_t l = 0; l < k; l++)
+				for (size_t l = 0; l < ((j < row_) ? col_ : row_); l++)
 				{
 					// if I find a one-entry and I don't remember the line, which itersects with computed line at the one-entry
 					if (((lines_[j] >> l) & 1) && 
-						(((j < k) && !((what_do_I_know >> (l + k)) & 1)) || 
-						 ((j >= k) && !((what_do_I_know >> l) & 1))))
+						(((j < row_) && !((what_do_I_know >> (l + row_)) & 1)) || 
+						 ((j >= row_) && !((what_do_I_know >> l) & 1))))
 					{
 						// I cannot forget the line
 						needed = true;
@@ -283,7 +284,7 @@ void general_pattern::find_extending_order()
 		size_t index = 0;
 
 		// go through all lines
-		for (size_t l = 0; l < 2 * k; l++)
+		for (size_t l = 0; l < row_ + col_; l++)
 		{
 			// if I remembered that line in the previous step
 			if ((what_to_remember_[i] >> l) & 1)
@@ -308,15 +309,15 @@ void general_pattern::find_parralel_bound_indices()
 {
 	for (size_t i = 0; i < steps; i++)
 	{
-		parallel_bound_indices_[i].resize(2 * k);
+		parallel_bound_indices_[i].resize(row_ + col_);
 		find_bound_indices(order_[i], i);
 
-		for (size_t j = 0; j < k; j++)
+		for (size_t j = 0; j < ((order_[i] < row_) ? col_ : row_); j++)
 		{
 			if (((lines_[order_[i]] >> j) & 1) && 
-				(!((order_[i] < k && ((what_to_remember_[i] >> (j + k)) & 1)) ||
-				(order_[i] >= k && ((what_to_remember_[i] >> j) & 1)))))
-				find_bound_indices((order_[i] < k) ? j + k : j, i);
+				(!((order_[i] < row_ && ((what_to_remember_[i] >> (j + row_)) & 1)) ||
+				(order_[i] >= row_ && ((what_to_remember_[i] >> j) & 1)))))
+				find_bound_indices((order_[i] < row_) ? j + row_ : j, i);
 		}
 	}
 }
@@ -330,12 +331,12 @@ void general_pattern::find_bound_indices(const size_t line, const size_t i)
 			i_bot = (size_t)-1;	// index of the line of the pattern which is a lower bound of currently added line
 	
 	// go through all lines and find the lower and upper bound for "line", which I remember in i-th step of the algorithm
-	for (i_top = 0; i_top < 2 * k; i_top++)
+	for (i_top = 0; i_top < row_ + col_; i_top++)
 	{
 		// iterating through rows and adding a row
-		if (((line < k && i_top < k) ||
+		if (((line < row_ && i_top < row_) ||
 			// iterating through columns and adding a column
-			(line >= k && i_top >= k)) &&
+			(line >= row_ && i_top >= row_)) &&
 			// I remember this line
 			((what_to_remember_[i] >> i_top) & 1))
 		{
@@ -358,8 +359,8 @@ void general_pattern::find_bound_indices(const size_t line, const size_t i)
 		else if ((what_to_remember_[i] >> i_top) & 1)
 			index++;
 		// if there is no upper bound
-		else if ((line < k && i_top + 1 == k) ||
-				(line >= k && i_top + 1 == 2 * k))
+		else if ((line < row_ && i_top + 1 == row_) ||
+				 (line >= row_ && i_top + 1 == row_ + col_))
 		{
 			i_top = (size_t)-1;
 			break;
@@ -370,7 +371,7 @@ void general_pattern::find_bound_indices(const size_t line, const size_t i)
 	parallel_bound_indices_[i][line].second = std::make_pair(i_bot, i_top);
 }
 
-void general_pattern::find_parallel_bounds(const size_t line, const size_t i, const size_t m, const size_t rows, const size_t columns,
+void general_pattern::find_parallel_bounds(const size_t line, const size_t i, const std::vector<size_t>& m, const size_t rows, const size_t columns,
 		size_t& from, size_t& to)
 {
 	size_t	bot = parallel_bound_indices_[i][line].first.first,		// index to the lower bound for currently added line in map vector
@@ -383,55 +384,55 @@ void general_pattern::find_parallel_bounds(const size_t line, const size_t i, co
 	if (bot == (size_t)-1)
 	{
 		// and "line" is a row
-		if (line < k)
+		if (line < row_)
 			from = 0 + line;
 		// "line" is a column
 		else
-			from = rows - k + line;
+			from = rows - row_ + line;
 	}
 	// else return found lower bound with offset, which ensures there at least enough lines in the big matrix to map those from the pattern, which are in between
 	else
-		from = building_tree_[i % 2][m][bot] - i_bot + line;
+		from = m[bot] - i_bot + line;
 
 	// if there is no upper bound
 	if (top == (size_t)-1)
 	{
 		// and "line" is a row
-		if (line < k)
-			to = rows - k + line + 1;
+		if (line < row_)
+			to = rows - row_ + line + 1;
 		// "line" is a column
 		else
-			to = rows + columns - 2 * k + line + 1;
+			to = rows + columns - row_ - col_ + line + 1;
 	}
 	// else return found upper bound with offset, which ensures there at least enough lines in the big matrix to map those from the pattern, which are in between
 	else
-		to = building_tree_[i % 2][m][top] - i_top + line + 1;
+		to = m[top] - i_top + line + 1;
 }
 
-bool general_pattern::map(const bool backtrack, const size_t line, const size_t i, const size_t j, const size_t m, const matrix<size_t>& N)
+bool general_pattern::map(const bool backtrack, const size_t line, const size_t i, const size_t j, const std::vector<size_t>& m, const matrix<size_t>& N)
 {
 	size_t from, to, last_one;
 	bool know_bounds = false, atleast1;
 
 	// go through all elements of "line"
-	for (size_t l = 0; l < k; l++)
+	for (size_t l = 0; l < ((line < row_) ? col_ : row_); l++)
 	{
 		// if there is a one-entry at the l-th position of added line in the pattern
 		if ((lines_[line] >> l) & 1)						
 		{
 			// and I remember the l-th line
-			if (((line < k) && ((what_to_remember_[i] >> (l + k)) & 1)) ||
-				((line >= k) && ((what_to_remember_[i] >> l) & 1)))		
+			if (((line < row_) && ((what_to_remember_[i] >> (l + row_)) & 1)) ||
+				((line >= row_) && ((what_to_remember_[i] >> l) & 1)))		
 			{
 				size_t index = 0, j2 = 0;
 				know_bounds = false;
 
 				// go through line and find the l-th one - I do this to find the index of l-th line in the mapping
-				for (; j2 < 2 * k; j2++)
+				for (; j2 < row_ + col_; j2++)
 				{
 					// this is the l-th line, index is now pointing to the line of the big matrix, which l-th line was mapped to
-					if (((line < k) && (j2 == l + k)) ||
-						((line >= k) && (j2 == l)))
+					if (((line < row_) && (j2 == l + row_)) ||
+						((line >= row_) && (j2 == l)))
 						break;
 
 					// I remember this one, so I need to increment the index
@@ -440,8 +441,8 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 				}
 
 				// and there is no one-entry at their intersection
-				if (((line < k) && (!N.at(j, building_tree_[i % 2][m][index] - N.getRow()))) ||
-					((line >= k) && (!N.at(building_tree_[i % 2][m][index], j - N.getRow()))))
+				if (((line < row_) && (!N.at(j, m[index] - N.getRow()))) ||
+					((line >= row_) && (!N.at(m[index], j - N.getRow()))))
 					// I can't map the line here
 					return false;
 			}
@@ -453,18 +454,18 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 			{
 				// I don't want to find the same one-entry again, so I increment the index of the line
 				last_one++;		
-				find_parallel_bounds((line < k) ? l + k : l, i, m, N.getRow(), N.getCol(), from, to);
+				find_parallel_bounds((line < row_) ? l + row_ : l, i, m, N.getRow(), N.getCol(), from, to);
 				atleast1 = false;
 
 				// go through all possible lines of the big matrix and find a one-entry if there is any
 				for (; last_one < to; last_one++)
 				{
 					// is there a one-entry where I need it?
-					if (((line < k) && N.at(j, last_one - N.getRow())) ||
-						((line >= k) && N.at(last_one, j - N.getRow())))
+					if (((line < row_) && N.at(j, last_one - N.getRow())) ||
+						((line >= row_) && N.at(last_one, j - N.getRow())))
 					{
 						// can l-th line be mapped to last_one?
-						if (map(false, (line < k) ? (l + k) : l, i, last_one, m, N))
+						if (map(false, (line < row_) ? (l + row_) : l, i, last_one, m, N))
 						{
 							// yes, it can
 							atleast1 = true;
@@ -481,7 +482,7 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 			else
 			{		
 				// find the bounds
-				find_parallel_bounds((line < k) ? l + k : l, i, m, N.getRow(), N.getCol(), from, to);
+				find_parallel_bounds((line < row_) ? l + row_ : l, i, m, N.getRow(), N.getCol(), from, to);
 				know_bounds = true;
 				atleast1 = false;
 
@@ -489,11 +490,11 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 				for (last_one = from; last_one < to; last_one++)
 				{
 					// if there is a one-entry
-					if (((line < k) && N.at(j, last_one - N.getRow())) ||
-						((line >= k) && N.at(last_one, j - N.getRow())))
+					if (((line < row_) && N.at(j, last_one - N.getRow())) ||
+						((line >= row_) && N.at(last_one, j - N.getRow())))
 					{
 						// can l-th line be mapped to last_one?
-						if (map(false, (line < k) ? (l + k) : l, i, last_one, m, N))
+						if (map(false, (line < row_) ? (l + row_) : l, i, last_one, m, N))
 						{
 							// yes, it can
 							atleast1 = true;
@@ -513,7 +514,7 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 	return true;
 }
 
-void general_pattern::extend(const size_t i, const size_t j, const size_t m)
+void general_pattern::extend(const size_t i, const size_t j, const std::vector<size_t>& m)
 {
 	// extended mapping - elements are those indices of the big matrix I need to remember in the (i+1)-th step
 	std::vector<size_t> extended;
@@ -523,7 +524,7 @@ void general_pattern::extend(const size_t i, const size_t j, const size_t m)
 		if (extending_order_[i][l] == size_t(-1))
 			extended.push_back(j);
 		else
-			extended.push_back(building_tree_[i % 2][m][extending_order_[i][l]]);			
+			extended.push_back(m[extending_order_[i][l]]);			
 	}
 
 	bool mapped = false;
@@ -571,11 +572,11 @@ walking_pattern::walking_pattern(const matrix<size_t>& pattern, const size_t n)
 			j = sum - i;
 
 			// I look to the right of the pattern
-			if (i >= pattern.getCol())
+			if (i >= pattern.getRow())
 				break;
 
 			// I look under the pattern
-			if (j >= pattern.getRow())
+			if (j >= pattern.getCol())
 				continue;
 
 			// when I find one-entry or find myself on the last diagonal
