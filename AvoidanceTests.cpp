@@ -12,7 +12,9 @@ general_pattern::general_pattern(const matrix<size_t>& pattern)
 	  lines_(2 * k),
 	  order_(2 * k),
 	  what_to_remember_(2 * k + 1),
-	  building_tree_(2)
+	  building_tree_(2),
+	  parallel_bound_indices_(2 * k),
+	  extending_order_(2 * k)
 {
 	for (size_t i = 0; i < k; i++)
 	{
@@ -31,7 +33,9 @@ general_pattern::general_pattern(const matrix<size_t>& pattern)
 	find_DESC_order();
 	//find_DAG_order();				
 	// finding mapped lines I need to remember after each line mapping
-	find_what_to_remember();		
+	find_what_to_remember();
+	find_parralel_bound_indices();
+	find_extending_order();
 }
 
 bool general_pattern::avoid(const matrix<size_t>& N)
@@ -270,51 +274,109 @@ void general_pattern::find_what_to_remember()
 	}
 }
 
-void general_pattern::find_parallel_bounds(const size_t line, const size_t i, const size_t m, const size_t rows, const size_t columns,
-		size_t& from, size_t& to)
+void general_pattern::find_extending_order()
+{
+	for (size_t i = 0; i < steps; i++)
+	{
+		// extended mapping - elements are those indices of the big matrix I need to remember in the (i+1)-th step
+		std::vector<size_t> extended;
+		size_t index = 0;
+
+		// go through all lines
+		for (size_t l = 0; l < 2 * k; l++)
+		{
+			// if I remembered that line in the previous step
+			if ((what_to_remember_[i] >> l) & 1)
+			{
+				// and I want to remember it now as well
+				if ((what_to_remember_[i + 1] >> l) & 1)
+					// then add it to the extended vector
+					extended.push_back(index);
+				// if I don't need to remember it now, just increase the index to the previous mapping
+				index++;
+			}
+			// this only happens when I need to remember currenly adding line
+			else if ((what_to_remember_[i + 1] >> l) & 1)
+				extended.push_back((size_t)-1);
+		}
+
+		extending_order_[i] = extended;
+	}
+}
+
+void general_pattern::find_parralel_bound_indices()
+{
+	for (size_t i = 0; i < steps; i++)
+	{
+		parallel_bound_indices_[i].resize(2 * k);
+		find_bound_indices(order_[i], i);
+
+		for (size_t j = 0; j < k; j++)
+		{
+			if (((lines_[order_[i]] >> j) & 1) && 
+				(!((order_[i] < k && ((what_to_remember_[i] >> (j + k)) & 1)) ||
+				(order_[i] >= k && ((what_to_remember_[i] >> j) & 1)))))
+				find_bound_indices((order_[i] < k) ? j + k : j, i);
+		}
+	}
+}
+
+void general_pattern::find_bound_indices(const size_t line, const size_t i)
 {
 	size_t	index = (size_t)-1,	// index into map m
 			bot = (size_t)-1,	// index to the lower bound for currently added line in map vector
 			top = (size_t)-1,	// index to the upper bound for currently added line in map vector
 			i_top = 0,			// index of the line of the pattern which is a upper bound of currently added line 
 			i_bot = (size_t)-1;	// index of the line of the pattern which is a lower bound of currently added line
-
+	
 	// go through all lines and find the lower and upper bound for "line", which I remember in i-th step of the algorithm
 	for (i_top = 0; i_top < 2 * k; i_top++)
 	{
-			// iterating through rows and adding a row
-		if (((((line << 1) < order_.size()) && ((i_top << 1) < order_.size())) ||	
+		// iterating through rows and adding a row
+		if (((line < k && i_top < k) ||
 			// iterating through columns and adding a column
-			(((line << 1) >= order_.size()) && ((i_top << 1) >= order_.size()))) &&	
+			(line >= k && i_top >= k)) &&
 			// I remember this line
-			((what_to_remember_[i] >> i_top) & 1))										
+			((what_to_remember_[i] >> i_top) & 1))
 		{
 			index++;
 
 			// I change the lower bound, I might do it a few times (up to k times)
-			if (i_top < line) 
+			if (i_top < line)
 			{
 				i_bot = i_top;
 				bot = index;
 			}
 			// I only set top once
-			else if (i_top > line)		
+			else if (i_top > line)
 			{
 				top = index;
 				break;
 			}
 		}
 		// I need to remeber this line, but I'm adding column and going through rows or vice versa
-		else if ((what_to_remember_[i] >> i_top) & 1)								
+		else if ((what_to_remember_[i] >> i_top) & 1)
 			index++;
 		// if there is no upper bound
-		else if ((((line << 1) < order_.size()) && (((i_top + 1) << 1) == order_.size())) ||
-				 (((line << 1) >= order_.size()) && (i_top + 1 == order_.size())))	
+		else if ((line < k && i_top + 1 == k) ||
+				(line >= k && i_top + 1 == 2 * k))
 		{
 			i_top = (size_t)-1;
 			break;
 		}
 	}
+
+	parallel_bound_indices_[i][line].first = std::make_pair(bot, top);
+	parallel_bound_indices_[i][line].second = std::make_pair(i_bot, i_top);
+}
+
+void general_pattern::find_parallel_bounds(const size_t line, const size_t i, const size_t m, const size_t rows, const size_t columns,
+		size_t& from, size_t& to)
+{
+	size_t	bot = parallel_bound_indices_[i][line].first.first,		// index to the lower bound for currently added line in map vector
+			top = parallel_bound_indices_[i][line].first.second,	// index to the upper bound for currently added line in map vector
+			i_bot = parallel_bound_indices_[i][line].second.first,	// index of the line of the pattern which is a upper bound of currently added line 
+			i_top = parallel_bound_indices_[i][line].second.second;	// index of the line of the pattern which is a lower bound of currently added line
 
 	// i have parallel boundaries of (size_t)-1 if there are not any, return correct bounds in both cases:
 	// if there is no lower bound
@@ -455,24 +517,13 @@ void general_pattern::extend(const size_t i, const size_t j, const size_t m)
 {
 	// extended mapping - elements are those indices of the big matrix I need to remember in the (i+1)-th step
 	std::vector<size_t> extended;
-	size_t index = 0;
 
-	// go through all lines
-	for (size_t l = 0; l < 2 * k; l++)
+	for (size_t l = 0; l < extending_order_[i].size(); l++)
 	{
-		// if I remembered that line in the previous step
-		if ((what_to_remember_[i] >> l) & 1)
-		{
-			// and I want to remember it now as well
-			if ((what_to_remember_[i + 1] >> l) & 1)
-				// then add it to the extended vector
-				extended.push_back(building_tree_[i % 2][m][index]);
-			// if I don't need to remember it now, just increase the index to the previous mapping
-			index++;
-		}
-		// this only happens when I need to remember currenly added line
-		else if ((what_to_remember_[i + 1] >> l) & 1)	
+		if (extending_order_[i][l] == size_t(-1))
 			extended.push_back(j);
+		else
+			extended.push_back(building_tree_[i % 2][m][extending_order_[i][l]]);			
 	}
 
 	bool mapped = false;

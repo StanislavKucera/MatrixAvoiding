@@ -2,6 +2,7 @@
 #define AvoidanceTest_hpp_
 
 #include "Matrix.hpp"
+#include <map>
 
 // General matrix pattern
 class general_pattern
@@ -18,6 +19,8 @@ private:
 						order_,										// order of lines in which I am going to be mapping them
 						what_to_remember_;							// for each adding line I know which of them I still need to remember for next mapping
 	std::vector<std::vector<std::vector<size_t> > > building_tree_;	// vector through layers - vector through mappings on each layer - vector through indices of mapped lines
+	std::vector<std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t> > > > parallel_bound_indices_;
+	std::vector<std::vector<size_t> > extending_order_;
 
 	// for given index of mapped line returns (last two arguments) indices of big matrix which line can be mapped in [from, to)
 	void find_parallel_bounds(const size_t, const size_t, const size_t, const size_t, const size_t, size_t&, size_t&);
@@ -33,6 +36,12 @@ private:
 	
 	// for given order computes, which already mapped lines need to be stored and which can be forgotten
 	void find_what_to_remember();
+
+	void find_parralel_bound_indices();
+	void find_bound_indices(const size_t, const size_t);
+
+	// precomputes which values of mapping I need to store in the one which is one step forward
+	void find_extending_order();
 	
 	// returns true if given line of the pattern can be mapped into a given line of the big matrix
 	bool map(const bool, const size_t, const size_t, const size_t, const size_t, const matrix<size_t>&);
