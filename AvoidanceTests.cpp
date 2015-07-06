@@ -516,16 +516,18 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 
 void general_pattern::extend(const size_t level, const size_t value, const std::vector<size_t>& mapping)
 {
+	size_t max = extending_order_[level].size();
+
 	// extended mapping - elements are those indices of the big matrix I need to remember in the (i+1)-th step
-	std::vector<size_t> extended;
+	std::vector<size_t> extended(max);
 
 	// go through elements of extended mapping and write those elements from previous mapping that should be there
-	for (size_t l = 0; l < extending_order_[level].size(); ++l)
+	for (size_t l = 0; l < max; ++l)
 	{
 		if (extending_order_[level][l] == (size_t)-1)
-			extended.push_back(value);
+			extended[l] = value;
 		else
-			extended.push_back(mapping[extending_order_[level][l]]);			
+			extended[l] = mapping[extending_order_[level][l]];			
 	}
 
 	bool mapped = false;

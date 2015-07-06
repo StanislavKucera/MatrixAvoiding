@@ -2,7 +2,6 @@
 #define AvoidanceTest_hpp_
 
 #include "Matrix.hpp"
-#include <map>
 
 /// For the purposes of complexity, let \theta(k) be the number of lines (rows and columns) of the pattern
 /// and \theta(n) be the number of lines of the big matrix.
