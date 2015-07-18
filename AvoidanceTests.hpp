@@ -6,10 +6,19 @@
 /// For the purposes of complexity, let \theta(k) be the number of lines (rows and columns) of the pattern
 /// and \theta(n) be the number of lines of the big matrix.
 
+// Enum for the line ordering functions
+enum Order { DESC, DAG, MAX };
+
 class general_pattern
 {
 public:
-	explicit general_pattern(const matrix<size_t>& pattern);
+	/// <summary>
+	/// Constructor of the pattern which stores the lines memory efficiently, identifies empty ones, computes the order of line mapping,
+	/// precomputes which lines it needs to remember in each step, how to find parallel bound and ho to extend previous mapping.
+	/// </summary>
+	/// <param name="pattern">Binary matrix which will form the pattern.</param>
+	/// <param name="order">Enum determining which function will be used for line ordering.</param>
+	general_pattern(const matrix<size_t>& pattern, const Order order = DESC);
 	
 	/// <summary>
 	/// Tests if the pattern avoids given matrix as a submatrix.
@@ -23,14 +32,15 @@ public:
 private:
 	size_t	row_,													// number of rows of the pattern
 			col_,													// number of columns of the pattern
-			steps;													// number of steps I'm going to do
+			steps_,													// number of steps I'm going to do
+			empty_lines_;											// binary number of lines with no one-entries
 	std::vector<size_t> lines_,										// binary number for each line of a pattern having one at i-th position if the pattern has one-entry there
 						order_,										// order of lines in which I am going to be mapping them
 						what_to_remember_;							// for each adding line I know which of them I still need to remember for next mapping
 	std::vector<std::vector<std::vector<size_t> > > building_tree_;	// vector through levels - vector through mappings on each layer - vector through indices of mapped lines
 	std::vector<std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t> > > > parallel_bound_indices_;
 																	// vector through levels - vector through lines - pair of pairs - pair of lower and upper bounds
-	std::vector<std::vector<size_t> > extending_order_;				// vector through levels - vector of indices of the mapping which are needed for the extended one
+	std::vector<std::vector<size_t> > extending_order_;				// vector through levels - vector of indices of the mapping which are needed for the extended one\
 
 	/// <summary>
 	/// For given line of the pattern computes lines of the big matrix, which bound its mapping.
@@ -57,9 +67,17 @@ private:
 
 	/// <summary>
 	/// Orders lines of the pattern so that there is the smallest number of lines it needs to remember throughout the whole algorithm.
+	/// Smallest in this case means smallest number as a sum of all numbers.
 	/// Takes 2^k time because it needs to try all the subsets of lines to find out the best one.
 	/// </summary>
 	void find_DAG_order();
+
+	/// <summary>
+	/// Orders lines of the pattern so that there is the smallest number of lines it needs to remember throughout the whole algorithm.
+	/// Smallest in this case means smallest number in the worst case.
+	/// Takes 2^k time because it needs to try all the subsets of lines to find out the best one.
+	/// </summary>
+	void find_MAX_order();
 	
 	/// <summary>
 	/// For given subset returns the number of lines it needs to remember (excluding those, which are not needed).
@@ -113,20 +131,16 @@ private:
 	/// <param name="big_matrix">Reference to the big matrix for which I test pattern avoiding.</param>
 	bool map(const bool backtrack, const size_t line, const size_t level, const size_t big_line, const std::vector<size_t>& mapping, const matrix<size_t>& big_matrix);
 	
-	// adds given mapping to the vector of all mappings if it is not already in there
 	/// <summary>
 	/// Extends previous mapping after deciding to which big line the line should be mapped.
 	/// It is precomputed which elements of previous mapping are needed for the new one and where to put the new element.
-	/// After the mapping is extended, it checks if the mapping is not already among the mapping previously find and if not
-	/// it adds it to them.
-	/// Takes up to k + n^k time. The first k is for extending itself and n^k for deciding whether the mapping is not already there, since
-	/// there is up to n^k different mappings. Obviously n^k is the bottleneck of the algorithm complexity therefore we try to cut as many bad mappings
-	/// as possible as soon as possible.
+	/// Takes k time, for extending.
 	/// </summary>
+	/// <param name="return">The extended mapping</param>
 	/// <param name="level">The level I am at - how many lines I have mapped already.</param>
 	/// <param name="big_line">Index of the line of the big matrix which I mapped the line to.</param>
 	/// <param name="mapping">The mapping I am extending.</param>
-	void extend(const size_t level, const size_t big_line, const std::vector<size_t>& mapping);
+	std::vector<size_t> extend(const size_t level, const size_t big_line, const std::vector<size_t>& mapping);
 };
 
 /// A matrix pattern in which exists a walk from left-upper corner to right-bottom corner, which contains all one-entries.
