@@ -264,7 +264,7 @@ void general_pattern::find_MAX_order()
 			// distance from 0 is equal to distance to current + number of elements I need to remember in this step
 			std::pair<size_t, size_t> count =	(supset == position || number < distances[current].first) ? distances[current] :
 												(number == distances[current].first) ? std::make_pair(distances[current].first, distances[current].second + 1) :
-												std::make_pair(number, 1);
+												std::make_pair(number, (size_t)1);
 
 			if (count < distances[supset])
 			{
