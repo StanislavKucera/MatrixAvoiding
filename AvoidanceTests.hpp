@@ -2,12 +2,15 @@
 #define AvoidanceTest_hpp_
 
 #include "Matrix.hpp"
+#include <set>
 
 /// For the purposes of complexity, let \theta(k) be the number of lines (rows and columns) of the pattern
 /// and \theta(n) be the number of lines of the big matrix.
 
 // Enum for the line ordering functions
-enum Order { DESC, DAG, MAX };
+enum Order { DESC, SUM, MAX };
+
+enum Map { RECURSION, COMPROMISE, NORECURSION };
 
 class general_pattern
 {
@@ -18,7 +21,7 @@ public:
 	/// </summary>
 	/// <param name="pattern">Binary matrix which will form the pattern.</param>
 	/// <param name="order">Enum determining which function will be used for line ordering.</param>
-	general_pattern(const matrix<size_t>& pattern, const Order order = DESC);
+	general_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION);
 	
 	/// <summary>
 	/// Tests if the pattern avoids given matrix as a submatrix.
@@ -30,6 +33,7 @@ public:
 	/// <param name="N">Matrix for which is tested whether it avoids the pattern.</param>
 	bool avoid(const matrix<size_t>& N);
 private:
+	Map map_approach_;												// choosen way of mapping algorithm - use recursion for nonmapped lines or not
 	size_t	row_,													// number of rows of the pattern
 			col_,													// number of columns of the pattern
 			steps_,													// number of steps I'm going to do
@@ -40,7 +44,8 @@ private:
 	std::vector<std::vector<std::vector<size_t> > > building_tree_;	// vector through levels - vector through mappings on each layer - vector through indices of mapped lines
 	std::vector<std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t> > > > parallel_bound_indices_;
 																	// vector through levels - vector through lines - pair of pairs - pair of lower and upper bounds
-	std::vector<std::vector<size_t> > extending_order_;				// vector through levels - vector of indices of the mapping which are needed for the extended one\
+	std::vector<std::vector<size_t> > extending_order_;				// vector through levels - vector of indices of the mapping which are needed for the extended one
+	std::vector<std::vector<size_t> > map_index_;					// vector through levels - vector of indices of lines in the mapping
 
 	/// <summary>
 	/// For given line of the pattern computes lines of the big matrix, which bound its mapping.
@@ -70,7 +75,7 @@ private:
 	/// Smallest in this case means smallest number as a sum of all numbers.
 	/// Takes 2^k time because it needs to try all the subsets of lines to find out the best one.
 	/// </summary>
-	void find_DAG_order();
+	void find_SUM_order();
 
 	/// <summary>
 	/// Orders lines of the pattern so that there is the smallest number of lines it needs to remember throughout the whole algorithm.

@@ -6,8 +6,9 @@
 #include <algorithm>
 
 /* General pattern */
-general_pattern::general_pattern(const matrix<size_t>& pattern, Order order)
-	: row_(pattern.getRow()),
+general_pattern::general_pattern(const matrix<size_t>& pattern, Order order, Map map_approach)
+	: map_approach_(map_approach),
+	  row_(pattern.getRow()),
 	  col_(pattern.getCol()),
 	  steps_(row_ + col_),
 	  empty_lines_(0),
@@ -16,7 +17,8 @@ general_pattern::general_pattern(const matrix<size_t>& pattern, Order order)
 	  what_to_remember_(row_ + col_ + 1),
 	  building_tree_(2),
 	  parallel_bound_indices_(row_ + col_),
-	  extending_order_(row_ + col_)
+	  extending_order_(row_ + col_),
+	  map_index_(row_ + col_ + 1)
 {
 	for (size_t i = 0; i < row_; ++i)
 	{
@@ -54,8 +56,8 @@ general_pattern::general_pattern(const matrix<size_t>& pattern, Order order)
 	case DESC:
 		find_DESC_order();
 		break;
-	case DAG:
-		find_DAG_order();
+	case SUM:
+		find_SUM_order();
 		break;
 	case MAX:
 		find_MAX_order();
@@ -100,7 +102,7 @@ bool general_pattern::avoid(const matrix<size_t>& N)
 			for (size_t big_line = from; big_line < to; ++big_line) 
 			{	
 				// if currenly added line can be mapped to big_line in mapping map
-				if (map(true, order_[level], level, big_line, mapping, N))
+				if (map((map_approach_ == NORECURSION) ? false : true, order_[level], level, big_line, mapping, N))
 				{
 					// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
 					if (level == steps_ - 1)
@@ -174,7 +176,7 @@ void general_pattern::find_DESC_order()
 	}
 }
 
-void general_pattern::find_DAG_order()
+void general_pattern::find_SUM_order()
 {
 	// queue for subsets of lines
 	std::queue<size_t> q;
@@ -353,6 +355,10 @@ void general_pattern::find_what_to_remember()
 		what_do_I_know |= 1 << order_[i - 1];
 		what_to_remember_[i] = what_to_remember_[i - 1] | (1 << order_[i - 1]);
 
+		// index into created mapping vector
+		size_t index = (size_t)-1;
+		map_index_[i].resize(row_ + col_);
+
 		// go through each line and if it is something I believe I need to remember, try if I can forget it
 		for (size_t j = 0; j < row_ + col_; ++j)
 		{
@@ -371,8 +377,12 @@ void general_pattern::find_what_to_remember()
 						// I don't remember either the previous line or the next one
 						(((j > 0 && j < row_) || (j > row_ && j < row_ + col_)) &&
 						(!((what_do_I_know >> (j - 1)) & 1) || !((what_do_I_know >> (j + 1)) & 1))))
+					{
+						// index of j-th line in i-th level is index
+						map_index_[i][j] = ++index;
 						// I cannot forget this line
 						continue;
+					}
 				}
 
 				needed = false;
@@ -380,7 +390,7 @@ void general_pattern::find_what_to_remember()
 				// go through the line's elements
 				for (size_t l = 0; l < ((j < row_) ? col_ : row_); ++l)
 				{
-					// if I find a one-entry and I don't remember the line, which itersects with computed line at the one-entry
+					// if I find a one-entry and I don't remember the line, which itersects with computed line in the one-entry
 					if (((lines_[j] >> l) & 1) && 
 						(((j < row_) && !((what_do_I_know >> (l + row_)) & 1)) || 
 						 ((j >= row_) && !((what_do_I_know >> l) & 1))))
@@ -391,9 +401,13 @@ void general_pattern::find_what_to_remember()
 					}
 				}
 
-				// the line is needed since it intersects with a line, which I don't know yet, at a one-entry
+				// the line is needed since it intersects with a line, which I don't know yet, in a one-entry
 				if (needed)
+				{
+					// index of j-th line in i-th level is index
+					map_index_[i][j] = ++index;
 					continue;
+				}
 
 				// else I don't need to remember the line and can forget it
 				what_to_remember_[i] ^= 1 << j;
@@ -538,14 +552,14 @@ void general_pattern::find_parallel_bounds(const size_t line, const size_t level
 
 bool general_pattern::map(const bool backtrack, const size_t line, const size_t level, const size_t big_line, const std::vector<size_t>& mapping, const matrix<size_t>& big_matrix)
 {
-	size_t from, to, last_one;
+	size_t from, to, last_one = 0;
 	bool	know_bounds = false,
 			atleast1 = false,
 			line_is_row = line < row_,
 			line_is_col = line >= row_;
 
 	// go through all elements of "line"
-	for (size_t l = 0; l < (line_is_row ? col_ : row_); ++l)
+	for (size_t l = 0; l < (line_is_row ? col_ : row_); ++l, ++last_one)
 	{
 		// real index of l as a line of the big_matrix
 		size_t l_index = (line_is_row ? l + row_ : l);
@@ -556,21 +570,9 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 			// and I remember the l-th line
 			if ((what_to_remember_[level] >> l_index) & 1)
 			{
-				size_t index = 0, j2 = 0;
+				size_t index = map_index_[level][l_index];
 				know_bounds = false;
-
-				// go through line and find the l-th one - I do this to find the index of l-th line in the mapping
-				for (; j2 < row_ + col_; ++j2)
-				{
-					// this is the l-th line, index is now pointing to the line of the big matrix, which l-th line was mapped to
-					if (j2 == l_index)
-						break;
-
-					// I remember this one, so I need to increment the index
-					if ((what_to_remember_[level] >> j2) & 1)
-						++index;
-				}
-
+				
 				// and there is no one-entry at their intersection
 				if ((line_is_row && (!big_matrix.at(big_line, mapping[index] - big_matrix.getRow()))) ||
 					(line_is_col && (!big_matrix.at(mapping[index], big_line - big_matrix.getRow()))))
@@ -583,9 +585,8 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 			// I have the bounds from previously found one-entry, need to find another one from the "last one" to "to"
 			else if (know_bounds)
 			{
-				// I don't want to find the same one-entry again, so I increment the index of the line
-				++last_one;		
 				find_parallel_bounds(l_index, level, mapping, big_matrix.getRow(), big_matrix.getCol(), from, to);
+				last_one = (last_one < from) ? from : last_one;
 				atleast1 = false;
 
 				// go through all possible lines of the big matrix and find a one-entry if there is any
@@ -596,7 +597,7 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 						(line_is_col && big_matrix.at(last_one, big_line - big_matrix.getRow())))
 					{
 						// can l-th line be mapped to last_one?
-						if (map(false, l_index, level, last_one, mapping, big_matrix))
+						if (map_approach_ == COMPROMISE || map(false, l_index, level, last_one, mapping, big_matrix))
 						{
 							// yes, it can
 							atleast1 = true;
@@ -625,7 +626,7 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 						(line_is_col && big_matrix.at(last_one, big_line - big_matrix.getRow())))
 					{
 						// can l-th line be mapped to last_one?
-						if (map(false, l_index, level, last_one, mapping, big_matrix))
+						if (map_approach_ == COMPROMISE || map(false, l_index, level, last_one, mapping, big_matrix))
 						{
 							// yes, it can
 							atleast1 = true;
