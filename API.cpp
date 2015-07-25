@@ -16,6 +16,8 @@ int main(int argc, char* argv[])
 	size_t N = 40, iter = 10000;
 	enum Type { general, walking };
 	Type type = general;
+	Order order = DESC;
+	Map map = RECURSION;
 	std::string input = "input.txt", output = "";
 	clock_t t = 0;
 
@@ -45,6 +47,22 @@ int main(int argc, char* argv[])
 	// the output result file is given
 	if (argc > 5)
 		output = argv[5];
+	// the ordering function for the general pattern is given
+	if (argc > 6)
+	{
+		std::istringstream convert(argv[6]);
+		short ord;
+		convert >> ord;
+		order = (Order)ord;
+	}
+	// the map approach for the general pattern is given
+	if (argc > 7)
+	{
+		std::istringstream convert(argv[7]);
+		short ma;
+		convert >> ma;
+		map = (Map)ma;
+	}
 
 	// create a pattern from the file - it has a constructor from initializer lists as well
 	matrix<size_t> pattern(input);
@@ -52,7 +70,7 @@ int main(int argc, char* argv[])
 	
 	if (type == general)
 	{
-		general_pattern gp(pattern);
+		general_pattern gp(pattern, order, map);
 		t = clock();
 		result = MCMCgenerator(N, iter, gp);
 		t = clock() - t;
