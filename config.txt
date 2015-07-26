@@ -3,10 +3,10 @@ Size of the generated matrix:			40
 Number of iterations of the generator:		10000
 Pattern file:					input.txt
 Type of the pattern:				general
-Initial big matrix:				zero
+Initial big matrix:				init.txt
 Map function approach:				recursion
 Container for storing mappings:			vector
-Line ordering:					custom custom_order.txt
+Line ordering:					auto
 
 Program output:
 Output matrix file:				no

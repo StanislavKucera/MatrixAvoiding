@@ -16,7 +16,6 @@ general_pattern::general_pattern(const matrix<size_t>& pattern, Order order, Map
 	  lines_(row_ + col_),
 	  order_(row_ + col_),
 	  what_to_remember_(row_ + col_ + 1),
-	  building_tree_(2),
 	  parallel_bound_indices_(row_ + col_),
 	  extending_order_(row_ + col_),
 	  map_index_(row_ + col_ + 1)
@@ -83,7 +82,7 @@ general_pattern::general_pattern(const matrix<size_t>& pattern, Order order, Map
 	find_extending_order();
 }
 
-bool general_pattern::avoid(const matrix<size_t>& N)
+bool general_vector_pattern::avoid(const matrix<size_t>& N)
 {
 	// I start with empty mapping - no lines are mapped
 	building_tree_[0].clear();
@@ -148,6 +147,54 @@ bool general_pattern::avoid(const matrix<size_t>& N)
 					// if extended is not yet an element, add it to the tree
 					if (!mapped)
 						building_tree_[(level + 1) % 2].push_back(extended);
+				}
+			}
+		}
+	}
+
+	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
+	return true;
+}
+
+bool general_set_pattern::avoid(const matrix<size_t>& N)
+{
+	// I start with empty mapping - no lines are mapped
+	building_tree_[0].clear();
+	building_tree_[0].insert(std::vector<size_t>(0));
+
+	size_t from, to,
+		big_matrix_rows = N.getRow(),
+		big_matrix_cols = N.getCol();
+
+	// main loop through added lines (loops 2*k times)
+	for (size_t level = 0; level < steps_; ++level)
+	{
+		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
+		if (building_tree_[level % 2].size() == 0)
+			return true;
+
+		building_tree_[(level + 1) % 2].clear();
+
+		// loop through the mappings found in the last iteration
+		for (auto& mapping : building_tree_[level % 2])
+		{
+			// find boundaries of added line:
+			find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to);
+
+			// map orders_[level] to j-th line of N if possible
+			for (size_t big_line = from; big_line < to; ++big_line)
+			{
+				// if currenly added line can be mapped to big_line in mapping map
+				if (map((map_approach_ == NORECURSION) ? false : true, order_[level], level, big_line, mapping, N))
+				{
+					// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
+					if (level == steps_ - 1)
+						return false;
+
+					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line
+					std::vector<size_t> extended = extend(level, big_line, mapping);
+
+					building_tree_[(level + 1) % 2].insert(extended);
 				}
 			}
 		}

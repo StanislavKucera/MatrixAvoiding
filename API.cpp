@@ -19,8 +19,8 @@ Type getType(const std::string& type)
 	else if (type == "walking" || type == "WALKING" || type == "W" || type == "w")
 		return WALKING;
 	else {
-		assert(!"Type not supported");
-		throw new std::exception("Type not supported. Choose WALKING or GENERAL");
+		assert(!"Pattern type not supported.");
+		throw new std::exception("Pattern type not supported. Choose WALKING or GENERAL.");
 		return GENERAL;
 	}
 }
@@ -34,9 +34,22 @@ Map getMap(const std::string& map)
 	else if (map == "norecursion" || map == "NORECURSION" || map == "N" || map == "n" || map == "NOR" || map == "Nor" || map == "nor")
 		return NORECURSION;
 	else {
-		assert(!"Mapping approach not supported");
-		throw new std::exception("Mapping approach not supported. Choose RECURSION, NORECURSION or COMPROMISE");
+		assert(!"Mapping approach not supported.");
+		throw new std::exception("Mapping approach not supported. Choose RECURSION, NORECURSION or COMPROMISE.");
 		return RECURSION;
+	}
+}
+
+Map_container getContainer(const std::string& map)
+{
+	if (map == "vector" || map == "VECTOR" || map == "V" || map == "v" || map == "std::vector")
+		return VECTOR;
+	else if (map == "set" || map == "SET" || map == "S" || map == "s" || map == "std:set")
+		return SET;
+	else {
+		assert(!"Map container not supported.");
+		throw new std::exception("Map container not supported. Choose VECTOR or SET.");
+		return VECTOR;
 	}
 }
 
@@ -53,8 +66,8 @@ Order getOrder(const std::string& order)
 	else if (order == "auto" || order == "AUTO" || order == "A" || order == "a" || "automatic")
 		return AUTO;
 	else {
-		assert(!"Line ordering not supported");
-		throw new std::exception("Line ordering not supported. Choose DESC, MAX, SUM, AUTO or CUSTOM");
+		assert(!"Line ordering not supported.");
+		throw new std::exception("Line ordering not supported. Choose DESC, MAX, SUM, AUTO or CUSTOM.");
 		return DESC;
 	}
 }
@@ -67,7 +80,7 @@ bool getBool(const std::string& write)
 		return false;
 	else {
 		assert(!"Not sure what to write into the console.");
-		throw new std::exception("Not sure what to write into the console. Choose yes or no in config.txt");
+		throw new std::exception("Not sure what to write into the console. Choose yes or no in config.txt.");
 		return false;
 	}
 }
@@ -128,7 +141,7 @@ int main(int argc, char* argv[])
 
 	for (size_t i = 0; i < 4; ++i) config >> junk;	// Container for storing mappings:
 	config >> param;								// #container#
-	std::string container = param;
+	Map_container container = getContainer(param);
 
 	for (size_t i = 0; i < 2; ++i) config >> junk;	// Line ordering:
 	config >> param;								// #order#
@@ -167,40 +180,95 @@ int main(int argc, char* argv[])
 		MCMCgenerator(iter, wp, result);
 		t = clock() - t;
 	}
-	else if (type == GENERAL) {
+	else if (type == GENERAL && container == VECTOR) {
 		if (order == AUTO) {
 			if (initialized) {
-				general_pattern gpDESC(pattern, DESC, map);
-				size_t num_iter = 0;
+				general_vector_pattern gpSUM(pattern, SUM, map);
 				t = clock();
-
-				while (clock() - t <= 10) {
-					if (!gpDESC.avoid(result)) {
-						assert(!"Initial big matrix does not avoid the pattern");
-						throw new std::exception("Initial big matrix does not avoid the pattern");
-					}
-					++num_iter;
+				if (!gpSUM.avoid(result)) {
+					assert(!"Initial big matrix does not avoid the pattern");
+					throw new std::exception("Initial big matrix does not avoid the pattern");
 				}
-
-				t = clock();
-				for (size_t i = 0; i < num_iter; ++i)
-					gpDESC.avoid(result);
 				t = clock() - t;
-				auto desc_time = (float)t / CLOCKS_PER_SEC;
+				auto sum_time = t;
 
-				general_pattern gpMAX(pattern, MAX, map);
+				general_vector_pattern gpMAX(pattern, MAX, map);
 				t = clock();
-				for (size_t i = 0; i < num_iter; ++i)
-					gpDESC.avoid(result);
+				gpMAX.avoid(result);
 				t = clock() - t;
-				auto max_time = (float)t / CLOCKS_PER_SEC;
+				auto max_time = t;
 
-				general_pattern gpSUM(pattern, SUM, map);
+				general_vector_pattern gpDESC(pattern, DESC, map);
 				t = clock();
-				for (size_t i = 0; i < num_iter; ++i)
-					gpDESC.avoid(result);
+				gpDESC.avoid(result);
 				t = clock() - t;
-				auto sum_time = (float)t / CLOCKS_PER_SEC;
+				auto desc_time = t;
+
+				if (desc_time <= max_time && desc_time <= sum_time)
+					order = DESC;
+				else if (max_time <= sum_time)
+					order = MAX;
+				else
+					order = SUM;
+			} 
+			else {
+				matrix<size_t> rand = matrix<size_t>::random_bin_matrix(N, N);
+
+				general_vector_pattern gpSUM(pattern, SUM, map);
+				t = clock();
+				gpSUM.avoid(rand);
+				t = clock() - t;
+				auto sum_time = t;
+
+				general_vector_pattern gpMAX(pattern, MAX, map);
+				t = clock();
+				gpMAX.avoid(rand);
+				t = clock() - t;
+				auto max_time = t;
+
+				general_vector_pattern gpDESC(pattern, DESC, map);
+				t = clock();
+				gpDESC.avoid(rand);
+				t = clock() - t;
+				auto desc_time = t;
+
+				if (desc_time <= max_time && desc_time <= sum_time)
+					order = DESC;
+				else if (max_time <= sum_time)
+					order = MAX;
+				else
+					order = SUM;
+			}
+		}
+
+		general_vector_pattern gp(pattern, order, map, std::move(custom_order));
+		t = clock();
+		MCMCgenerator(iter, gp, result);
+		t = clock() - t;
+	} 
+	else if (type == GENERAL && container == SET) {
+		if (order == AUTO) {
+			if (initialized) {
+				general_set_pattern gpSUM(pattern, SUM, map);
+				t = clock();
+				if (!gpSUM.avoid(result)) {
+					assert(!"Initial big matrix does not avoid the pattern");
+					throw new std::exception("Initial big matrix does not avoid the pattern");
+				}
+				t = clock() - t;
+				auto sum_time = t;
+
+				general_set_pattern gpMAX(pattern, MAX, map);
+				t = clock();
+				gpMAX.avoid(result);
+				t = clock() - t;
+				auto max_time = t;
+
+				general_set_pattern gpDESC(pattern, DESC, map);
+				t = clock();
+				gpDESC.avoid(result);
+				t = clock() - t;
+				auto desc_time = t;
 
 				if (desc_time <= max_time && desc_time <= sum_time)
 					order = DESC;
@@ -212,31 +280,23 @@ int main(int argc, char* argv[])
 			else {
 				matrix<size_t> rand = matrix<size_t>::random_bin_matrix(N, N);
 
-				general_pattern gpDESC(pattern, DESC, map);
-				size_t num_iter = 0;
+				general_set_pattern gpSUM(pattern, SUM, map);
 				t = clock();
+				gpSUM.avoid(rand);
+				t = clock() - t;
+				auto sum_time = t;
 
-				while (clock() - t <= 10) {
-					gpDESC.avoid(result);
-					++num_iter;
-				}
+				general_set_pattern gpMAX(pattern, MAX, map);
+				t = clock();
+				gpMAX.avoid(rand);
+				t = clock() - t;
+				auto max_time = t;
 
+				general_set_pattern gpDESC(pattern, DESC, map);
 				t = clock();
 				gpDESC.avoid(rand);
 				t = clock() - t;
-				auto desc_time = (float)t / CLOCKS_PER_SEC;
-
-				general_pattern gpMAX(pattern, MAX, map);
-				t = clock();
-				gpDESC.avoid(rand);
-				t = clock() - t;
-				auto max_time = (float)t / CLOCKS_PER_SEC;
-
-				general_pattern gpSUM(pattern, SUM, map);
-				t = clock();
-				gpDESC.avoid(rand);
-				t = clock() - t;
-				auto sum_time = (float)t / CLOCKS_PER_SEC;
+				auto desc_time = t;
 
 				if (desc_time <= max_time && desc_time <= sum_time)
 					order = DESC;
@@ -247,10 +307,14 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		general_pattern gp(pattern, order, map, std::move(custom_order));
+		general_set_pattern gp(pattern, order, map, std::move(custom_order));
 		t = clock();
 		MCMCgenerator(iter, gp, result);
 		t = clock() - t;
+	}
+	else {
+		assert(!"Something bad have happened.");
+		throw new std::exception("This shouldn't have happened. Please send a message to the developer team with your config file.s");
 	}
 
 	// if output file is specified
