@@ -1,9 +1,9 @@
 Program input:
 Size of the generated matrix:			40
-Number of iterations of the generator:		10000
-Pattern file:					input.txt
+Number of iterations of the generator:		20000
+Pattern file:					pattern/input.txt
 Type of the pattern:				general
-Initial big matrix:				init.txt
+Initial big matrix:				matrix/init.txt
 Map function approach:				recursion
 Container for storing mappings:			vector
 Line ordering:					auto

@@ -82,15 +82,15 @@ general_pattern::general_pattern(const matrix<size_t>& pattern, Order order, Map
 	find_extending_order();
 }
 
-bool general_vector_pattern::avoid(const matrix<size_t>& N)
+bool general_vector_pattern::avoid(const matrix<size_t>& big_matrix)
 {
 	// I start with empty mapping - no lines are mapped
 	building_tree_[0].clear();
 	building_tree_[0].push_back(std::vector<size_t>(0));	
 
 	size_t from, to,
-		big_matrix_rows = N.getRow(),
-		big_matrix_cols = N.getCol();
+		big_matrix_rows = big_matrix.getRow(),
+		big_matrix_cols = big_matrix.getCol();
 
 	// main loop through added lines (loops 2*k times)
 	for (size_t level = 0; level < steps_; ++level)
@@ -111,7 +111,7 @@ bool general_vector_pattern::avoid(const matrix<size_t>& N)
 			for (size_t big_line = from; big_line < to; ++big_line) 
 			{	
 				// if currenly added line can be mapped to big_line in mapping map
-				if (map((map_approach_ == NORECURSION) ? false : true, order_[level], level, big_line, mapping, N))
+				if (map((map_approach_ == NORECURSION) ? false : true, order_[level], level, big_line, mapping, big_matrix))
 				{
 					// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
 					if (level == steps_ - 1)
@@ -156,15 +156,89 @@ bool general_vector_pattern::avoid(const matrix<size_t>& N)
 	return true;
 }
 
-bool general_set_pattern::avoid(const matrix<size_t>& N)
+bool general_vector_pattern::avoid(size_t r, size_t c, const matrix<size_t>& big_matrix)
+{
+	// I start with empty mapping - no lines are mapped
+	building_tree_[0].clear();
+	building_tree_[0].push_back(std::vector<size_t>(0));
+
+	size_t from, to,
+		big_matrix_rows = big_matrix.getRow(),
+		big_matrix_cols = big_matrix.getCol();
+
+	// main loop through added lines (loops 2*k times)
+	for (size_t level = 0; level < steps_; ++level)
+	{
+		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
+		if (building_tree_[level % 2].size() == 0)
+			return true;
+
+		building_tree_[(level + 1) % 2].clear();
+
+		// loop through the mappings found in the last iteration
+		for (auto& mapping : building_tree_[level % 2])
+		{
+			// find boundaries of added line:
+			find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to, r, c);
+
+			// map orders_[level] to j-th line of N if possible
+			for (size_t big_line = from; big_line < to; ++big_line)
+			{
+				// if currenly added line can be mapped to big_line in mapping map
+				if (map((map_approach_ == NORECURSION) ? false : true, order_[level], level, big_line, mapping, big_matrix))
+				{
+					// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
+					if (level == steps_ - 1)
+						return false;
+
+					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line
+					std::vector<size_t> extended = extend(level, big_line, mapping);
+
+					bool mapped = false;
+
+					// go through all already found mappings in (i+1)-th step and check if extended is not already in there
+					for (auto& mapping2 : building_tree_[(level + 1) % 2])
+					{
+						mapped = true;
+
+						// go through m2 mapping
+						for (size_t l2 = 0; l2 < building_tree_[(level + 1) % 2][0].size(); ++l2)
+						{
+							// and check whether the index in extended and m2 are the same
+							if (extended[l2] != mapping2[l2])
+							{
+								// if not, extended is a different mapping then m2
+								mapped = false;
+								break;
+							}
+						}
+
+						// extended has already been added (atleast its different class) - I won't add it for the second time
+						if (mapped)
+							break;
+					}
+
+					// if extended is not yet an element, add it to the tree
+					if (!mapped)
+						building_tree_[(level + 1) % 2].push_back(extended);
+				}
+			}
+		}
+	}
+
+	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
+	return true;
+}
+
+bool general_set_pattern::avoid(const matrix<size_t>& big_matrix)
 {
 	// I start with empty mapping - no lines are mapped
 	building_tree_[0].clear();
 	building_tree_[0].insert(std::vector<size_t>(0));
 
 	size_t from, to,
-		big_matrix_rows = N.getRow(),
-		big_matrix_cols = N.getCol();
+		big_matrix_rows = big_matrix.getRow(),
+		big_matrix_cols = big_matrix.getCol();
 
 	// main loop through added lines (loops 2*k times)
 	for (size_t level = 0; level < steps_; ++level)
@@ -185,7 +259,55 @@ bool general_set_pattern::avoid(const matrix<size_t>& N)
 			for (size_t big_line = from; big_line < to; ++big_line)
 			{
 				// if currenly added line can be mapped to big_line in mapping map
-				if (map((map_approach_ == NORECURSION) ? false : true, order_[level], level, big_line, mapping, N))
+				if (map((map_approach_ == NORECURSION) ? false : true, order_[level], level, big_line, mapping, big_matrix))
+				{
+					// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
+					if (level == steps_ - 1)
+						return false;
+
+					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line
+					std::vector<size_t> extended = extend(level, big_line, mapping);
+
+					building_tree_[(level + 1) % 2].insert(extended);
+				}
+			}
+		}
+	}
+
+	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
+	return true;
+}
+
+bool general_set_pattern::avoid(size_t r, size_t c, const matrix<size_t>& big_matrix)
+{
+	// I start with empty mapping - no lines are mapped
+	building_tree_[0].clear();
+	building_tree_[0].insert(std::vector<size_t>(0));
+
+	size_t from, to,
+		big_matrix_rows = big_matrix.getRow(),
+		big_matrix_cols = big_matrix.getCol();
+
+	// main loop through added lines (loops 2*k times)
+	for (size_t level = 0; level < steps_; ++level)
+	{
+		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
+		if (building_tree_[level % 2].size() == 0)
+			return true;
+
+		building_tree_[(level + 1) % 2].clear();
+
+		// loop through the mappings found in the last iteration
+		for (auto& mapping : building_tree_[level % 2])
+		{
+			// find boundaries of added line:
+			find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to, r, c);
+
+			// map orders_[level] to j-th line of N if possible
+			for (size_t big_line = from; big_line < to; ++big_line)
+			{
+				// if currenly added line can be mapped to big_line in mapping map
+				if (map((map_approach_ == NORECURSION) ? false : true, order_[level], level, big_line, mapping, big_matrix))
 				{
 					// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
 					if (level == steps_ - 1)
@@ -344,7 +466,7 @@ void general_pattern::find_MAX_order()
 	}
 }
 
-size_t general_pattern::count_what_to_remember(const size_t current)
+size_t general_pattern::count_what_to_remember(size_t current)
 {
 	bool needed;
 	size_t count = bit_count(current);
@@ -520,7 +642,7 @@ void general_pattern::find_parralel_bound_indices()
 	}
 }
 
-void general_pattern::find_bound_indices(const size_t line, const size_t level)
+void general_pattern::find_bound_indices(size_t line, size_t level)
 {
 	size_t	index = (size_t)-1,	// index into map m
 			bot = (size_t)-1,	// index to the lower bound for currently added line in map vector
@@ -569,8 +691,8 @@ void general_pattern::find_bound_indices(const size_t line, const size_t level)
 	parallel_bound_indices_[level][line].second = std::make_pair(i_bot, i_top);
 }
 
-void general_pattern::find_parallel_bounds(const size_t line, const size_t level, const std::vector<size_t>& mapping, const size_t rows, const size_t columns,
-		size_t& from, size_t& to)
+void general_pattern::find_parallel_bounds(size_t line, size_t level, const std::vector<size_t>& mapping, size_t rows, size_t columns,
+	size_t& from, size_t& to, size_t r, size_t c)
 {
 	size_t	bot = parallel_bound_indices_[level][line].first.first,		// index to the lower bound for currently added line in map vector
 			top = parallel_bound_indices_[level][line].first.second,	// index to the upper bound for currently added line in map vector
@@ -582,11 +704,21 @@ void general_pattern::find_parallel_bounds(const size_t line, const size_t level
 	if (bot == (size_t)-1)
 	{
 		// and "line" is a row
-		if (line < row_)
+		if (line < row_) {
 			from = 0 + line;
+
+			// I know r-th row is involved in every occurence of the pattern; therefore, I cannot map the last row before r-th one
+			if (line == row_ - 1 && r != (size_t)-1 && r > from)
+				from = r;
+		}
 		// "line" is a column
-		else
+		else {
 			from = rows - row_ + line;
+		
+			// I know c-th column is involved in every occurence of the pattern; therefore, I cannot map the last column before c-th one
+			if (line == row_ + col_ - 1 && c != (size_t)-1 && c + rows > from)
+				from = rows + c;
+		}
 	}
 	// else return found lower bound with offset, which ensures there at least enough lines in the big matrix to map those from the pattern, which are in between
 	else
@@ -596,18 +728,28 @@ void general_pattern::find_parallel_bounds(const size_t line, const size_t level
 	if (top == (size_t)-1)
 	{
 		// and "line" is a row
-		if (line < row_)
+		if (line < row_) {
 			to = rows - row_ + line + 1;
+
+			// I know r-th row is involved in every occurence of the pattern; therefore, I cannot map the first row after r-th one
+			if (line == 0 && r != (size_t)-1 && r + 1 < to)
+				to = r + 1;
+		}
 		// "line" is a column
-		else
+		else {
 			to = rows + columns - row_ - col_ + line + 1;
+
+			// I know c-th column is involved in every occurence of the pattern; therefore, I cannot map the first column after c-th one
+			if (line == row_ && c != (size_t)-1 && c + rows + 1 < to)
+				to = c + rows + 1;
+		}
 	}
 	// else return found upper bound with offset, which ensures there at least enough lines in the big matrix to map those from the pattern, which are in between
 	else
 		to = mapping[top] - i_top + line + 1;
 }
 
-bool general_pattern::map(const bool backtrack, const size_t line, const size_t level, const size_t big_line, const std::vector<size_t>& mapping, const matrix<size_t>& big_matrix)
+bool general_pattern::map(bool backtrack, size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping, const matrix<size_t>& big_matrix)
 {
 	size_t from, to, last_one = 0;
 	bool	know_bounds = false,
@@ -703,7 +845,7 @@ bool general_pattern::map(const bool backtrack, const size_t line, const size_t 
 	return true;
 }
 
-std::vector<size_t> general_pattern::extend(const size_t level, const size_t value, const std::vector<size_t>& mapping)
+std::vector<size_t> general_pattern::extend(size_t level, size_t value, const std::vector<size_t>& mapping)
 {
 	size_t max = extending_order_[level].size();
 
@@ -723,7 +865,7 @@ std::vector<size_t> general_pattern::extend(const size_t level, const size_t val
 }
 
 /* Walking pattern */
-walking_pattern::walking_pattern(const matrix<size_t>& pattern, const size_t n)
+walking_pattern::walking_pattern(const matrix<size_t>& pattern, size_t n)
 	: max_walk_part_(n, n, std::pair<size_t, size_t>(0, 0))
 {
 	// coords of the last visited 1 entry, index for the columns
@@ -786,7 +928,7 @@ walking_pattern::walking_pattern(const matrix<size_t>& pattern, const size_t n)
 	value_.push_back(pattern.at(last_i, last_j));
 }
 
-bool walking_pattern::avoid(const size_t r, const size_t c, const matrix<size_t>& big_matrix)
+bool walking_pattern::avoid(size_t r, size_t c, const matrix<size_t>& big_matrix)
 {
 	typedef std::pair<size_t, size_t> pair;
 	std::queue<pair> q;						// queue for elements of the matrix that are supposed to be updated

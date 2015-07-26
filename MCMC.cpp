@@ -24,7 +24,7 @@ void MCMCgenerator(size_t iter, general_vector_pattern& pattern, matrix<size_t>&
 		big_matrix.at(r, c) = big_matrix.at(r, c) ? 0 : 1;
 
 		// test if the changed matrix still avoids the pattern, it obviously holds, when one-entry changes to zero-entry
-		if (big_matrix.at(r, c) && !pattern.avoid(big_matrix))
+		if (big_matrix.at(r, c) && !pattern.avoid(r, c, big_matrix))
 			// if not return to the previous step
 			big_matrix.at(r, c) = big_matrix.at(r, c) ? 0 : 1;
 	}

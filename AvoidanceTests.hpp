@@ -54,8 +54,10 @@ protected:
 	/// <param name="columns">Number of columns of the big matrix.</param>
 	/// <param name="from">Index of the line of the big matrix which bounds "line" from the bottom.</param>
 	/// <param name="to">Index of the line of the big matrix which bounds "line" from the top.</param>
-	void find_parallel_bounds(const size_t line, const size_t level, const std::vector<size_t>& mapping, const size_t rows, const size_t columns,
-		size_t& from, size_t& to);
+	/// <param name="r">Row of the entry that was changed in the last iteration if I know it.</param>
+	/// <param name="c">Column of the entry that was changed in the last iteration if I know it.</param>
+	void find_parallel_bounds(size_t line, size_t level, const std::vector<size_t>& mapping, size_t rows, size_t columns,
+		size_t& from, size_t& to, size_t r = (size_t)-1, size_t c = (size_t)-1);
 	
 	/// <summary>
 	/// Orders lines of the pattern according to the number of one-entries descendingly.
@@ -85,7 +87,7 @@ protected:
 	/// and if they are it checks the same condition for all the lines that intersect the line in a one-entry.
 	/// </summary>
 	/// <param name="current">Given subset of lines for which I calculate how many lines I need to remember.</param>
-	size_t count_what_to_remember(const size_t current);
+	size_t count_what_to_remember(size_t current);
 	
 	/// <summary>
 	/// For given order computes, which already mapped lines need to be stored and which can be forgotten
@@ -107,7 +109,7 @@ protected:
 	/// </summary>
 	/// <param name="line">Given line for which bounds are being precalculated.</param>
 	/// <param name="level">The level I am at - how many lines I have mapped already.</param>
-	void find_bound_indices(const size_t line, const size_t level);
+	void find_bound_indices(size_t line, size_t level);
 
 	/// <summary>
 	/// Precomputes which values of mapping I need to store in the one which is one step forward.
@@ -129,7 +131,7 @@ protected:
 	/// <param name="big_line">Index of the line of the big matrix which I am trying to map the line to.</param>
 	/// <param name="mapping">The mapping I am extending.</param>
 	/// <param name="big_matrix">Reference to the big matrix for which I test pattern avoiding.</param>
-	bool map(const bool backtrack, const size_t line, const size_t level, const size_t big_line, const std::vector<size_t>& mapping, const matrix<size_t>& big_matrix);
+	bool map(bool backtrack, size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping, const matrix<size_t>& big_matrix);
 	
 	/// <summary>
 	/// Extends previous mapping after deciding to which big line the line should be mapped.
@@ -140,7 +142,7 @@ protected:
 	/// <param name="level">The level I am at - how many lines I have mapped already.</param>
 	/// <param name="big_line">Index of the line of the big matrix which I mapped the line to.</param>
 	/// <param name="mapping">The mapping I am extending.</param>
-	std::vector<size_t> extend(const size_t level, const size_t big_line, const std::vector<size_t>& mapping);
+	std::vector<size_t> extend(size_t level, size_t big_line, const std::vector<size_t>& mapping);
 };
 
 // general pattern having std::vector as a container for found mappings
@@ -159,8 +161,9 @@ public:
 	/// It is, as it sounds, a brute force method (O(n^k)). To make it more efficient, the mappings, which have "important lines" mapped to
 	/// the same lines of big matrix are shrinked into one mapping.
 	/// </summary>
-	/// <param name="N">Matrix for which is tested whether it avoids the pattern.</param>
-	bool avoid(const matrix<size_t>& N);
+	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
+	bool avoid(const matrix<size_t>& big_matrix);
+	bool avoid(size_t r, size_t c, const matrix<size_t>& big_matrix);
 private:
 	std::vector<std::vector<std::vector<size_t> > > building_tree_;
 };
@@ -181,8 +184,9 @@ public:
 	/// It is, as it sounds, a brute force method (O(n^k)). To make it more efficient, the mappings, which have "important lines" mapped to
 	/// the same lines of big matrix are shrinked into one mapping.
 	/// </summary>
-	/// <param name="N">Matrix for which is tested whether it avoids the pattern.</param>
-	bool avoid(const matrix<size_t>& N);
+	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
+	bool avoid(const matrix<size_t>& big_matrix);
+	bool avoid(size_t r, size_t c, const matrix<size_t>& big_matrix);
 private:
 	std::vector<std::set<std::vector<size_t> > > building_tree_;
 };
@@ -193,7 +197,7 @@ private:
 class walking_pattern
 {
 public:
-	walking_pattern(const matrix<size_t>& pattern, const size_t n);
+	walking_pattern(const matrix<size_t>& pattern, size_t n);
 	
 	/// <summary>
 	/// Tests if the pattern avoids given matrix as a submatrix.
@@ -204,10 +208,10 @@ public:
 	/// <param name="r">Row of the big matrix that has been changed.</param>
 	/// <param name="c">Column of the big matrix that has been changed.</param>
 	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
-	virtual bool avoid(const size_t r, const size_t c, const matrix<size_t>& big_matrix);
+	virtual bool avoid(size_t r, size_t c, const matrix<size_t>& big_matrix);
 	
 	// reverts changes in max_walk_part matrix after an unsuccessful change of the big matrix
-	virtual bool revert(const size_t r, const size_t c, const matrix<size_t>& big_matrix) { return avoid(r, c, big_matrix); }
+	virtual bool revert(size_t r, size_t c, const matrix<size_t>& big_matrix) { return avoid(r, c, big_matrix); }
 private:
 	matrix<std::pair<size_t, size_t> > max_walk_part_;	// table of calculated [c_v,c_h] for all elements
 	
