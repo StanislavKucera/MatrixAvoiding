@@ -5,15 +5,12 @@
 #include <random>
 
 // Generates random-ish matrix of given size, which is avoiding given general pattern. Uses iter iterations on markov chain.
-matrix<size_t> MCMCgenerator(const size_t n, const size_t iter, general_pattern& pattern)
+void MCMCgenerator(size_t iter, general_pattern& pattern, matrix<size_t>& big_matrix)
 {
-	// generatated matrix
-	matrix<size_t> big_matrix(n, n, 0);		
-
 	// random generator from uniform distribution [0, n-1]
 	std::random_device rd;
 	std::mt19937 rng(rd());
-	std::uniform_int_distribution<size_t> uni(0, n - 1);
+	std::uniform_int_distribution<size_t> uni(0, big_matrix.getRow() - 1);
 
 	// coordinates of changed element
 	size_t r, c;
@@ -31,21 +28,15 @@ matrix<size_t> MCMCgenerator(const size_t n, const size_t iter, general_pattern&
 			// if not return to the previous step
 			big_matrix.at(r, c) = big_matrix.at(r, c) ? 0 : 1;
 	}
-
-	// return the resulting matrix
-	return std::move(big_matrix);
 }
 
 // Generates random-ish matrix of given size, which is avoiding given walking pattern. Uses iter iterations on markov chain.
-matrix<size_t> MCMCgenerator(const size_t n, const size_t iter, walking_pattern& pattern)
+void MCMCgenerator(size_t iter, walking_pattern& pattern, matrix<size_t>& big_matrix)
 {
-	// generatated matrix
-	matrix<size_t> big_matrix(n, n, 0);		
-
 	// random generator from uniform distribution [0, n-1]
 	std::random_device rd;    
 	std::mt19937 rng(rd());   
-	std::uniform_int_distribution<size_t> uni(0, n - 1); 
+	std::uniform_int_distribution<size_t> uni(0, big_matrix.getRow() - 1); 
 
 	// coordinates of changed element
 	size_t r, c;
@@ -67,9 +58,6 @@ matrix<size_t> MCMCgenerator(const size_t n, const size_t iter, walking_pattern&
 			pattern.revert(r, c, big_matrix);
 		}
 	}
-
-	// return the resulting matrix
-	return std::move(big_matrix);
 }
 
 #endif

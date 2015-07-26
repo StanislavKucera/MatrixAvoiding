@@ -5,8 +5,8 @@
 #include "AvoidanceTests.hpp"
 
 // Generates random-ish matrix of given size, which is avoiding given general pattern. Uses iter iterations on markov chain.
-matrix<size_t> MCMCgenerator(const size_t, const size_t, general_pattern&);
+void MCMCgenerator(size_t, general_pattern&, matrix<size_t>& big_matrix);
 // Generates random-ish matrix of given size, which is avoiding given walking pattern. Uses iter iterations on markov chain.
-matrix<size_t> MCMCgenerator(const size_t, const size_t, walking_pattern&);
+void MCMCgenerator(size_t, walking_pattern&, matrix<size_t>& big_matrix);
 
 #endif

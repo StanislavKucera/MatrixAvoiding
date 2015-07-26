@@ -4,9 +4,10 @@
 #include "AvoidanceTests.hpp"
 #include <queue>
 #include <algorithm>
+#include <assert.h>
 
 /* General pattern */
-general_pattern::general_pattern(const matrix<size_t>& pattern, Order order, Map map_approach)
+general_pattern::general_pattern(const matrix<size_t>& pattern, Order order, Map map_approach, std::vector<size_t>&& custom_order)
 	: map_approach_(map_approach),
 	  row_(pattern.getRow()),
 	  col_(pattern.getCol()),
@@ -62,8 +63,17 @@ general_pattern::general_pattern(const matrix<size_t>& pattern, Order order, Map
 	case MAX:
 		find_MAX_order();
 		break;
+	case CUSTOM:
+		steps_ = custom_order.size();
+		order_ = custom_order;
+		break;
+	case AUTO:
+		assert(!"Order AUTO has nothing to do in the pattern constructor.");
+		throw new std::exception("Order AUTO has nothing to do in the pattern constructor.");
+		break;
 	default:
-		find_DESC_order();
+		assert(!"Unsupported order was given in the pattern constructor.");
+		throw new std::exception("Unsupported order was given in the pattern constructor.");
 		break;
 	}
 
@@ -692,12 +702,16 @@ walking_pattern::walking_pattern(const matrix<size_t>& pattern, const size_t n)
 			if (pattern.at(i, j) || sum == pattern.getRow() + pattern.getCol() - 2)
 			{
 				// last visited element is 0 and I did not find any 1 entries
-				if (!pattern.at(i, j) && last_i == 0 && last_j == 0 && !pattern.at(last_i, last_j)) 
+				if (!pattern.at(i, j) && last_i == 0 && last_j == 0 && !pattern.at(last_i, last_j)) {
+					assert(!"Pattern has no one entries.");
 					throw std::invalid_argument("Pattern has no one entries.");
+				}
 
 				// I have found a one-entry somewhere where it shouldn't have been
-				if (j < last_j || i < last_i)
+				if (j < last_j || i < last_i) {
+					assert(!"Pattern is not a walking pattern type");
 					throw std::invalid_argument("Pattern is not a walking pattern type.");
+				}
 
 				// need to find, which elements will be a part of the walk
 				// from the previously found one-entry go as for to the bottom as you can

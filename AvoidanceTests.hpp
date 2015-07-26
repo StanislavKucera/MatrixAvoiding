@@ -7,8 +7,10 @@
 /// For the purposes of complexity, let \theta(k) be the number of lines (rows and columns) of the pattern
 /// and \theta(n) be the number of lines of the big matrix.
 
+enum Type { GENERAL, WALKING };
+
 // Enum for the line ordering functions
-enum Order { DESC, SUM, MAX };
+enum Order { DESC, SUM, MAX, AUTO, CUSTOM };
 
 enum Map { RECURSION, COMPROMISE, NORECURSION };
 
@@ -21,7 +23,9 @@ public:
 	/// </summary>
 	/// <param name="pattern">Binary matrix which will form the pattern.</param>
 	/// <param name="order">Enum determining which function will be used for line ordering.</param>
-	general_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION);
+	/// <param name="map">Enum determining what conditions will map function check.</param>
+	/// <param name="custom_order">Order of lines given by user in case order is set to CUSTOM.</param>
+	general_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>());
 	
 	/// <summary>
 	/// Tests if the pattern avoids given matrix as a submatrix.

@@ -8,13 +8,14 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <random>
 
 template< typename T>
 class matrix
 {
 public:
 	// constructs an empty 0x0 matrix 
-	matrix() {}
+	matrix() : row_(0), col_(0) {}
 	// constructs a matrix of given size with default value in each element
 	matrix(size_t r, size_t c) : row_(r), col_(c), data_(r*c) {}
 	// constructs a matrix of given size with given value in each element
@@ -38,6 +39,15 @@ public:
 		std::ifstream iFile(input);
 		iFile >> row_ >> col_;
 		data_.resize(row_ * col_);
+		for (auto &it : data_)
+			iFile >> it;
+		iFile.close();
+	}
+	// constructs a matrix of size given in r and c from input file, expected format is: rows*cols elements of type T
+	matrix(size_t r, size_t c, const std::string& input)
+		: row_(r), col_(c), data_(r*c)
+	{
+		std::ifstream iFile(input);
 		for (auto &it : data_)
 			iFile >> it;
 		iFile.close();
@@ -110,6 +120,20 @@ public:
 			out << "\n";
 		}
 		return out.str();
+	}
+	// returns a random binary matrix
+	static matrix<T> random_bin_matrix(size_t r, size_t c)
+	{
+		// random generator from uniform distribution [0, n-1]
+		std::random_device rd;
+		std::mt19937 rng(rd());
+		std::uniform_int_distribution<size_t> uni(0, 1);
+
+		matrix<T> ret(r, c);
+		for (auto& it : ret.data_)
+			it = uni(rng);
+
+		return ret;
 	}
 private:
 	size_t row_, col_;

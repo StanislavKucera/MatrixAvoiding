@@ -15,21 +15,94 @@ There are two types of patterns program can use: <br />
  
 **Program input:** <br />
   The program expects the pattern to be in a text file "input" having format of two natural numbers "rows" and "columns" and then "rows" lines of "columns" numbers (0/1) separated by spaces. <br />
-  It can be given up to five arguments when calling:
-  1. "N" - size of the result matrix (N x N)
-  2. "iterations" - number of iterations of Markov chain Monte Carlo method.
-  3. "type" - type of a pattern as explained above:
-    - 0 for a general pattern
-    - 1 for a walking pattern
-  4. "input" - name of the file from which pattern will be readed.
-  5. "output" - name of the file which result will be written to.
+  All the parameters are read from file config.txt having this format:
+  1. Size of the generated matrix:	#size# (integer)
+  2. Number of iterations of the generator:  #iterations# (integer)
+  3. Pattern file: #pattern filename# (string)
+  4. Type of the pattern:  #type# (string)
+    - general
+    - walking
+  5. Initial big matrix:  #initial# (string)
+    - "zero" for no initial matrix, algorithm will then start with a zero matrix
+	- #initial matrix filename# from which algorithm will read the matrix; since the size is given in the argument before, file only contains the matrix itself
+  6. Map function approach:  #map# (string)
+    - recursion: map is called recursively for lines that intersect currently mapped line in a one-entry
+	- compromise: there is no recursive call, but for those lines it atleast checks mandatory conditions
+	- norecursion: it does not even check those mandatory conditions
+  7. Container for storing mappings:  #container# (string)
+    - vector: found mappings are stored in the std::vector
+	- set: found mappings are stored in the std::set
+  8. Line ordering:  #order# (string) [#order filename# (string)]
+    - desc: lines are ordered according to the number of one-entries
+	- max: lines are ordered in such a way that the maximum of remembered lines in one iteration is the smallest
+	- sum: lines are ordered in such a way that the sum of remembered lines in all iteartions is the smallest
+	- auto: all previous orderings are tested and the fastest one is taken
+	- custom: order of lines is read from the file given in the next argument
   
-**Default behaviour:** <br />
-  MatrixAvoiding.exe 40 10000 0 "input.txt" ""
-   
 **Program output:** <br />
-  The program prints generated N x N matrix to the console as well as the pattern which the matrix is supposed to avoid. As a last thing it writes down the time the generating took. If "output" is not empty string it will also print generated matrix to the file.
-  
+  All parameters are read from file config.txt having this format:
+  9. Output matrix file:  #output# (string)
+    - "no" for no output file
+	- #output filename# to which generated matrix will be written
+  10. Write resulting matrix into console:  #console matrix# (string)
+    - "yes": generated matrix will be written into the console
+	- "no": generated matrix won't be written into the console
+  11. Write the pattern into console:  #console pattern# (string)
+    - "yes": the pattern will be written into the console
+	- "no": the pattern won't be written into the console
+  12. Write total time of the run into console:  #console time# (string)
+    - "yes": the time spent in MCMC generator will be written into the console
+	- "no": the time spent in MCMC generator won't be written into the console
+
+**Default behaviour:** <br />
+<table>
+ <tr>
+  <td>Program input:</td> <td></td>
+ </tr>
+ <tr>
+  <td>Size of the generated matrix:</td> <td>40</td>
+ </tr>
+ <tr>
+  <td>Number of iterations of the generator:</td> <td>10000</td>
+ </tr>
+ <tr>
+  <td>Pattern file:</td> <td>input.txt</td>
+ </tr>
+ <tr>
+  <td>Type of the pattern:</td> <td>general</td>
+ </tr>
+ <tr>
+  <td>Initial big matrix:</td> <td>zero</td>
+ </tr>
+ <tr>
+  <td>Map function approach:</td> <td>recursion</td>
+ </tr>
+ <tr>
+  <td>Container for storing mappings:</td> <td>vector</td>
+ </tr>
+ <tr>
+  <td>Line ordering:</td> <td>desc</td>
+ </tr>
+ <tr>
+  <td></td> <td></td>
+ </tr>
+ <tr>
+  <td>Program output:</td> <td></td>
+ </tr>
+ <tr>
+  <td>Output matrix file:</td> <td>no</td>
+ </tr>
+ <tr>
+  <td>Write resulting matrix into console:</td> <td>yes</td>
+ </tr>
+ <tr>
+  <td>Write the pattern into console:</td> <td>yes</td>
+ </tr>
+ <tr>
+  <td>Write total time of the run into console:</td> <td>yes</td>
+ </tr>
+</table>
+     
 **Algorithms:** <br />
 <ol>
   <li>
