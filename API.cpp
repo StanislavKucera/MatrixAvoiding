@@ -43,9 +43,13 @@ Map getMap(const std::string& map)
 Map_container getContainer(const std::string& map)
 {
 	if (map == "vector" || map == "VECTOR" || map == "V" || map == "v" || map == "std::vector")
-		return VECTOR;
+		return VECTOR; 
+//	else if (map == "vector_pair" || map == "VECTOR_PAIR" || map == "VP" || map == "vp" || map == "std::vector<std::pair>" || map == "pair")
+//		return VECTOR_PAIR;
 	else if (map == "set" || map == "SET" || map == "S" || map == "s" || map == "std:set")
 		return SET;
+//	else if (map == "map" || map == "MAP" || map == "M" || map == "m" || map == "std:map")
+//		return MAP;
 	else {
 		assert(!"Map container not supported.");
 		throw new std::exception("Map container not supported. Choose VECTOR or SET.");
@@ -314,7 +318,7 @@ int main(int argc, char* argv[])
 	}
 	else {
 		assert(!"Something bad have happened.");
-		throw new std::exception("This shouldn't have happened. Please send a message to the developer team with your config file.s");
+		throw new std::exception("This shouldn't have happened. Please send a message to the developer team with your config file.");
 	}
 
 	// if output file is specified

@@ -3,6 +3,7 @@
 
 #include "Matrix.hpp"
 #include <set>
+#include <map>
 
 /// For the purposes of complexity, let \theta(k) be the number of lines (rows and columns) of the pattern
 /// and \theta(n) be the number of lines of the big matrix.
@@ -14,7 +15,7 @@ enum Order { DESC, SUM, MAX, AUTO, CUSTOM };
 
 enum Map { RECURSION, COMPROMISE, NORECURSION };
 
-enum Map_container { VECTOR, SET };
+enum Map_container { VECTOR, VECTOR_PAIR, SET, MAP };
 
 class general_pattern
 {
@@ -29,18 +30,25 @@ public:
 	/// <param name="custom_order">Order of lines given by user in case order is set to CUSTOM.</param>
 	general_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>());
 protected:
-	Map map_approach_;												// choosen way of mapping algorithm - use recursion for nonmapped lines or not
-	size_t	row_,													// number of rows of the pattern
-			col_,													// number of columns of the pattern
-			steps_,													// number of steps I'm going to do
-			empty_lines_;											// binary number of lines with no one-entries
-	std::vector<size_t> lines_,										// binary number for each line of a pattern having one at i-th position if the pattern has one-entry there
-						order_,										// order of lines in which I am going to be mapping them
-						what_to_remember_;							// for each adding line I know which of them I still need to remember for next mapping
+	Map map_approach_;									// choosen way of mapping algorithm - use recursion for nonmapped lines or not
+	size_t	row_,										// number of rows of the pattern
+			col_,										// number of columns of the pattern
+			steps_,										// number of steps I'm going to do = number of lines I need to map (excluding empty lines)
+			empty_lines_;								// binary number of lines with no one-entries
+	std::vector<size_t> lines_,							// binary number for each line of a pattern having one at i-th position if the pattern has one-entry there
+														// lines_[i] = (1011)_2 ... i-th line of the pattern has one-enty at 0th, 1st and 3rd position
+						order_,							// order of lines in which I am going to be mapping them
+														// order_[i] = j ... in i-th step I'm going to map j-th line if the pattern
+						what_to_remember_;				// for each adding line I know which of them I still need to remember for next mapping
+														// what_to_remember[i] = (001010)_2 ... in i-th step I remember where I mapped the 1st and 3rd line of the pattern
 	std::vector<std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t> > > > parallel_bound_indices_;
-																	// vector through levels - vector through lines - pair of pairs - pair of lower and upper bounds
-	std::vector<std::vector<size_t> > extending_order_;				// vector through levels - vector of indices of the mapping which are needed for the extended one
-	std::vector<std::vector<size_t> > map_index_;					// vector through levels - vector of indices of lines in the mapping
+		// vector through levels - vector through lines - pair of pairs - pair of lower and upper bounds
+		// parallel_bound_indices_[i][j] = ((bot, top),(i_bot, i_top)) ... in i-th step, j-th line of the pattern is bounded by i_bot line of the pattern from the bottom
+		//	and by i_top line of the pattern from the top; bot and top are indices to mapping structure - mapping[bot] = b ... bot-th line is mapped to b line
+	std::vector<std::vector<size_t> > extending_order_;	// vector through levels - vector of indices of the mapping which are needed for the extended one
+														// extending_order_[i][j] = k ... in i-th step, j-th linewill be emplaced at k-th position of the mapping
+	std::vector<std::vector<size_t> > map_index_;		// vector through levels - vector of indices of lines in the mapping
+														// map_index_[i][j] = k ... in i-th step, j-th line is on the k-th position in the mapping
 
 	/// <summary>
 	/// For given line of the pattern computes lines of the big matrix, which bound its mapping.
@@ -150,9 +158,8 @@ class general_vector_pattern
 	: public general_pattern
 {
 public:
-	general_vector_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>())
-		: general_pattern(pattern, order, map_approach, std::move(custom_order)), building_tree_(2)
-	{}
+	general_vector_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION,	std::vector<size_t>&& custom_order = std::vector<size_t>())
+		: general_pattern(pattern, order, map_approach, std::move(custom_order)), building_tree_(2) {}
 
 	/// <summary>
 	/// Tests if the pattern avoids given matrix as a submatrix.
@@ -168,14 +175,39 @@ private:
 	std::vector<std::vector<std::vector<size_t> > > building_tree_;
 };
 
+// general pattern having std::vector<std::pair> as a container for found mappings
+class general_vector_pair_pattern
+	: public general_pattern
+{
+public:
+	general_vector_pair_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>())
+		: general_pattern(pattern, order, map_approach, std::move(custom_order)), building_tree_(steps_ + 1) {}
+
+	/// <summary>
+	/// Tests if the pattern avoids given matrix as a submatrix.
+	/// Returns true if it does, false if the matrix contains the pattern.
+	/// The program takes one line of the pattern after another and tries to map them to every possible line of the resulting matrix. 
+	/// It is, as it sounds, a brute force method (O(n^k)). To make it more efficient, the mappings, which have "important lines" mapped to
+	/// the same lines of big matrix are shrinked into one mapping.
+	/// </summary>
+	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
+	//bool avoid(const matrix<size_t>& big_matrix);
+	//bool avoid(size_t r, size_t c, const matrix<size_t>& big_matrix);
+
+	// this haven't been implemented yet
+	bool avoid_from_zero_to_one(size_t r, size_t c, const matrix<size_t>& big_matrix);	// this is expected to fail more often than succed
+	bool avoid_from_one_to_zero(size_t r, size_t c, const matrix<size_t>& big_matrix);	// this will succed every time
+private:
+	std::vector<std::vector<std::pair<std::vector<size_t>, size_t> > > building_tree_;
+};
+
 // general pattern having std::set as a container for found mappings
 class general_set_pattern
 	: public general_pattern
 {
 public:
 	general_set_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>())
-		: general_pattern(pattern, order, map_approach, std::move(custom_order)), building_tree_(2)
-	{}
+		: general_pattern(pattern, order, map_approach, std::move(custom_order)), building_tree_(2) {}
 
 	/// <summary>
 	/// Tests if the pattern avoids given matrix as a submatrix.
@@ -189,6 +221,32 @@ public:
 	bool avoid(size_t r, size_t c, const matrix<size_t>& big_matrix);
 private:
 	std::vector<std::set<std::vector<size_t> > > building_tree_;
+};
+
+// general pattern having std::map as a container for found mappings
+class general_map_pattern
+	: public general_pattern
+{
+public:
+	general_map_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>())
+		: general_pattern(pattern, order, map_approach, std::move(custom_order)), building_tree_(steps_ + 1) {}
+
+	/// <summary>
+	/// Tests if the pattern avoids given matrix as a submatrix.
+	/// Returns true if it does, false if the matrix contains the pattern.
+	/// The program takes one line of the pattern after another and tries to map them to every possible line of the resulting matrix. 
+	/// It is, as it sounds, a brute force method (O(n^k)). To make it more efficient, the mappings, which have "important lines" mapped to
+	/// the same lines of big matrix are shrinked into one mapping.
+	/// </summary>
+	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
+	//bool avoid(const matrix<size_t>& big_matrix);
+	//bool avoid(size_t r, size_t c, const matrix<size_t>& big_matrix);
+
+	// this haven't been implemented yet
+	bool avoid_from_zero_to_one(size_t r, size_t c, const matrix<size_t>& big_matrix);	// this is expected to fail more often than succed
+	bool avoid_from_one_to_zero(size_t r, size_t c, const matrix<size_t>& big_matrix);	// this will succed every time
+private:
+	std::vector<std::map<std::vector<size_t>, size_t> > building_tree_;
 };
 
 

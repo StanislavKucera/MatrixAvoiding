@@ -230,6 +230,20 @@ bool general_vector_pattern::avoid(size_t r, size_t c, const matrix<size_t>& big
 	return true;
 }
 
+bool general_vector_pair_pattern::avoid_from_zero_to_one(size_t r, size_t c, const matrix<size_t>& big_matrix)
+{
+	assert(!"Function avoid_from_zero_to_one not ready yet for general_vector_pattern");
+	throw new std::exception("Function avoid_from_zero_to_one not ready yet for general_vector_pattern");
+	return false;
+}
+
+bool general_vector_pair_pattern::avoid_from_one_to_zero(size_t r, size_t c, const matrix<size_t>& big_matrix)
+{
+	assert(!"Function avoid_from_one_to_zero not ready yet for general_vector_pattern");
+	throw new std::exception("Function avoid_from_one_to_zero not ready yet for general_vector_pattern");
+	return false;
+}
+
 bool general_set_pattern::avoid(const matrix<size_t>& big_matrix)
 {
 	// I start with empty mapping - no lines are mapped
@@ -324,6 +338,20 @@ bool general_set_pattern::avoid(size_t r, size_t c, const matrix<size_t>& big_ma
 
 	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
 	return true;
+}
+
+bool general_map_pattern::avoid_from_zero_to_one(size_t r, size_t c, const matrix<size_t>& big_matrix)
+{
+	assert(!"Function avoid_from_zero_to_one not ready yet for general_set_pattern");
+	throw new std::exception("Function avoid_from_zero_to_one not ready yet for general_set_pattern");
+	return false;
+}
+
+bool general_map_pattern::avoid_from_one_to_zero(size_t r, size_t c, const matrix<size_t>& big_matrix)
+{
+	assert(!"Function avoid_from_one_to_zero not ready yet for general_set_pattern");
+	throw new std::exception("Function avoid_from_one_to_zero not ready yet for general_set_pattern");
+	return false;
 }
 
 void general_pattern::find_DESC_order()
@@ -747,6 +775,28 @@ void general_pattern::find_parallel_bounds(size_t line, size_t level, const std:
 	// else return found upper bound with offset, which ensures there at least enough lines in the big matrix to map those from the pattern, which are in between
 	else
 		to = mapping[top] - i_top + line + 1;
+
+	if (top != (size_t)-1) {
+		// If I remember the next row, it has to be mapped to "top" and that line is mapped after "r" then I cannot map previous row before r-th one
+		if (line < row_ && line != row_ - 1 && r != (size_t)-1 && ((what_to_remember_[level] >> (line + 1)) & 1) && mapping[top] > r && r + 1 > from)
+			// if r > to the for cycle in map() will iterate through an empty set, which is ok
+			from = r;
+		// If I remember the next column, it has to be mapped to "top" and that line is mapped after "c" then I cannot map then previous column before c-th one
+		else if (line < row_ && line != row_ + col_ - 1 && c != (size_t)-1 && ((what_to_remember_[level] >> (line + 1)) & 1) && mapping[top] > c + rows && c + rows > from)
+			// if rows + c > to the for cycle in map() will iterate through an empty set, which is ok
+			from = rows + c;
+	}
+
+	if (bot != (size_t)-1) {
+		// If I remember the pevious row, it has to be mapped to "bot" and that line is mapped before "r" then I cannot map then next row after r-th one
+		if (line < row_ && line != 0 && r != (size_t)-1 && ((what_to_remember_[level] >> (line - 1)) & 1) && mapping[bot] < r && r < to)
+			// if r < from the for cycle in map() will iterate through an empty set, which is ok
+			to = r + 1;
+		// If I remember the pevious column, it has to be mapped to "bot" and that line is mapped before "c" then I cannot map then next column after c-th one
+		else if (line < row_ && line != row_ && c != (size_t)-1 && ((what_to_remember_[level] >> (line - 1)) & 1) && mapping[bot] < c + rows && c + rows + 1 < to)
+			// if r < from the for cycle in map() will iterate through an empty set, which is ok
+			to = c + rows + 1;
+	}
 }
 
 bool general_pattern::map(bool backtrack, size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping, const matrix<size_t>& big_matrix)
