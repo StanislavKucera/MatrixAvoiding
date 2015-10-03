@@ -8,8 +8,8 @@
 #include <set>
 #include <unordered_set>
 
-template<class T>
-general_pattern<T>::general_pattern(const matrix<size_t>& pattern, Order order, Map map_approach, std::vector<size_t>&& custom_order)
+template<typename T>
+general_pattern<T>::general_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>())
 	: map_approach_(map_approach),
 	row_(pattern.getRow()),
 	col_(pattern.getCol()),
@@ -75,11 +75,11 @@ general_pattern<T>::general_pattern(const matrix<size_t>& pattern, Order order, 
 		break;
 	case AUTO:
 		assert(!"Order AUTO has nothing to do in the pattern constructor.");
-		throw new std::exception("Order AUTO has nothing to do in the pattern constructor.");
+		throw my_exception("Order AUTO has nothing to do in the pattern constructor.");
 		break;
 	default:
 		assert(!"Unsupported order was given in the pattern constructor.");
-		throw new std::exception("Unsupported order was given in the pattern constructor.");
+		throw my_exception("Unsupported order was given in the pattern constructor.");
 		break;
 	}
 
@@ -338,7 +338,7 @@ bool general_pattern<std::set<std::vector<size_t> > >::avoid(size_t r, size_t c,
 }
 
 template<>
-bool general_pattern<std::unordered_set<std::vector<size_t> > >::avoid(const matrix<size_t>& big_matrix)
+bool general_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >::avoid(const matrix<size_t>& big_matrix)
 {
 	// I start with empty mapping - no lines are mapped
 	building_tree_[0].clear();
@@ -387,7 +387,7 @@ bool general_pattern<std::unordered_set<std::vector<size_t> > >::avoid(const mat
 }
 
 template<>
-bool general_pattern<std::unordered_set<std::vector<size_t> > >::avoid(size_t r, size_t c, const matrix<size_t>& big_matrix)
+bool general_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >::avoid(size_t r, size_t c, const matrix<size_t>& big_matrix)
 {
 	// I start with empty mapping - no lines are mapped
 	building_tree_[0].clear();
@@ -435,7 +435,7 @@ bool general_pattern<std::unordered_set<std::vector<size_t> > >::avoid(size_t r,
 	return true;
 }
 
-template<class T>
+template<typename T>
 void general_pattern<T>::find_DESC_order()
 {
 	// vector of pairs (number of one-entries, line_ID) of nonempty lines
@@ -465,7 +465,7 @@ void general_pattern<T>::find_DESC_order()
 	}
 }
 
-template<class T>
+template<typename T>
 void general_pattern<T>::find_SUM_order()
 {
 	// queue for subsets of lines
@@ -520,7 +520,7 @@ void general_pattern<T>::find_SUM_order()
 	}
 }
 
-template<class T>
+template<typename T>
 void general_pattern<T>::find_MAX_order()
 {
 	// queue for subsets of lines
@@ -578,7 +578,7 @@ void general_pattern<T>::find_MAX_order()
 	}
 }
 
-template<class T>
+template<typename T>
 size_t general_pattern<T>::count_what_to_remember(size_t current)
 {
 	bool needed;
@@ -634,7 +634,7 @@ size_t general_pattern<T>::count_what_to_remember(size_t current)
 	return count;
 }
 
-template<class T>
+template<typename T>
 void general_pattern<T>::find_what_to_remember()
 {
 	bool needed;
@@ -709,7 +709,7 @@ void general_pattern<T>::find_what_to_remember()
 	}
 }
 
-template<class T>
+template<typename T>
 void general_pattern<T>::find_extending_order()
 {
 	for (size_t i = 0; i < steps_; ++i)
@@ -740,7 +740,7 @@ void general_pattern<T>::find_extending_order()
 	}
 }
 
-template<class T>
+template<typename T>
 void general_pattern<T>::find_parralel_bound_indices()
 {
 	for (size_t i = 0; i < steps_; ++i)
@@ -758,7 +758,7 @@ void general_pattern<T>::find_parralel_bound_indices()
 	}
 }
 
-template<class T>
+template<typename T>
 void general_pattern<T>::find_bound_indices(size_t line, size_t level)
 {
 	size_t	index = (size_t)-1,	// index into map m
@@ -808,7 +808,7 @@ void general_pattern<T>::find_bound_indices(size_t line, size_t level)
 	parallel_bound_indices_[level][line].second = std::make_pair(i_bot, i_top);
 }
 
-template<class T>
+template<typename T>
 void general_pattern<T>::find_parallel_bounds(size_t line, size_t level, const std::vector<size_t>& mapping, size_t rows, size_t columns,
 	size_t& from, size_t& to, size_t r, size_t c)
 {
@@ -889,7 +889,7 @@ void general_pattern<T>::find_parallel_bounds(size_t line, size_t level, const s
 	}
 }
 
-template<class T>
+template<typename T>
 bool general_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping, const matrix<size_t>& big_matrix)
 {
 	size_t from, to, last_one = 0;
@@ -986,7 +986,7 @@ bool general_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t b
 	return true;
 }
 
-template<class T>
+template<typename T>
 std::vector<size_t> general_pattern<T>::extend(size_t level, size_t value, const std::vector<size_t>& mapping)
 {
 	size_t max = extending_order_[level].size();

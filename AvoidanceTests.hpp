@@ -15,7 +15,7 @@ enum Map { RECURSION, COMPROMISE, NORECURSION };
 
 enum Map_container { VECTOR, SET, HASH };
 
-template<class T>
+template<typename T>
 class general_pattern
 {
 public:
@@ -201,5 +201,29 @@ inline size_t bit_count(size_t n)	// I have used a function from the internet: -
 	size_t uCount = n - ((n >> 1) & 033333333333) - ((n >> 2) & 011111111111);
 	return ((uCount + (uCount >> 3)) & 030707070707) % 63;
 }
+
+// hash function for a vector of size_t
+class size_t_vector_hasher {
+public:
+	size_t operator()(const std::vector<size_t>& vec) const {
+		size_t seed = 0;
+		for (auto& i : vec) {
+			seed ^= i + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+		}
+		return seed;
+	}
+};
+
+struct my_exception : std::exception
+{
+	my_exception(const char* message) : message_(message) {}
+
+	const char* what() const
+	{
+		return message_;
+	}
+private:
+	const char* message_;
+};
 
 #endif
