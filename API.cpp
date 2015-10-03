@@ -4,6 +4,9 @@
 #include "AvoidanceTests.hpp"
 #include "Matrix.hpp"
 #include "MCMC.hpp"
+
+#include <set>
+#include <unordered_set>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -187,7 +190,7 @@ int main(int argc, char* argv[])
 	else if (type == GENERAL && container == VECTOR) {
 		if (order == AUTO) {
 			if (initialized) {
-				general_vector_pattern gpSUM(pattern, SUM, map);
+				general_pattern<std::vector<std::vector<size_t> > > gpSUM(pattern, SUM, map);
 				t = clock();
 				if (!gpSUM.avoid(result)) {
 					assert(!"Initial big matrix does not avoid the pattern");
@@ -196,13 +199,13 @@ int main(int argc, char* argv[])
 				t = clock() - t;
 				auto sum_time = t;
 
-				general_vector_pattern gpMAX(pattern, MAX, map);
+				general_pattern<std::vector<std::vector<size_t> > > gpMAX(pattern, MAX, map);
 				t = clock();
 				gpMAX.avoid(result);
 				t = clock() - t;
 				auto max_time = t;
 
-				general_vector_pattern gpDESC(pattern, DESC, map);
+				general_pattern<std::vector<std::vector<size_t> > > gpDESC(pattern, DESC, map);
 				t = clock();
 				gpDESC.avoid(result);
 				t = clock() - t;
@@ -218,19 +221,19 @@ int main(int argc, char* argv[])
 			else {
 				matrix<size_t> rand = matrix<size_t>::random_bin_matrix(N, N);
 
-				general_vector_pattern gpSUM(pattern, SUM, map);
+				general_pattern<std::vector<std::vector<size_t> > > gpSUM(pattern, SUM, map);
 				t = clock();
 				gpSUM.avoid(rand);
 				t = clock() - t;
 				auto sum_time = t;
 
-				general_vector_pattern gpMAX(pattern, MAX, map);
+				general_pattern<std::vector<std::vector<size_t> > > gpMAX(pattern, MAX, map);
 				t = clock();
 				gpMAX.avoid(rand);
 				t = clock() - t;
 				auto max_time = t;
 
-				general_vector_pattern gpDESC(pattern, DESC, map);
+				general_pattern<std::vector<std::vector<size_t> > > gpDESC(pattern, DESC, map);
 				t = clock();
 				gpDESC.avoid(rand);
 				t = clock() - t;
@@ -245,7 +248,7 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		general_vector_pattern gp(pattern, order, map, std::move(custom_order));
+		general_pattern<std::vector<std::vector<size_t> > > gp(pattern, order, map, std::move(custom_order));
 		t = clock();
 		MCMCgenerator(iter, gp, result);
 		t = clock() - t;
@@ -253,7 +256,7 @@ int main(int argc, char* argv[])
 	else if (type == GENERAL && container == SET) {
 		if (order == AUTO) {
 			if (initialized) {
-				general_set_pattern gpSUM(pattern, SUM, map);
+				general_pattern<std::set<std::vector<size_t> > > gpSUM(pattern, SUM, map);
 				t = clock();
 				if (!gpSUM.avoid(result)) {
 					assert(!"Initial big matrix does not avoid the pattern");
@@ -262,13 +265,13 @@ int main(int argc, char* argv[])
 				t = clock() - t;
 				auto sum_time = t;
 
-				general_set_pattern gpMAX(pattern, MAX, map);
+				general_pattern<std::set<std::vector<size_t> > > gpMAX(pattern, MAX, map);
 				t = clock();
 				gpMAX.avoid(result);
 				t = clock() - t;
 				auto max_time = t;
 
-				general_set_pattern gpDESC(pattern, DESC, map);
+				general_pattern<std::set<std::vector<size_t> > > gpDESC(pattern, DESC, map);
 				t = clock();
 				gpDESC.avoid(result);
 				t = clock() - t;
@@ -284,19 +287,19 @@ int main(int argc, char* argv[])
 			else {
 				matrix<size_t> rand = matrix<size_t>::random_bin_matrix(N, N);
 
-				general_set_pattern gpSUM(pattern, SUM, map);
+				general_pattern<std::set<std::vector<size_t> > > gpSUM(pattern, SUM, map);
 				t = clock();
 				gpSUM.avoid(rand);
 				t = clock() - t;
 				auto sum_time = t;
 
-				general_set_pattern gpMAX(pattern, MAX, map);
+				general_pattern<std::set<std::vector<size_t> > > gpMAX(pattern, MAX, map);
 				t = clock();
 				gpMAX.avoid(rand);
 				t = clock() - t;
 				auto max_time = t;
 
-				general_set_pattern gpDESC(pattern, DESC, map);
+				general_pattern<std::set<std::vector<size_t> > > gpDESC(pattern, DESC, map);
 				t = clock();
 				gpDESC.avoid(rand);
 				t = clock() - t;
@@ -311,7 +314,73 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		general_set_pattern gp(pattern, order, map, std::move(custom_order));
+		general_pattern<std::set<std::vector<size_t> > > gp(pattern, order, map, std::move(custom_order));
+		t = clock();
+		MCMCgenerator(iter, gp, result);
+		t = clock() - t;
+	}
+	else if (type == GENERAL && container == HASH) {
+		if (order == AUTO) {
+			if (initialized) {
+				general_pattern<std::unordered_set<std::vector<size_t> > > gpSUM(pattern, SUM, map);
+				t = clock();
+				if (!gpSUM.avoid(result)) {
+					assert(!"Initial big matrix does not avoid the pattern");
+					throw new std::exception("Initial big matrix does not avoid the pattern");
+				}
+				t = clock() - t;
+				auto sum_time = t;
+
+				general_pattern<std::unordered_set<std::vector<size_t> > > gpMAX(pattern, MAX, map);
+				t = clock();
+				gpMAX.avoid(result);
+				t = clock() - t;
+				auto max_time = t;
+
+				general_pattern<std::unordered_set<std::vector<size_t> > > gpDESC(pattern, DESC, map);
+				t = clock();
+				gpDESC.avoid(result);
+				t = clock() - t;
+				auto desc_time = t;
+
+				if (desc_time <= max_time && desc_time <= sum_time)
+					order = DESC;
+				else if (max_time <= sum_time)
+					order = MAX;
+				else
+					order = SUM;
+			}
+			else {
+				matrix<size_t> rand = matrix<size_t>::random_bin_matrix(N, N);
+
+				general_pattern<std::unordered_set<std::vector<size_t> > > gpSUM(pattern, SUM, map);
+				t = clock();
+				gpSUM.avoid(rand);
+				t = clock() - t;
+				auto sum_time = t;
+
+				general_pattern<std::unordered_set<std::vector<size_t> > > gpMAX(pattern, MAX, map);
+				t = clock();
+				gpMAX.avoid(rand);
+				t = clock() - t;
+				auto max_time = t;
+
+				general_pattern<std::unordered_set<std::vector<size_t> > > gpDESC(pattern, DESC, map);
+				t = clock();
+				gpDESC.avoid(rand);
+				t = clock() - t;
+				auto desc_time = t;
+
+				if (desc_time <= max_time && desc_time <= sum_time)
+					order = DESC;
+				else if (max_time <= sum_time)
+					order = MAX;
+				else
+					order = SUM;
+			}
+		}
+
+		general_pattern<std::unordered_set<std::vector<size_t> > > gp(pattern, order, map, std::move(custom_order));
 		t = clock();
 		MCMCgenerator(iter, gp, result);
 		t = clock() - t;
