@@ -9,7 +9,7 @@
 
 // Generates random-ish matrix of given size, which is avoiding given general pattern. Uses iter iterations on markov chain.
 template<class T>
-void MCMCgenerator(size_t iter, general_pattern<T>& pattern, matrix<size_t>& big_matrix)
+inline void MCMCgenerator(size_t iter, general_pattern<T>& pattern, matrix<size_t>& big_matrix)
 {
 	// random generator from uniform distribution [0, n-1]
 	std::random_device rd;
@@ -35,7 +35,7 @@ void MCMCgenerator(size_t iter, general_pattern<T>& pattern, matrix<size_t>& big
 }
 
 // Generates random-ish matrix of given size, which is avoiding given walking pattern. Uses iter iterations on markov chain.
-void MCMCgenerator(size_t iter, walking_pattern& pattern, matrix<size_t>& big_matrix)
+inline void MCMCgenerator(size_t iter, walking_pattern& pattern, matrix<size_t>& big_matrix)
 {
 	// random generator from uniform distribution [0, n-1]
 	std::random_device rd;
