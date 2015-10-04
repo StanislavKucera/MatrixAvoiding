@@ -51,7 +51,7 @@ Map_container getContainer(const std::string& container)
 	else if (container == "set" || container == "SET" || container == "S" || container == "s" || container == "std::set")
 		return SET;
 	else if (container == "hash" || container == "HASH" || container == "H" || container == "h" || container == "std::unordered_set")
-		return SET;
+		return HASH;
 	else {
 		assert(!"Map container not supported.");
 		throw my_exception("Map container not supported. Choose VECTOR or SET.");
