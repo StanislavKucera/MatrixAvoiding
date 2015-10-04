@@ -2,8 +2,6 @@
 #define AvoidanceTest_hpp_
 
 #include "Matrix.hpp"
-#include <set>
-#include <map>
 
 /// For the purposes of complexity, let \theta(k) be the number of lines (rows and columns) of the pattern
 /// and \theta(n) be the number of lines of the big matrix.
@@ -15,8 +13,9 @@ enum Order { DESC, SUM, MAX, AUTO, CUSTOM };
 
 enum Map { RECURSION, COMPROMISE, NORECURSION };
 
-enum Map_container { VECTOR, VECTOR_PAIR, SET, MAP };
+enum Map_container { VECTOR, SET, HASH };
 
+template<typename T>
 class general_pattern
 {
 public:
@@ -29,7 +28,18 @@ public:
 	/// <param name="map">Enum determining what conditions will map function check.</param>
 	/// <param name="custom_order">Order of lines given by user in case order is set to CUSTOM.</param>
 	general_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>());
-protected:
+
+	/// <summary>
+	/// Tests if the pattern avoids given matrix as a submatrix.
+	/// Returns true if it does, false if the matrix contains the pattern.
+	/// The program takes one line of the pattern after another and tries to map them to every possible line of the resulting matrix. 
+	/// It is, as it sounds, a brute force method (O(n^k)). To make it more efficient, the mappings, which have "important lines" mapped to
+	/// the same lines of big matrix are shrinked into one mapping.
+	/// </summary>
+	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
+	bool avoid(const matrix<size_t>& big_matrix);
+	bool avoid(size_t r, size_t c, const matrix<size_t>& big_matrix);
+private:
 	Map map_approach_;									// choosen way of mapping algorithm - use recursion for nonmapped lines or not
 	size_t	row_,										// number of rows of the pattern
 			col_,										// number of columns of the pattern
@@ -49,6 +59,7 @@ protected:
 														// extending_order_[i][j] = k ... in i-th step, j-th linewill be emplaced at k-th position of the mapping
 	std::vector<std::vector<size_t> > map_index_;		// vector through levels - vector of indices of lines in the mapping
 														// map_index_[i][j] = k ... in i-th step, j-th line is on the k-th position in the mapping
+	std::vector<T> building_tree_;
 
 	/// <summary>
 	/// For given line of the pattern computes lines of the big matrix, which bound its mapping.
@@ -153,103 +164,6 @@ protected:
 	std::vector<size_t> extend(size_t level, size_t big_line, const std::vector<size_t>& mapping);
 };
 
-// general pattern having std::vector as a container for found mappings
-class general_vector_pattern
-	: public general_pattern
-{
-public:
-	general_vector_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION,	std::vector<size_t>&& custom_order = std::vector<size_t>())
-		: general_pattern(pattern, order, map_approach, std::move(custom_order)), building_tree_(2) {}
-
-	/// <summary>
-	/// Tests if the pattern avoids given matrix as a submatrix.
-	/// Returns true if it does, false if the matrix contains the pattern.
-	/// The program takes one line of the pattern after another and tries to map them to every possible line of the resulting matrix. 
-	/// It is, as it sounds, a brute force method (O(n^k)). To make it more efficient, the mappings, which have "important lines" mapped to
-	/// the same lines of big matrix are shrinked into one mapping.
-	/// </summary>
-	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
-	bool avoid(const matrix<size_t>& big_matrix);
-	bool avoid(size_t r, size_t c, const matrix<size_t>& big_matrix);
-private:
-	std::vector<std::vector<std::vector<size_t> > > building_tree_;
-};
-
-// general pattern having std::vector<std::pair> as a container for found mappings
-class general_vector_pair_pattern
-	: public general_pattern
-{
-public:
-	general_vector_pair_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>())
-		: general_pattern(pattern, order, map_approach, std::move(custom_order)), building_tree_(steps_ + 1) {}
-
-	/// <summary>
-	/// Tests if the pattern avoids given matrix as a submatrix.
-	/// Returns true if it does, false if the matrix contains the pattern.
-	/// The program takes one line of the pattern after another and tries to map them to every possible line of the resulting matrix. 
-	/// It is, as it sounds, a brute force method (O(n^k)). To make it more efficient, the mappings, which have "important lines" mapped to
-	/// the same lines of big matrix are shrinked into one mapping.
-	/// </summary>
-	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
-	//bool avoid(const matrix<size_t>& big_matrix);
-	//bool avoid(size_t r, size_t c, const matrix<size_t>& big_matrix);
-
-	// this haven't been implemented yet
-	bool avoid_from_zero_to_one(size_t r, size_t c, const matrix<size_t>& big_matrix);	// this is expected to fail more often than succed
-	bool avoid_from_one_to_zero(size_t r, size_t c, const matrix<size_t>& big_matrix);	// this will succed every time
-private:
-	std::vector<std::vector<std::pair<std::vector<size_t>, size_t> > > building_tree_;
-};
-
-// general pattern having std::set as a container for found mappings
-class general_set_pattern
-	: public general_pattern
-{
-public:
-	general_set_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>())
-		: general_pattern(pattern, order, map_approach, std::move(custom_order)), building_tree_(2) {}
-
-	/// <summary>
-	/// Tests if the pattern avoids given matrix as a submatrix.
-	/// Returns true if it does, false if the matrix contains the pattern.
-	/// The program takes one line of the pattern after another and tries to map them to every possible line of the resulting matrix. 
-	/// It is, as it sounds, a brute force method (O(n^k)). To make it more efficient, the mappings, which have "important lines" mapped to
-	/// the same lines of big matrix are shrinked into one mapping.
-	/// </summary>
-	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
-	bool avoid(const matrix<size_t>& big_matrix);
-	bool avoid(size_t r, size_t c, const matrix<size_t>& big_matrix);
-private:
-	std::vector<std::set<std::vector<size_t> > > building_tree_;
-};
-
-// general pattern having std::map as a container for found mappings
-class general_map_pattern
-	: public general_pattern
-{
-public:
-	general_map_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>())
-		: general_pattern(pattern, order, map_approach, std::move(custom_order)), building_tree_(steps_ + 1) {}
-
-	/// <summary>
-	/// Tests if the pattern avoids given matrix as a submatrix.
-	/// Returns true if it does, false if the matrix contains the pattern.
-	/// The program takes one line of the pattern after another and tries to map them to every possible line of the resulting matrix. 
-	/// It is, as it sounds, a brute force method (O(n^k)). To make it more efficient, the mappings, which have "important lines" mapped to
-	/// the same lines of big matrix are shrinked into one mapping.
-	/// </summary>
-	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
-	//bool avoid(const matrix<size_t>& big_matrix);
-	//bool avoid(size_t r, size_t c, const matrix<size_t>& big_matrix);
-
-	// this haven't been implemented yet
-	bool avoid_from_zero_to_one(size_t r, size_t c, const matrix<size_t>& big_matrix);	// this is expected to fail more often than succed
-	bool avoid_from_one_to_zero(size_t r, size_t c, const matrix<size_t>& big_matrix);	// this will succed every time
-private:
-	std::vector<std::map<std::vector<size_t>, size_t> > building_tree_;
-};
-
-
 /// A matrix pattern in which exists a walk from left-upper corner to right-bottom corner, which contains all one-entries.
 /// It may contain zero-entries as well, but no one-entry can be not included in the walk.
 class walking_pattern
@@ -287,5 +201,29 @@ inline size_t bit_count(size_t n)	// I have used a function from the internet: -
 	size_t uCount = n - ((n >> 1) & 033333333333) - ((n >> 2) & 011111111111);
 	return ((uCount + (uCount >> 3)) & 030707070707) % 63;
 }
+
+// hash function for a vector of size_t
+class size_t_vector_hasher {
+public:
+	size_t operator()(const std::vector<size_t>& vec) const {
+		size_t seed = 0;
+		for (auto& i : vec) {
+			seed ^= i + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+		}
+		return seed;
+	}
+};
+
+struct my_exception : std::exception
+{
+	my_exception(const char* message) : message_(message) {}
+
+	const char* what() const
+	{
+		return message_;
+	}
+private:
+	const char* message_;
+};
 
 #endif
