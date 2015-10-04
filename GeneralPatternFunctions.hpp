@@ -2,6 +2,7 @@
 #define GeneralPatternFunctions_hpp_
 
 #include "AvoidanceTests.hpp"
+
 #include <queue>
 #include <algorithm>
 #include <assert.h>
@@ -20,13 +21,9 @@ general_pattern<T>::general_pattern(const matrix<size_t>& pattern, Order order =
 	what_to_remember_(row_ + col_ + 1),
 	parallel_bound_indices_(row_ + col_),
 	extending_order_(row_ + col_),
-	map_index_(row_ + col_ + 1)
+	map_index_(row_ + col_ + 1),
+	building_tree_(2)
 {
-	if (true)
-		building_tree_.resize(steps_ + 1);
-	else
-		building_tree_.resize(2);
-
 	for (size_t i = 0; i < row_; ++i)
 	{
 		for (size_t j = 0; j < col_; ++j)
