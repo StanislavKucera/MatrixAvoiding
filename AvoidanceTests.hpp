@@ -1,19 +1,10 @@
 #ifndef AvoidanceTest_hpp_
 #define AvoidanceTest_hpp_
 
-#include "Matrix.hpp"
+#include "HelpFunctionsAndStructures.hpp"
 
 /// For the purposes of complexity, let \theta(k) be the number of lines (rows and columns) of the pattern
 /// and \theta(n) be the number of lines of the big matrix.
-
-enum Type { GENERAL, WALKING };
-
-// Enum for the line ordering functions
-enum Order { DESC, SUM, MAX, AUTO, CUSTOM };
-
-enum Map { RECURSION, COMPROMISE, NORECURSION };
-
-enum Map_container { VECTOR, SET, HASH };
 
 template<typename T>
 class general_pattern
@@ -37,8 +28,7 @@ public:
 	/// the same lines of big matrix are shrinked into one mapping.
 	/// </summary>
 	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
-	bool avoid(const matrix<size_t>& big_matrix);
-	bool avoid(size_t r, size_t c, const matrix<size_t>& big_matrix);
+	bool avoid(const matrix<size_t>& big_matrix, size_t r = (size_t)-1, size_t c = (size_t)-1);
 private:
 	Map map_approach_;									// choosen way of mapping algorithm - use recursion for nonmapped lines or not
 	size_t	row_,										// number of rows of the pattern
@@ -180,50 +170,15 @@ public:
 	/// <param name="r">Row of the big matrix that has been changed.</param>
 	/// <param name="c">Column of the big matrix that has been changed.</param>
 	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
-	virtual bool avoid(size_t r, size_t c, const matrix<size_t>& big_matrix);
+	virtual bool avoid(const matrix<size_t>& big_matrix, size_t r, size_t c);
 	
 	// reverts changes in max_walk_part matrix after an unsuccessful change of the big matrix
-	virtual bool revert(size_t r, size_t c, const matrix<size_t>& big_matrix) { return avoid(r, c, big_matrix); }
+	virtual bool revert(size_t r, size_t c, const matrix<size_t>& big_matrix) { return avoid(big_matrix, r, c); }
 private:
 	matrix<std::pair<size_t, size_t> > max_walk_part_;	// table of calculated [c_v,c_h] for all elements
 	
 	// indexed by index of v_i, the element of the walk, gives the direction of the next element (0 for vertical) and value of v_i.
 	std::vector<size_t> direction_, value_;
-};
-
-/// <summary>
-/// Computes the number of one-entries of a binary number.
-/// Takes constant time and space.
-/// </summary>
-/// <param name="n">A binary number for which number of bits is computed.</param>
-inline size_t bit_count(size_t n)	// I have used a function from the internet: -http://blogs.msdn.com/b/jeuge/archive/2005/06/08/hakmem-bit-count.aspx
-{
-	size_t uCount = n - ((n >> 1) & 033333333333) - ((n >> 2) & 011111111111);
-	return ((uCount + (uCount >> 3)) & 030707070707) % 63;
-}
-
-// hash function for a vector of size_t
-class size_t_vector_hasher {
-public:
-	size_t operator()(const std::vector<size_t>& vec) const {
-		size_t seed = 0;
-		for (auto& i : vec) {
-			seed ^= i + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-		}
-		return seed;
-	}
-};
-
-struct my_exception : std::exception
-{
-	my_exception(const char* message) : message_(message) {}
-
-	const char* what() const
-	{
-		return message_;
-	}
-private:
-	const char* message_;
 };
 
 #endif

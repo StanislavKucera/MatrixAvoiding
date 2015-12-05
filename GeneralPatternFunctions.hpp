@@ -6,8 +6,6 @@
 #include <queue>
 #include <algorithm>
 #include <assert.h>
-#include <set>
-#include <unordered_set>
 
 template<typename T>
 general_pattern<T>::general_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>())
@@ -87,82 +85,7 @@ general_pattern<T>::general_pattern(const matrix<size_t>& pattern, Order order =
 }
 
 template<>
-inline bool general_pattern<std::vector<std::vector<size_t> > >::avoid(const matrix<size_t>& big_matrix)
-{
-	// I start with empty mapping - no lines are mapped
-	building_tree_[0].clear();
-	building_tree_[0].push_back(std::vector<size_t>(0));
-
-	size_t from, to,
-		big_matrix_rows = big_matrix.getRow(),
-		big_matrix_cols = big_matrix.getCol();
-
-	// main loop through added lines (loops 2*k times)
-	for (size_t level = 0; level < steps_; ++level)
-	{
-		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
-		if (building_tree_[level % 2].size() == 0)
-			return true;
-
-		building_tree_[(level + 1) % 2].clear();
-
-		// loop through the mappings found in the last iteration
-		for (auto& mapping : building_tree_[level % 2])
-		{
-			// find boundaries of added line:
-			find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to);
-
-			// map orders_[level] to j-th line of N if possible
-			for (size_t big_line = from; big_line < to; ++big_line)
-			{
-				// if currenly added line can be mapped to big_line in mapping map
-				if (map((map_approach_ == NORECURSION) ? false : true, order_[level], level, big_line, mapping, big_matrix))
-				{
-					// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
-					if (level == steps_ - 1)
-						return false;
-
-					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line
-					std::vector<size_t> extended = extend(level, big_line, mapping);
-
-					bool mapped = false;
-
-					// go through all already found mappings in (i+1)-th step and check if extended is not already in there
-					for (auto& mapping2 : building_tree_[(level + 1) % 2])
-					{
-						mapped = true;
-
-						// go through m2 mapping
-						for (size_t l2 = 0; l2 < building_tree_[(level + 1) % 2][0].size(); ++l2)
-						{
-							// and check whether the index in extended and m2 are the same
-							if (extended[l2] != mapping2[l2])
-							{
-								// if not, extended is a different mapping then m2
-								mapped = false;
-								break;
-							}
-						}
-
-						// extended has already been added (atleast its different class) - I won't add it for the second time
-						if (mapped)
-							break;
-					}
-
-					// if extended is not yet an element, add it to the tree
-					if (!mapped)
-						building_tree_[(level + 1) % 2].push_back(extended);
-				}
-			}
-		}
-	}
-
-	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
-	return true;
-}
-
-template<>
-inline bool general_pattern<std::vector<std::vector<size_t> > >::avoid(size_t r, size_t c, const matrix<size_t>& big_matrix)
+inline bool general_pattern<std::vector<std::vector<size_t> > >::avoid(const matrix<size_t>& big_matrix, size_t r, size_t c)
 {
 	// I start with empty mapping - no lines are mapped
 	building_tree_[0].clear();
@@ -237,56 +160,7 @@ inline bool general_pattern<std::vector<std::vector<size_t> > >::avoid(size_t r,
 }
 
 template<>
-inline bool general_pattern<std::set<std::vector<size_t> > >::avoid(const matrix<size_t>& big_matrix)
-{
-	// I start with empty mapping - no lines are mapped
-	building_tree_[0].clear();
-	building_tree_[0].insert(std::vector<size_t>(0));
-
-	size_t from, to,
-		big_matrix_rows = big_matrix.getRow(),
-		big_matrix_cols = big_matrix.getCol();
-
-	// main loop through added lines (loops 2*k times)
-	for (size_t level = 0; level < steps_; ++level)
-	{
-		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
-		if (building_tree_[level % 2].size() == 0)
-			return true;
-
-		building_tree_[(level + 1) % 2].clear();
-
-		// loop through the mappings found in the last iteration
-		for (auto& mapping : building_tree_[level % 2])
-		{
-			// find boundaries of added line:
-			find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to);
-
-			// map orders_[level] to j-th line of N if possible
-			for (size_t big_line = from; big_line < to; ++big_line)
-			{
-				// if currenly added line can be mapped to big_line in mapping map
-				if (map((map_approach_ == NORECURSION) ? false : true, order_[level], level, big_line, mapping, big_matrix))
-				{
-					// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
-					if (level == steps_ - 1)
-						return false;
-
-					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line
-					std::vector<size_t> extended = extend(level, big_line, mapping);
-
-					building_tree_[(level + 1) % 2].insert(extended);
-				}
-			}
-		}
-	}
-
-	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
-	return true;
-}
-
-template<>
-inline bool general_pattern<std::set<std::vector<size_t> > >::avoid(size_t r, size_t c, const matrix<size_t>& big_matrix)
+inline bool general_pattern<std::set<std::vector<size_t> > >::avoid(const matrix<size_t>& big_matrix, size_t r, size_t c)
 {
 	// I start with empty mapping - no lines are mapped
 	building_tree_[0].clear();
@@ -335,56 +209,7 @@ inline bool general_pattern<std::set<std::vector<size_t> > >::avoid(size_t r, si
 }
 
 template<>
-inline bool general_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >::avoid(const matrix<size_t>& big_matrix)
-{
-	// I start with empty mapping - no lines are mapped
-	building_tree_[0].clear();
-	building_tree_[0].insert(std::vector<size_t>(0));
-
-	size_t from, to,
-		big_matrix_rows = big_matrix.getRow(),
-		big_matrix_cols = big_matrix.getCol();
-
-	// main loop through added lines (loops 2*k times)
-	for (size_t level = 0; level < steps_; ++level)
-	{
-		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
-		if (building_tree_[level % 2].size() == 0)
-			return true;
-
-		building_tree_[(level + 1) % 2].clear();
-
-		// loop through the mappings found in the last iteration
-		for (auto& mapping : building_tree_[level % 2])
-		{
-			// find boundaries of added line:
-			find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to);
-
-			// map orders_[level] to j-th line of N if possible
-			for (size_t big_line = from; big_line < to; ++big_line)
-			{
-				// if currenly added line can be mapped to big_line in mapping map
-				if (map((map_approach_ == NORECURSION) ? false : true, order_[level], level, big_line, mapping, big_matrix))
-				{
-					// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
-					if (level == steps_ - 1)
-						return false;
-
-					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line
-					std::vector<size_t> extended = extend(level, big_line, mapping);
-
-					building_tree_[(level + 1) % 2].insert(extended);
-				}
-			}
-		}
-	}
-
-	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
-	return true;
-}
-
-template<>
-inline bool general_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >::avoid(size_t r, size_t c, const matrix<size_t>& big_matrix)
+inline bool general_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >::avoid(const matrix<size_t>& big_matrix, size_t r, size_t c)
 {
 	// I start with empty mapping - no lines are mapped
 	building_tree_[0].clear();
