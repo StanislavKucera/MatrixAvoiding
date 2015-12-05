@@ -11,17 +11,17 @@
 #include <random>
 
 template< typename T>
-class matrix
+class Matrix
 {
 public:
 	// constructs an empty 0x0 matrix 
-	matrix() : row_(0), col_(0) {}
+	Matrix() : row_(0), col_(0) {}
 	// constructs a matrix of given size with default value in each element
-	matrix(size_t r, size_t c) : row_(r), col_(c), data_(r*c) {}
+	Matrix(size_t r, size_t c) : data_(r*c), row_(r), col_(c) {}
 	// constructs a matrix of given size with given value in each element
-	matrix(size_t r, size_t c, const T& def) : row_(r), col_(c), data_(r*c, def) {}
+	Matrix(size_t r, size_t c, const T& def) : data_(r*c, def), row_(r), col_(c) {}
 	// constructs a matrix from initializer list of initializer lists
-	matrix(const std::initializer_list<std::initializer_list<T> >& il)
+	Matrix(const std::initializer_list<std::initializer_list<T> >& il)
 		: row_(il.size()), col_(il.begin()->size())
 	{
 		data_.reserve(row_ * col_);
@@ -34,7 +34,7 @@ public:
 		}
 	}
 	// constructs a matrix from input file, expected format is: number of rows, number of columns, rows*cols elements of type T
-	explicit matrix(const std::string& input)
+	explicit Matrix(const std::string& input)
 	{
 		std::ifstream iFile(input);
 		iFile >> row_ >> col_;
@@ -44,8 +44,8 @@ public:
 		iFile.close();
 	}
 	// constructs a matrix of size given in r and c from input file, expected format is: rows*cols elements of type T
-	matrix(size_t r, size_t c, const std::string& input)
-		: row_(r), col_(c), data_(r*c)
+	Matrix(size_t r, size_t c, const std::string& input)
+		: data_(r*c), row_(r), col_(c)
 	{
 		std::ifstream iFile(input);
 		for (auto &it : data_)
@@ -53,13 +53,13 @@ public:
 		iFile.close();
 	}
 
-	matrix(const matrix<T>& m) : row_(m.row_), col_(m.col_), data_(m.data_.begin(), m.data_.end()) {}
-	matrix(matrix<T>&& m)
+	Matrix(const Matrix<T>& m) : row_(m.row_), col_(m.col_), data_(m.data_.begin(), m.data_.end()) {}
+	Matrix(Matrix<T>&& m)
 		: row_(m.row_), col_(m.col_)
 	{
 		data_ = std::move(m.data_);
 	}
-	matrix& operator=(const matrix<T>& m)
+	Matrix& operator=(const Matrix<T>& m)
 	{
 		row_ = m.row_;
 		col_ = m.col_;
@@ -67,7 +67,7 @@ public:
 		std::copy(m.data_.begin(), m.data_.end(), data_.begin());
 		return *this;
 	}
-	matrix& operator=(matrix<T>&& m)
+	Matrix& operator=(Matrix<T>&& m)
 	{
 		row_ = m.row_;
 		col_ = m.col_;
@@ -122,22 +122,22 @@ public:
 		return out.str();
 	}
 	// returns a random binary matrix
-	static matrix<T> random_bin_matrix(size_t r, size_t c)
+	static Matrix<T> random_bin_matrix(size_t r, size_t c)
 	{
 		// random generator from uniform distribution [0, n-1]
 		std::random_device rd;
 		std::mt19937 rng(rd());
 		std::uniform_int_distribution<size_t> uni(0, 1);
 
-		matrix<T> ret(r, c);
+		Matrix<T> ret(r, c);
 		for (auto& it : ret.data_)
 			it = uni(rng);
 
 		return ret;
 	}
 private:
-	size_t row_, col_;
 	std::vector<T> data_;
+	size_t row_, col_;
 };
 
 #endif

@@ -1,13 +1,21 @@
-#ifndef AvoidanceTest_hpp_
-#define AvoidanceTest_hpp_
+#ifndef PatternHeaders_hpp_
+#define PatternHeaders_hpp_
 
 #include "HelpFunctionsAndStructures.hpp"
 
 /// For the purposes of complexity, let \theta(k) be the number of lines (rows and columns) of the pattern
 /// and \theta(n) be the number of lines of the big matrix.
 
+class Pattern
+{
+public:
+	virtual bool avoid(const Matrix<size_t>& big_matrix, size_t r, size_t c) = 0;
+	virtual bool revert(const Matrix<size_t>& big_matrix, size_t r, size_t c) = 0;
+};
+
 template<typename T>
-class general_pattern
+class General_pattern
+	: public Pattern
 {
 public:
 	/// <summary>
@@ -18,7 +26,7 @@ public:
 	/// <param name="order">Enum determining which function will be used for line ordering.</param>
 	/// <param name="map">Enum determining what conditions will map function check.</param>
 	/// <param name="custom_order">Order of lines given by user in case order is set to CUSTOM.</param>
-	general_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>());
+	General_pattern(const Matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>());
 
 	/// <summary>
 	/// Tests if the pattern avoids given matrix as a submatrix.
@@ -28,13 +36,11 @@ public:
 	/// the same lines of big matrix are shrinked into one mapping.
 	/// </summary>
 	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
-	bool avoid(const matrix<size_t>& big_matrix, size_t r = (size_t)-1, size_t c = (size_t)-1);
+	bool avoid(const Matrix<size_t>& big_matrix, size_t r = (size_t)-1, size_t c = (size_t)-1);
+	bool revert(const Matrix<size_t>& /* big_matrix */, size_t /* r */ = (size_t)-1, size_t /* c */ = (size_t)-1) { return true; }
 private:
-	Map map_approach_;									// choosen way of mapping algorithm - use recursion for nonmapped lines or not
 	size_t	row_,										// number of rows of the pattern
-			col_,										// number of columns of the pattern
-			steps_,										// number of steps I'm going to do = number of lines I need to map (excluding empty lines)
-			empty_lines_;								// binary number of lines with no one-entries
+			col_;										// number of columns of the pattern
 	std::vector<size_t> lines_,							// binary number for each line of a pattern having one at i-th position if the pattern has one-entry there
 														// lines_[i] = (1011)_2 ... i-th line of the pattern has one-enty at 0th, 1st and 3rd position
 						order_,							// order of lines in which I am going to be mapping them
@@ -49,7 +55,10 @@ private:
 														// extending_order_[i][j] = k ... in i-th step, j-th linewill be emplaced at k-th position of the mapping
 	std::vector<std::vector<size_t> > map_index_;		// vector through levels - vector of indices of lines in the mapping
 														// map_index_[i][j] = k ... in i-th step, j-th line is on the k-th position in the mapping
-	std::vector<T> building_tree_;
+	std::vector<Container<T> > building_tree_;			// container for found mapping at each level
+	size_t	steps_,										// number of steps I'm going to do = number of lines I need to map (excluding empty lines)
+			empty_lines_;								// binary number of lines with no one-entries
+	Map map_approach_;									// choosen way of mapping algorithm - use recursion for nonmapped lines or not
 
 	/// <summary>
 	/// For given line of the pattern computes lines of the big matrix, which bound its mapping.
@@ -140,7 +149,7 @@ private:
 	/// <param name="big_line">Index of the line of the big matrix which I am trying to map the line to.</param>
 	/// <param name="mapping">The mapping I am extending.</param>
 	/// <param name="big_matrix">Reference to the big matrix for which I test pattern avoiding.</param>
-	bool map(bool backtrack, size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping, const matrix<size_t>& big_matrix);
+	bool map(bool backtrack, size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping, const Matrix<size_t>& big_matrix);
 	
 	/// <summary>
 	/// Extends previous mapping after deciding to which big line the line should be mapped.
@@ -156,10 +165,11 @@ private:
 
 /// A matrix pattern in which exists a walk from left-upper corner to right-bottom corner, which contains all one-entries.
 /// It may contain zero-entries as well, but no one-entry can be not included in the walk.
-class walking_pattern
+class Walking_pattern
+	: public Pattern
 {
 public:
-	walking_pattern(const matrix<size_t>& pattern, size_t n);
+	Walking_pattern(const Matrix<size_t>& pattern, size_t n);
 	
 	/// <summary>
 	/// Tests if the pattern avoids given matrix as a submatrix.
@@ -170,12 +180,12 @@ public:
 	/// <param name="r">Row of the big matrix that has been changed.</param>
 	/// <param name="c">Column of the big matrix that has been changed.</param>
 	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
-	virtual bool avoid(const matrix<size_t>& big_matrix, size_t r, size_t c);
+	bool avoid(const Matrix<size_t>& big_matrix, size_t r, size_t c);
 	
 	// reverts changes in max_walk_part matrix after an unsuccessful change of the big matrix
-	virtual bool revert(size_t r, size_t c, const matrix<size_t>& big_matrix) { return avoid(big_matrix, r, c); }
+	bool revert(const Matrix<size_t>& big_matrix, size_t r, size_t c) { return avoid(big_matrix, r, c); }
 private:
-	matrix<std::pair<size_t, size_t> > max_walk_part_;	// table of calculated [c_v,c_h] for all elements
+	Matrix<std::pair<size_t, size_t> > max_walk_part_;	// table of calculated [c_v,c_h] for all elements
 	
 	// indexed by index of v_i, the element of the walk, gives the direction of the next element (0 for vertical) and value of v_i.
 	std::vector<size_t> direction_, value_;

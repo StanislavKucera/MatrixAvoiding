@@ -1,26 +1,26 @@
 #ifndef GeneralPatternFunctions_hpp_
 #define GeneralPatternFunctions_hpp_
 
-#include "AvoidanceTests.hpp"
+#include "PatternHeaders.hpp"
 
 #include <queue>
 #include <algorithm>
 #include <assert.h>
 
 template<typename T>
-general_pattern<T>::general_pattern(const matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>())
-	: map_approach_(map_approach),
-	row_(pattern.getRow()),
-	col_(pattern.getCol()),
-	steps_(row_ + col_),
-	empty_lines_(0),
+General_pattern<T>::General_pattern(const Matrix<size_t>& pattern, Order order, Map map_approach, std::vector<size_t>&& custom_order)
+	: row_(pattern.getRow()),
+	col_(pattern.getCol()), 
 	lines_(row_ + col_),
 	order_(row_ + col_),
 	what_to_remember_(row_ + col_ + 1),
 	parallel_bound_indices_(row_ + col_),
 	extending_order_(row_ + col_),
 	map_index_(row_ + col_ + 1),
-	building_tree_(2)
+	building_tree_(2),
+	steps_(row_ + col_),
+	empty_lines_(0),
+	map_approach_(map_approach)
 {
 	for (size_t i = 0; i < row_; ++i)
 	{
@@ -84,16 +84,15 @@ general_pattern<T>::general_pattern(const matrix<size_t>& pattern, Order order =
 	find_extending_order();
 }
 
-template<>
-inline bool general_pattern<std::vector<std::vector<size_t> > >::avoid(const matrix<size_t>& big_matrix, size_t r, size_t c)
+template<typename T>
+inline bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, size_t r, size_t c)
 {
 	// I start with empty mapping - no lines are mapped
-	building_tree_[0].clear();
-	building_tree_[0].push_back(std::vector<size_t>(0));
+	building_tree_[0].init();
 
-	size_t from, to,
-		big_matrix_rows = big_matrix.getRow(),
-		big_matrix_cols = big_matrix.getCol();
+	size_t from, to;
+	const size_t big_matrix_rows = big_matrix.getRow(),
+				 big_matrix_cols = big_matrix.getCol();
 
 	// main loop through added lines (loops 2*k times)
 	for (size_t level = 0; level < steps_; ++level)
@@ -105,7 +104,7 @@ inline bool general_pattern<std::vector<std::vector<size_t> > >::avoid(const mat
 		building_tree_[(level + 1) % 2].clear();
 
 		// loop through the mappings found in the last iteration
-		for (auto& mapping : building_tree_[level % 2])
+		for (const std::vector<size_t>& mapping : building_tree_[level % 2])
 		{
 			// find boundaries of added line:
 			find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to, r, c);
@@ -120,134 +119,8 @@ inline bool general_pattern<std::vector<std::vector<size_t> > >::avoid(const mat
 					if (level == steps_ - 1)
 						return false;
 
-					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line
-					std::vector<size_t> extended = extend(level, big_line, mapping);
-
-					bool mapped = false;
-
-					// go through all already found mappings in (i+1)-th step and check if extended is not already in there
-					for (auto& mapping2 : building_tree_[(level + 1) % 2])
-					{
-						mapped = true;
-
-						// go through m2 mapping
-						for (size_t l2 = 0; l2 < building_tree_[(level + 1) % 2][0].size(); ++l2)
-						{
-							// and check whether the index in extended and m2 are the same
-							if (extended[l2] != mapping2[l2])
-							{
-								// if not, extended is a different mapping then m2
-								mapped = false;
-								break;
-							}
-						}
-
-						// extended has already been added (atleast its different class) - I won't add it for the second time
-						if (mapped)
-							break;
-					}
-
-					// if extended is not yet an element, add it to the tree
-					if (!mapped)
-						building_tree_[(level + 1) % 2].push_back(extended);
-				}
-			}
-		}
-	}
-
-	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
-	return true;
-}
-
-template<>
-inline bool general_pattern<std::set<std::vector<size_t> > >::avoid(const matrix<size_t>& big_matrix, size_t r, size_t c)
-{
-	// I start with empty mapping - no lines are mapped
-	building_tree_[0].clear();
-	building_tree_[0].insert(std::vector<size_t>(0));
-
-	size_t from, to,
-		big_matrix_rows = big_matrix.getRow(),
-		big_matrix_cols = big_matrix.getCol();
-
-	// main loop through added lines (loops 2*k times)
-	for (size_t level = 0; level < steps_; ++level)
-	{
-		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
-		if (building_tree_[level % 2].size() == 0)
-			return true;
-
-		building_tree_[(level + 1) % 2].clear();
-
-		// loop through the mappings found in the last iteration
-		for (auto& mapping : building_tree_[level % 2])
-		{
-			// find boundaries of added line:
-			find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to, r, c);
-
-			// map orders_[level] to j-th line of N if possible
-			for (size_t big_line = from; big_line < to; ++big_line)
-			{
-				// if currenly added line can be mapped to big_line in mapping map
-				if (map((map_approach_ == NORECURSION) ? false : true, order_[level], level, big_line, mapping, big_matrix))
-				{
-					// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
-					if (level == steps_ - 1)
-						return false;
-
-					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line
-					std::vector<size_t> extended = extend(level, big_line, mapping);
-
-					building_tree_[(level + 1) % 2].insert(extended);
-				}
-			}
-		}
-	}
-
-	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
-	return true;
-}
-
-template<>
-inline bool general_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >::avoid(const matrix<size_t>& big_matrix, size_t r, size_t c)
-{
-	// I start with empty mapping - no lines are mapped
-	building_tree_[0].clear();
-	building_tree_[0].insert(std::vector<size_t>(0));
-
-	size_t from, to,
-		big_matrix_rows = big_matrix.getRow(),
-		big_matrix_cols = big_matrix.getCol();
-
-	// main loop through added lines (loops 2*k times)
-	for (size_t level = 0; level < steps_; ++level)
-	{
-		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
-		if (building_tree_[level % 2].size() == 0)
-			return true;
-
-		building_tree_[(level + 1) % 2].clear();
-
-		// loop through the mappings found in the last iteration
-		for (auto& mapping : building_tree_[level % 2])
-		{
-			// find boundaries of added line:
-			find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to, r, c);
-
-			// map orders_[level] to j-th line of N if possible
-			for (size_t big_line = from; big_line < to; ++big_line)
-			{
-				// if currenly added line can be mapped to big_line in mapping map
-				if (map((map_approach_ == NORECURSION) ? false : true, order_[level], level, big_line, mapping, big_matrix))
-				{
-					// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
-					if (level == steps_ - 1)
-						return false;
-
-					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line
-					std::vector<size_t> extended = extend(level, big_line, mapping);
-
-					building_tree_[(level + 1) % 2].insert(extended);
+					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line, and add it to the building_tree_
+					building_tree_[(level + 1) % 2].insert_without_duplicates(extend(level, big_line, mapping));
 				}
 			}
 		}
@@ -258,7 +131,7 @@ inline bool general_pattern<std::unordered_set<std::vector<size_t>, size_t_vecto
 }
 
 template<typename T>
-inline void general_pattern<T>::find_DESC_order()
+inline void General_pattern<T>::find_DESC_order()
 {
 	// vector of pairs (number of one-entries, line_ID) of nonempty lines
 	std::vector<std::pair<size_t, size_t> > pairs(row_ + col_ - bit_count(empty_lines_));
@@ -288,7 +161,7 @@ inline void general_pattern<T>::find_DESC_order()
 }
 
 template<typename T>
-inline void general_pattern<T>::find_SUM_order()
+inline void General_pattern<T>::find_SUM_order()
 {
 	// queue for subsets of lines
 	std::queue<size_t> q;
@@ -343,7 +216,7 @@ inline void general_pattern<T>::find_SUM_order()
 }
 
 template<typename T>
-inline void general_pattern<T>::find_MAX_order()
+inline void General_pattern<T>::find_MAX_order()
 {
 	// queue for subsets of lines
 	std::queue<size_t> q;
@@ -401,7 +274,7 @@ inline void general_pattern<T>::find_MAX_order()
 }
 
 template<typename T>
-inline size_t general_pattern<T>::count_what_to_remember(size_t current)
+inline size_t General_pattern<T>::count_what_to_remember(size_t current)
 {
 	bool needed;
 	size_t count = bit_count(current);
@@ -457,7 +330,7 @@ inline size_t general_pattern<T>::count_what_to_remember(size_t current)
 }
 
 template<typename T>
-inline void general_pattern<T>::find_what_to_remember()
+inline void General_pattern<T>::find_what_to_remember()
 {
 	bool needed;
 	// at the beginning I don't know any line
@@ -532,7 +405,7 @@ inline void general_pattern<T>::find_what_to_remember()
 }
 
 template<typename T>
-inline void general_pattern<T>::find_extending_order()
+inline void General_pattern<T>::find_extending_order()
 {
 	for (size_t i = 0; i < steps_; ++i)
 	{
@@ -563,7 +436,7 @@ inline void general_pattern<T>::find_extending_order()
 }
 
 template<typename T>
-inline void general_pattern<T>::find_parralel_bound_indices()
+inline void General_pattern<T>::find_parralel_bound_indices()
 {
 	for (size_t i = 0; i < steps_; ++i)
 	{
@@ -581,13 +454,13 @@ inline void general_pattern<T>::find_parralel_bound_indices()
 }
 
 template<typename T>
-inline void general_pattern<T>::find_bound_indices(size_t line, size_t level)
+inline void General_pattern<T>::find_bound_indices(size_t line, size_t level)
 {
 	size_t	index = (size_t)-1,	// index into map m
-		bot = (size_t)-1,	// index to the lower bound for currently added line in map vector
-		top = (size_t)-1,	// index to the upper bound for currently added line in map vector
-		i_top = 0,			// index of the line of the pattern which is a upper bound of currently added line 
-		i_bot = (size_t)-1;	// index of the line of the pattern which is a lower bound of currently added line
+			bot = (size_t)-1,	// index to the lower bound for currently added line in map vector
+			top = (size_t)-1,	// index to the upper bound for currently added line in map vector
+			i_top = 0,			// index of the line of the pattern which is a upper bound of currently added line 
+			i_bot = (size_t)-1;	// index of the line of the pattern which is a lower bound of currently added line
 
 	// go through all lines and find the lower and upper bound for "line", which I remember in i-th step of the algorithm
 	for (i_top = 0; i_top < row_ + col_; ++i_top)
@@ -631,13 +504,13 @@ inline void general_pattern<T>::find_bound_indices(size_t line, size_t level)
 }
 
 template<typename T>
-inline void general_pattern<T>::find_parallel_bounds(size_t line, size_t level, const std::vector<size_t>& mapping, size_t rows, size_t columns,
+inline void General_pattern<T>::find_parallel_bounds(size_t line, size_t level, const std::vector<size_t>& mapping, size_t rows, size_t columns,
 	size_t& from, size_t& to, size_t r, size_t c)
 {
-	size_t	bot = parallel_bound_indices_[level][line].first.first,		// index to the lower bound for currently added line in map vector
-		top = parallel_bound_indices_[level][line].first.second,	// index to the upper bound for currently added line in map vector
-		i_bot = parallel_bound_indices_[level][line].second.first,	// index of the line of the pattern which is a upper bound of currently added line 
-		i_top = parallel_bound_indices_[level][line].second.second;	// index of the line of the pattern which is a lower bound of currently added line
+	const size_t	bot = parallel_bound_indices_[level][line].first.first,		// index to the lower bound for currently added line in map vector
+					top = parallel_bound_indices_[level][line].first.second,	// index to the upper bound for currently added line in map vector
+					i_bot = parallel_bound_indices_[level][line].second.first,	// index of the line of the pattern which is a upper bound of currently added line 
+					i_top = parallel_bound_indices_[level][line].second.second;	// index of the line of the pattern which is a lower bound of currently added line
 
 	// i have parallel boundaries of (size_t)-1 if there are not any, return correct bounds in both cases:
 	// if there is no lower bound
@@ -712,19 +585,19 @@ inline void general_pattern<T>::find_parallel_bounds(size_t line, size_t level, 
 }
 
 template<typename T>
-bool general_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping, const matrix<size_t>& big_matrix)
+bool General_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping, const Matrix<size_t>& big_matrix)
 {
 	size_t from, to, last_one = 0;
 	bool	know_bounds = false,
-		atleast1 = false,
-		line_is_row = line < row_,
-		line_is_col = line >= row_;
+			atleast1 = false,
+			line_is_row = line < row_,
+			line_is_col = line >= row_;
 
 	// go through all elements of "line"
 	for (size_t l = 0; l < (line_is_row ? col_ : row_); ++l, ++last_one)
 	{
 		// real index of l as a line of the big_matrix
-		size_t l_index = (line_is_row ? l + row_ : l);
+		const size_t l_index = (line_is_row ? l + row_ : l);
 
 		// if there is a one-entry at the l-th position of added line in the pattern
 		if ((lines_[line] >> l) & 1)
@@ -732,7 +605,7 @@ bool general_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t b
 			// and I remember the l-th line
 			if ((what_to_remember_[level] >> l_index) & 1)
 			{
-				size_t index = map_index_[level][l_index];
+				const size_t index = map_index_[level][l_index];
 				know_bounds = false;
 
 				// and there is no one-entry at their intersection
@@ -809,9 +682,9 @@ bool general_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t b
 }
 
 template<typename T>
-inline std::vector<size_t> general_pattern<T>::extend(size_t level, size_t value, const std::vector<size_t>& mapping)
+inline std::vector<size_t> General_pattern<T>::extend(size_t level, size_t value, const std::vector<size_t>& mapping)
 {
-	size_t max = extending_order_[level].size();
+	const size_t max = extending_order_[level].size();
 
 	// extended mapping - elements are those indices of the big matrix I need to remember in the (i+1)-th step
 	std::vector<size_t> extended(max);

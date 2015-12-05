@@ -1,13 +1,14 @@
-#ifndef AvoidanceTest_cpp_
-#define AvoidanceTest_cpp_
+#ifndef WalkingPatternFunctions_cpp_
+#define WalkingPatternFunctions_cpp_
 
-#include "AvoidanceTests.hpp"
+#include "PatternHeaders.hpp"
+
 #include <queue>
 #include <algorithm>
 #include <assert.h>
 
 /* Walking pattern */
-walking_pattern::walking_pattern(const matrix<size_t>& pattern, size_t n)
+Walking_pattern::Walking_pattern(const Matrix<size_t>& pattern, size_t n)
 	: max_walk_part_(n, n, std::pair<size_t, size_t>(0, 0))
 {
 	// coords of the last visited 1 entry, index for the columns
@@ -70,7 +71,7 @@ walking_pattern::walking_pattern(const matrix<size_t>& pattern, size_t n)
 	value_.push_back(pattern.at(last_i, last_j));
 }
 
-bool walking_pattern::avoid(const matrix<size_t>& big_matrix, size_t r, size_t c)
+bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, size_t r, size_t c)
 {
 	typedef std::pair<size_t, size_t> pair;
 	std::queue<pair> q;						// queue for elements of the matrix that are supposed to be updated
