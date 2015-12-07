@@ -17,6 +17,9 @@ inline void MCMCgenerator(size_t iter, Pattern& pattern, Matrix<size_t>& big_mat
 	// coordinates of changed element
 	size_t r, c;
 
+	// this is gonna be here for now and won't be used
+	std::vector<std::pair<size_t, size_t> > sizes;
+
 	// go through iterations
 	for (size_t i = 0; i < iter; ++i)
 	{
@@ -26,12 +29,12 @@ inline void MCMCgenerator(size_t iter, Pattern& pattern, Matrix<size_t>& big_mat
 		big_matrix.at(r, c) = big_matrix.at(r, c) ? 0 : 1;
 
 		// test if the changed matrix still avoids the pattern
-		if (!pattern.avoid(big_matrix, r, c))
+		if (!pattern.avoid(big_matrix, sizes, r, c))
 		{
 			// if not return to the previous matrix
 			big_matrix.at(r, c) = big_matrix.at(r, c) ? 0 : 1;
 			// and recalculate used structures if needed
-			bool ok = pattern.revert(big_matrix, r, c);
+			bool ok = pattern.revert(big_matrix, sizes, r, c);
 
 			if (!ok) {
 				assert(!"Matrix after reverting contains the pattern!");

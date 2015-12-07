@@ -85,8 +85,12 @@ General_pattern<T>::General_pattern(const Matrix<size_t>& pattern, Order order, 
 }
 
 template<typename T>
-inline bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, size_t r, size_t c)
+inline bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vector<std::pair<size_t, size_t> >& /* sizes */, size_t r, size_t c)
 {
+	// There was a change from one-entry to zero-entry
+	if (r != (size_t)-1 && c != (size_t)-1 && big_matrix.at(r, c) == 0)
+		return true;
+
 	// I start with empty mapping - no lines are mapped
 	building_tree_[0].init();
 
@@ -587,7 +591,7 @@ inline void General_pattern<T>::find_parallel_bounds(size_t line, size_t level, 
 template<typename T>
 bool General_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping, const Matrix<size_t>& big_matrix)
 {
-	size_t from, to, last_one = 0;
+	size_t from, to, last_one = 0, last_from;
 	bool	know_bounds = false,
 			atleast1 = false,
 			line_is_row = line < row_,
@@ -621,6 +625,9 @@ bool General_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t b
 			else if (know_bounds)
 			{
 				find_parallel_bounds(l_index, level, mapping, big_matrix.getRow(), big_matrix.getCol(), from, to);
+				// skipping the lines with zero-entry intersection
+				last_one += from - last_from - 1;
+				last_from = from;
 				last_one = (last_one < from) ? from : last_one;
 				atleast1 = false;
 
@@ -650,6 +657,7 @@ bool General_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t b
 			{
 				// find the bounds
 				find_parallel_bounds(l_index, level, mapping, big_matrix.getRow(), big_matrix.getCol(), from, to);
+				last_from = from;
 				know_bounds = true;
 				atleast1 = false;
 

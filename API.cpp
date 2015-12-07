@@ -177,6 +177,8 @@ int main()
 	config >> param;								// #ctime#
 	bool console_time = getBool(param);
 
+	std::vector<std::pair<size_t, size_t> > sizes;
+
 	if (type == WALKING) {
 		Walking_pattern wp(pattern, N);
 		t = clock();
@@ -188,7 +190,7 @@ int main()
 			if (initialized) {
 				General_pattern<std::vector<std::vector<size_t> > > gpSUM(pattern, SUM, map);
 				t = clock();
-				if (!gpSUM.avoid(result)) {
+				if (!gpSUM.avoid(result, sizes)) {
 					assert(!"Initial big matrix does not avoid the pattern");
 					throw my_exception("Initial big matrix does not avoid the pattern");
 				}
@@ -197,13 +199,13 @@ int main()
 
 				General_pattern<std::vector<std::vector<size_t> > > gpMAX(pattern, MAX, map);
 				t = clock();
-				gpMAX.avoid(result);
+				gpMAX.avoid(result, sizes);
 				t = clock() - t;
 				auto max_time = t;
 
 				General_pattern<std::vector<std::vector<size_t> > > gpDESC(pattern, DESC, map);
 				t = clock();
-				gpDESC.avoid(result);
+				gpDESC.avoid(result, sizes);
 				t = clock() - t;
 				auto desc_time = t;
 
@@ -219,19 +221,19 @@ int main()
 
 				General_pattern<std::vector<std::vector<size_t> > > gpSUM(pattern, SUM, map);
 				t = clock();
-				gpSUM.avoid(rand);
+				gpSUM.avoid(rand, sizes);
 				t = clock() - t;
 				auto sum_time = t;
 
 				General_pattern<std::vector<std::vector<size_t> > > gpMAX(pattern, MAX, map);
 				t = clock();
-				gpMAX.avoid(rand);
+				gpMAX.avoid(rand, sizes);
 				t = clock() - t;
 				auto max_time = t;
 
 				General_pattern<std::vector<std::vector<size_t> > > gpDESC(pattern, DESC, map);
 				t = clock();
-				gpDESC.avoid(rand);
+				gpDESC.avoid(rand, sizes);
 				t = clock() - t;
 				auto desc_time = t;
 
@@ -254,7 +256,7 @@ int main()
 			if (initialized) {
 				General_pattern<std::set<std::vector<size_t> > > gpSUM(pattern, SUM, map);
 				t = clock();
-				if (!gpSUM.avoid(result)) {
+				if (!gpSUM.avoid(result, sizes)) {
 					assert(!"Initial big matrix does not avoid the pattern");
 					throw my_exception("Initial big matrix does not avoid the pattern");
 				}
@@ -263,13 +265,13 @@ int main()
 
 				General_pattern<std::set<std::vector<size_t> > > gpMAX(pattern, MAX, map);
 				t = clock();
-				gpMAX.avoid(result);
+				gpMAX.avoid(result, sizes);
 				t = clock() - t;
 				auto max_time = t;
 
 				General_pattern<std::set<std::vector<size_t> > > gpDESC(pattern, DESC, map);
 				t = clock();
-				gpDESC.avoid(result);
+				gpDESC.avoid(result, sizes);
 				t = clock() - t;
 				auto desc_time = t;
 
@@ -285,19 +287,19 @@ int main()
 
 				General_pattern<std::set<std::vector<size_t> > > gpSUM(pattern, SUM, map);
 				t = clock();
-				gpSUM.avoid(rand);
+				gpSUM.avoid(rand, sizes);
 				t = clock() - t;
 				auto sum_time = t;
 
 				General_pattern<std::set<std::vector<size_t> > > gpMAX(pattern, MAX, map);
 				t = clock();
-				gpMAX.avoid(rand);
+				gpMAX.avoid(rand, sizes);
 				t = clock() - t;
 				auto max_time = t;
 
 				General_pattern<std::set<std::vector<size_t> > > gpDESC(pattern, DESC, map);
 				t = clock();
-				gpDESC.avoid(rand);
+				gpDESC.avoid(rand, sizes);
 				t = clock() - t;
 				auto desc_time = t;
 
@@ -316,70 +318,70 @@ int main()
 		t = clock() - t;
 	}
 	else if (type == GENERAL && container == HASH) {
-	if (order == AUTO) {
-	if (initialized) {
-	General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpSUM(pattern, SUM, map);
-	t = clock();
-	if (!gpSUM.avoid(result)) {
-	assert(!"Initial big matrix does not avoid the pattern");
-	throw my_exception("Initial big matrix does not avoid the pattern");
-	}
-	t = clock() - t;
-	auto sum_time = t;
+		if (order == AUTO) {
+			if (initialized) {
+				General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpSUM(pattern, SUM, map);
+				t = clock();
+				if (!gpSUM.avoid(result, sizes)) {
+					assert(!"Initial big matrix does not avoid the pattern");
+					throw my_exception("Initial big matrix does not avoid the pattern");
+				}
+				t = clock() - t;
+				auto sum_time = t;
 
-	General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpMAX(pattern, MAX, map);
-	t = clock();
-	gpMAX.avoid(result);
-	t = clock() - t;
-	auto max_time = t;
+				General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpMAX(pattern, MAX, map);
+				t = clock();
+				gpMAX.avoid(result, sizes);
+				t = clock() - t;
+				auto max_time = t;
 
-	General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpDESC(pattern, DESC, map);
-	t = clock();
-	gpDESC.avoid(result);
-	t = clock() - t;
-	auto desc_time = t;
+				General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpDESC(pattern, DESC, map);
+				t = clock();
+				gpDESC.avoid(result, sizes);
+				t = clock() - t;
+				auto desc_time = t;
 
-	if (desc_time <= max_time && desc_time <= sum_time)
-	order = DESC;
-	else if (max_time <= sum_time)
-	order = MAX;
-	else
-	order = SUM;
-	}
-	else {
-	Matrix<size_t> rand = Matrix<size_t>::random_bin_matrix(N, N);
+				if (desc_time <= max_time && desc_time <= sum_time)
+					order = DESC;
+				else if (max_time <= sum_time)
+					order = MAX;
+				else
+					order = SUM;
+			}
+			else {
+				Matrix<size_t> rand = Matrix<size_t>::random_bin_matrix(N, N);
 
-	General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpSUM(pattern, SUM, map);
-	t = clock();
-	gpSUM.avoid(rand);
-	t = clock() - t;
-	auto sum_time = t;
+				General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpSUM(pattern, SUM, map);
+				t = clock();
+				gpSUM.avoid(rand, sizes);
+				t = clock() - t;
+				auto sum_time = t;
 
-	General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpMAX(pattern, MAX, map);
-	t = clock();
-	gpMAX.avoid(rand);
-	t = clock() - t;
-	auto max_time = t;
+				General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpMAX(pattern, MAX, map);
+				t = clock();
+				gpMAX.avoid(rand, sizes);
+				t = clock() - t;
+				auto max_time = t;
 
-	General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpDESC(pattern, DESC, map);
-	t = clock();
-	gpDESC.avoid(rand);
-	t = clock() - t;
-	auto desc_time = t;
+				General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpDESC(pattern, DESC, map);
+				t = clock();
+				gpDESC.avoid(rand, sizes);
+				t = clock() - t;
+				auto desc_time = t;
 
-	if (desc_time <= max_time && desc_time <= sum_time)
-	order = DESC;
-	else if (max_time <= sum_time)
-	order = MAX;
-	else
-	order = SUM;
-	}
-	}
+				if (desc_time <= max_time && desc_time <= sum_time)
+					order = DESC;
+				else if (max_time <= sum_time)
+					order = MAX;
+				else
+					order = SUM;
+			}
+		}
 
-	General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gp(pattern, order, map, std::move(custom_order));
-	t = clock();
-	MCMCgenerator(iter, gp, result);
-	t = clock() - t;
+		General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gp(pattern, order, map, std::move(custom_order));
+		t = clock();
+		MCMCgenerator(iter, gp, result);
+		t = clock() - t;
 	}
 	else {
 		assert(!"Something bad have happened.");

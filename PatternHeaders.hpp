@@ -9,8 +9,8 @@
 class Pattern
 {
 public:
-	virtual bool avoid(const Matrix<size_t>& big_matrix, size_t r, size_t c) = 0;
-	virtual bool revert(const Matrix<size_t>& big_matrix, size_t r, size_t c) = 0;
+	virtual bool avoid(const Matrix<size_t>& big_matrix, std::vector<std::pair<size_t, size_t> >& sizes, size_t r, size_t c) = 0;
+	virtual bool revert(const Matrix<size_t>& big_matrix, std::vector<std::pair<size_t, size_t> >& sizes, size_t r, size_t c) = 0;
 };
 
 template<typename T>
@@ -36,8 +36,12 @@ public:
 	/// the same lines of big matrix are shrinked into one mapping.
 	/// </summary>
 	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
-	bool avoid(const Matrix<size_t>& big_matrix, size_t r = (size_t)-1, size_t c = (size_t)-1);
-	bool revert(const Matrix<size_t>& /* big_matrix */, size_t /* r */ = (size_t)-1, size_t /* c */ = (size_t)-1) { return true; }
+	/// <param name="r">Row of the big matrix that has been changed.</param>
+	/// <param name="c">Column of the big matrix that has been changed.</param>
+	/// <param name="sizes">Vector of numbers of found mappings on each level.</param>
+	bool avoid(const Matrix<size_t>& big_matrix, std::vector<std::pair<size_t, size_t> >& sizes, size_t r = (size_t)-1, size_t c = (size_t)-1);
+	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<std::pair<size_t, size_t> >& /* sizes */, size_t /* r */, size_t /* c */)
+	{ return true; }
 private:
 	size_t	row_,										// number of rows of the pattern
 			col_;										// number of columns of the pattern
@@ -177,13 +181,14 @@ public:
 	/// Takes n^2 time. It looks at position [r,c], recalculates c_v and c_h (in constant time) and if it changes, recalculates those values
 	/// that might be inflicted by the change.
 	/// </summary>
+	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
 	/// <param name="r">Row of the big matrix that has been changed.</param>
 	/// <param name="c">Column of the big matrix that has been changed.</param>
-	/// <param name="big_matrix">Matrix for which is tested whether it avoids the pattern.</param>
-	bool avoid(const Matrix<size_t>& big_matrix, size_t r, size_t c);
+	/// <param name="sizes">Vector of numbers of found mappings on each level.</param>
+	bool avoid(const Matrix<size_t>& big_matrix, std::vector<std::pair<size_t, size_t> >& sizes, size_t r = (size_t)-1, size_t c = (size_t)-1);
 	
 	// reverts changes in max_walk_part matrix after an unsuccessful change of the big matrix
-	bool revert(const Matrix<size_t>& big_matrix, size_t r, size_t c) { return avoid(big_matrix, r, c); }
+	bool revert(const Matrix<size_t>& big_matrix, std::vector<std::pair<size_t, size_t> >& sizes, size_t r, size_t c) { return avoid(big_matrix, sizes, r, c); }
 private:
 	Matrix<std::pair<size_t, size_t> > max_walk_part_;	// table of calculated [c_v,c_h] for all elements
 	
