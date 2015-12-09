@@ -71,7 +71,7 @@ Walking_pattern::Walking_pattern(const Matrix<size_t>& pattern, size_t n)
 	value_.push_back(pattern.at(last_i, last_j));
 }
 
-bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<std::pair<size_t, size_t> >& /* sizes */, size_t r, size_t c)
+bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<std::pair<std::pair<size_t, size_t>, size_t> >& /* sizes */, size_t r, size_t c)
 {
 	typedef std::pair<size_t, size_t> pair;
 	std::queue<pair> q;						// queue for elements of the matrix that are supposed to be updated

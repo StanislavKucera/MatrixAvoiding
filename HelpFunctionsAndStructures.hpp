@@ -90,33 +90,16 @@ inline void Container<std::unordered_set<std::vector<size_t>, size_t_vector_hash
 template<>
 inline void Container<std::vector<std::vector<size_t> > >::insert_without_duplicates(std::vector<size_t>&& mapping)
 {
-	bool mapped = false;
-
 	// go through all already found mappings in (i+1)-th step and check if extended is not already in there
 	for (auto& mapping2 : container_)
 	{
-		mapped = true;
-
-		// go through m2 mapping
-		for (size_t l2 = 0; l2 < container_[0].size(); ++l2)
-		{
-			// and check whether the index in extended and m2 are the same
-			if (mapping[l2] != mapping2[l2])
-			{
-				// if not, extended is a different mapping then m2
-				mapped = false;
-				break;
-			}
-		}
-
 		// extended has already been added (atleast its different class) - I won't add it for the second time
-		if (mapped)
-			break;
+		if (mapping == mapping2)
+			return;
 	}
 
 	// if extended is not yet an element, add it to the tree
-	if (!mapped)
-		container_.push_back(mapping);
+	container_.push_back(mapping);
 }
 
 template<>

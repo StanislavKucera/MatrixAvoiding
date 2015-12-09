@@ -177,7 +177,7 @@ int main()
 	config >> param;								// #ctime#
 	bool console_time = getBool(param);
 
-	std::vector<std::pair<size_t, size_t> > sizes;
+	std::vector<std::pair<std::pair<size_t, size_t>, size_t> > sizes;
 
 	if (type == WALKING) {
 		Walking_pattern wp(pattern, N);
@@ -401,7 +401,7 @@ int main()
 	if (console_pattern)
 		std::cout << "\nAvoiding pattern:\n\n" << pattern.Print();
 	if (console_time)
-		std::cout << "\nRunning time: " << (float)t / CLOCKS_PER_SEC << " sec.\n";
+		std::cout << "\nRunning time: " << (double)t / CLOCKS_PER_SEC << " sec.\n";
 
 	getchar();
 	return 0;
