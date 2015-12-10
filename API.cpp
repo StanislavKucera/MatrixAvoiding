@@ -112,6 +112,7 @@ int main()
 	clock_t t;
 	std::string junk, param;
 	bool initialized = false;
+	Performance_Statistics perf_stats;
 
 	std::ifstream config("config.txt");
 
@@ -177,12 +178,22 @@ int main()
 	config >> param;								// #ctime#
 	bool console_time = getBool(param);
 
-	std::vector<std::pair<std::pair<size_t, size_t>, size_t> > sizes;
+	for (size_t i = 0; i < 4; ++i) config >> junk;	// Output performance statistics file:
+	config >> param;								// #output#
+	std::string perf_file;
+	if (param != "no" && param != "n")				// no output file
+		perf_file = param;
+
+	for (size_t i = 0; i < 5; ++i) config >> junk;	// Write performance statistics into console:
+	config >> param;								// #cperf#
+	bool performance = getBool(param);
+
+	std::vector<Counter> sizes;
 
 	if (type == WALKING) {
 		Walking_pattern wp(pattern, N);
 		t = clock();
-		MCMCgenerator(iter, wp, result);
+		MCMCgenerator(iter, wp, result, perf_stats);
 		t = clock() - t;
 	}
 	else if (type == GENERAL && container == VECTOR) {
@@ -248,7 +259,7 @@ int main()
 
 		General_pattern<std::vector<std::vector<size_t> > > gp(pattern, order, map, std::move(custom_order));
 		t = clock();
-		MCMCgenerator(iter, gp, result);
+		MCMCgenerator(iter, gp, result, perf_stats);
 		t = clock() - t;
 	}
 	else if (type == GENERAL && container == SET) {
@@ -314,7 +325,7 @@ int main()
 
 		General_pattern<std::set<std::vector<size_t> > > gp(pattern, order, map, std::move(custom_order));
 		t = clock();
-		MCMCgenerator(iter, gp, result);
+		MCMCgenerator(iter, gp, result, perf_stats);
 		t = clock() - t;
 	}
 	else if (type == GENERAL && container == HASH) {
@@ -380,7 +391,7 @@ int main()
 
 		General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gp(pattern, order, map, std::move(custom_order));
 		t = clock();
-		MCMCgenerator(iter, gp, result);
+		MCMCgenerator(iter, gp, result, perf_stats);
 		t = clock() - t;
 	}
 	else {
@@ -396,12 +407,25 @@ int main()
 		oFile.close();
 	}
 
+	// if performance stats file is specified
+	if (perf_file != "") {
+		std::ofstream opFile(perf_file);
+		opFile << "Total running time: " << (double)t / CLOCKS_PER_SEC << " sec.\n\n";
+		perf_stats.printData(opFile);
+		opFile.close();
+	}
+
 	if (console_matrix)
 		std::cout << result.Print();
 	if (console_pattern)
 		std::cout << "\nAvoiding pattern:\n\n" << pattern.Print();
 	if (console_time)
 		std::cout << "\nRunning time: " << (double)t / CLOCKS_PER_SEC << " sec.\n";
+	if (performance)
+	{
+		std::cout << "\nPerformance statistics:\n";
+		perf_stats.printData(std::cout);
+	}
 
 	getchar();
 	return 0;

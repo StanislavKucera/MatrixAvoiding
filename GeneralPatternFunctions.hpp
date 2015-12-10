@@ -85,7 +85,7 @@ General_pattern<T>::General_pattern(const Matrix<size_t>& pattern, Order order, 
 }
 
 template<typename T>
-inline bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vector<std::pair<std::pair<size_t, size_t>, size_t> >& sizes, size_t r, size_t c)
+inline bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r, size_t c)
 {
 	// There was a change from one-entry to zero-entry
 	if (r != (size_t)-1 && c != (size_t)-1 && big_matrix.at(r, c) == 0)
@@ -94,15 +94,16 @@ inline bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vec
 	// I start with empty mapping - no lines are mapped
 	building_tree_[0].init();
 
-	size_t from, to, maps, tries;
+	Counter counter;
+	size_t from, to;
 	const size_t big_matrix_rows = big_matrix.getRow(),
 				 big_matrix_cols = big_matrix.getCol();
 
 	// main loop through added lines (loops 2*k times)
 	for (size_t level = 0; level < steps_; ++level)
 	{
-		maps = 0;
-		tries = 0;
+		counter.maps = 0;
+		counter.tries = 0;
 
 		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
 		if (building_tree_[level % 2].size() == 0)
@@ -119,16 +120,17 @@ inline bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vec
 			// map orders_[level] to j-th line of N if possible
 			for (size_t big_line = from; big_line < to; ++big_line)
 			{
-				++tries;
+				++counter.tries;
 
 				// if currenly added line can be mapped to big_line in mapping map
 				if (map(map_approach_ != NORECURSION, order_[level], level, big_line, mapping, big_matrix))
 				{
-					++maps;
+					++counter.maps;
 
 					// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
 					if (level == steps_ - 1) {
-						sizes.push_back(std::make_pair(std::make_pair(maps, tries), building_tree_[level % 2].size()));
+						counter.uniques = building_tree_[(level + 1) % 2].size();
+						sizes.push_back(counter);
 						return false;
 					}
 
@@ -138,7 +140,8 @@ inline bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vec
 			}
 		}
 
-		sizes.push_back(std::make_pair(std::make_pair(maps, tries), building_tree_[level % 2].size()));
+		counter.uniques = building_tree_[(level + 1) % 2].size();
+		sizes.push_back(counter);
 	}
 
 	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern

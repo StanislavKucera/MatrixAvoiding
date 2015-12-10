@@ -116,6 +116,15 @@ inline void Container<std::unordered_set<std::vector<size_t>, size_t_vector_hash
 	container_.insert(mapping);
 }
 
+struct Counter
+{
+	Counter() : tries(0), maps(0), uniques(0) {}
+
+	size_t tries,	// number of attempts to map a line
+		maps,		// number of successful attempts to map a line
+		uniques;	// number of unique mappings (two mapping are the same if the important mapped lines are the same)
+};
+
 /// <summary>
 /// Computes the number of one-entries of a binary number.
 /// Takes constant time and space.

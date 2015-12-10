@@ -1,0 +1,25 @@
+Total running time: 33.984 sec.
+
+Successful calls of avoid (matrix avoids the pattern):
+Count: 6970 - 34.85%
+Average time per call: 0.00106987 sec
+Average number of lines mapped: 2
+Average number of mapping attempts - successful mappings - unique mappings for each mapped line:
+1: 19 - 18.9895 - 18.9895
+2: 258.945 - 186.15 - 186.15
+3: 3880.94 - 117.444 - 45.6834
+4: 641.96 - 0 - 0
+5: 0 - 0 - 0
+6: 0 - 0 - 0
+
+Unsuccessful calls of avoid (matrix doesn't avoid the pattern):
+Count: 13030 - 65.15%
+Average time per call: 0.00203553 sec
+Average number of lines mapped: 6
+Average number of mapping attempts - successful mappings - unique mappings for each mapped line:
+1: 38 - 37.9791 - 37.9791
+2: 505.634 - 365.455 - 365.455
+3: 7396.82 - 227.898 - 89.8075
+4: 1214.2 - 1.86347 - 1.86347
+5: 52.2486 - 3.63477 - 3.63477
+6: 10.1774 - 1 - 0
