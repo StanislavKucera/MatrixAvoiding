@@ -112,7 +112,6 @@ int main()
 	clock_t t;
 	std::string junk, param;
 	bool initialized = false;
-	Performance_Statistics perf_stats;
 
 	std::ifstream config("config.txt");
 
@@ -188,6 +187,13 @@ int main()
 	config >> param;								// #cperf#
 	bool performance = getBool(param);
 
+	for (size_t i = 0; i < 5; ++i) config >> junk;	// Output performance statistics csv file:
+	config >> param;								// #output#
+	std::string csv_file;
+	if (param != "no" && param != "n")				// no output file
+		csv_file = param;
+
+	Performance_Statistics perf_stats(4, iter);
 	std::vector<Counter> sizes;
 
 	if (type == WALKING) {
@@ -265,14 +271,14 @@ int main()
 	else if (type == GENERAL && container == SET) {
 		if (order == AUTO) {
 			if (initialized) {
-				General_pattern<std::set<std::vector<size_t> > > gpSUM(pattern, SUM, map);
+				General_pattern<std::set<std::vector<size_t> > > gpDESC(pattern, DESC, map);
 				t = clock();
-				if (!gpSUM.avoid(result, sizes)) {
+				if (!gpDESC.avoid(result, sizes)) {
 					assert(!"Initial big matrix does not avoid the pattern");
 					throw my_exception("Initial big matrix does not avoid the pattern");
 				}
 				t = clock() - t;
-				auto sum_time = t;
+				auto desc_time = t;
 
 				General_pattern<std::set<std::vector<size_t> > > gpMAX(pattern, MAX, map);
 				t = clock();
@@ -280,11 +286,11 @@ int main()
 				t = clock() - t;
 				auto max_time = t;
 
-				General_pattern<std::set<std::vector<size_t> > > gpDESC(pattern, DESC, map);
+				General_pattern<std::set<std::vector<size_t> > > gpSUM(pattern, SUM, map);
 				t = clock();
-				gpDESC.avoid(result, sizes);
+				gpSUM.avoid(result, sizes);
 				t = clock() - t;
-				auto desc_time = t;
+				auto sum_time = t;
 
 				if (desc_time <= max_time && desc_time <= sum_time)
 					order = DESC;
@@ -413,6 +419,14 @@ int main()
 		opFile << "Total running time: " << (double)t / CLOCKS_PER_SEC << " sec.\n\n";
 		perf_stats.printData(opFile);
 		opFile.close();
+	}
+
+	// if performance stats csv file is specified
+	if (csv_file != "") {
+		std::ofstream opcFile(csv_file);
+		opcFile << "Total running time: " << (double)t / CLOCKS_PER_SEC << " sec.\n\n";
+		perf_stats.printCsv(opcFile);
+		opcFile.close();
 	}
 
 	if (console_matrix)

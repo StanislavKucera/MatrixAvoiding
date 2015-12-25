@@ -605,15 +605,17 @@ inline void General_pattern<T>::find_parallel_bounds(size_t line, size_t level, 
 template<typename T>
 bool General_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping, const Matrix<size_t>& big_matrix)
 {
-	size_t from, to, last_one = 0, last_from;
+	size_t from, to, last_one = 0;
 	bool	know_bounds = false,
 			atleast1 = false,
 			line_is_row = line < row_,
 			line_is_col = line >= row_;
 
 	// go through all elements of "line"
-	for (size_t l = 0; l < (line_is_row ? col_ : row_); ++l, ++last_one)
+	for (size_t l = 0; l < (line_is_row ? col_ : row_); ++l)
 	{
+		++last_one;
+
 		// real index of l as a line of the big_matrix
 		const size_t l_index = (line_is_row ? l + row_ : l);
 
@@ -639,9 +641,6 @@ bool General_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t b
 			else if (know_bounds)
 			{
 				find_parallel_bounds(l_index, level, mapping, big_matrix.getRow(), big_matrix.getCol(), from, to);
-				// skipping the lines with zero-entry intersection
-				last_one += from - last_from - 1;
-				last_from = from;
 				last_one = (last_one < from) ? from : last_one;
 				atleast1 = false;
 
@@ -671,7 +670,6 @@ bool General_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t b
 			{
 				// find the bounds
 				find_parallel_bounds(l_index, level, mapping, big_matrix.getRow(), big_matrix.getCol(), from, to);
-				last_from = from;
 				know_bounds = true;
 				atleast1 = false;
 
