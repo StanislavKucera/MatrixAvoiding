@@ -15,7 +15,7 @@ inline void MCMCgenerator(size_t iter, Pattern& pattern, Matrix<size_t>& big_mat
 {
 	// random generator from uniform distribution [0, n-1]
 	std::random_device rd;
-	std::mt19937 rng(rd());
+	std::mt19937 rng(1993);
 	std::uniform_int_distribution<size_t> uni(0, big_matrix.getRow() - 1);
 
 	// coordinates of changed element
@@ -25,6 +25,7 @@ inline void MCMCgenerator(size_t iter, Pattern& pattern, Matrix<size_t>& big_mat
 	std::vector<Counter> sizes;
 	clock_t t;
 	bool success;
+	size_t last_perc = 0;
 
 	// go through iterations
 	for (size_t i = 0; i < iter; ++i)
@@ -49,7 +50,8 @@ inline void MCMCgenerator(size_t iter, Pattern& pattern, Matrix<size_t>& big_mat
 			// and recalculate used structures if needed
 			bool ok = pattern.revert(big_matrix, sizes, r, c);
 
-			if (!ok) {
+			if (!ok)
+			{
 				assert(!"Matrix after reverting contains the pattern!");
 				throw my_exception("Matrix after reverting contains the pattern!");
 			}
@@ -58,6 +60,14 @@ inline void MCMCgenerator(size_t iter, Pattern& pattern, Matrix<size_t>& big_mat
 		t = clock() - t;
 		
 		perf_stats.addData(i, success, t, sizes);
+
+		const size_t current_it = (i + 1) * 10 / iter;
+		
+		if (current_it > last_perc)
+		{
+			last_perc = current_it;
+			std::cout << last_perc * 10 << " %\n";
+		}
 	}
 }
 

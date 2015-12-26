@@ -1,3 +1,8 @@
+#ifdef _MSC_VER 
+// MS Visual Studio gives warnings when using fopen.
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #ifndef API_cpp_
 #define API_cpp_
 
@@ -15,6 +20,7 @@
 #include <exception>
 #include <stdexcept>
 #include <time.h>
+
 
 Type getType(const std::string& type)
 {
@@ -163,7 +169,14 @@ int main()
 	config >> param;								// #output#
 	std::string output;
 	if (param != "no" && param != "n")				// no output file
+	{
 		output = param;
+		FILE* test = fopen(output.c_str(), "w");
+		if (!test)
+			std::cout << "Cannot open file \"" << output << "\". Please check all directories are created and accessible.\n";
+		else
+			fclose(test);
+	}
 
 	for (size_t i = 0; i < 5; ++i) config >> junk;	// Write resulting matrix into console:
 	config >> param;								// #cmatrix#
@@ -181,7 +194,14 @@ int main()
 	config >> param;								// #output#
 	std::string perf_file;
 	if (param != "no" && param != "n")				// no output file
+	{
 		perf_file = param;
+		FILE* test = fopen(perf_file.c_str(), "w");
+		if (!test)
+			std::cout << "Cannot open file \"" << perf_file << "\". Please check all directories are created and accessible.\n";
+		else
+			fclose(test);
+	}
 
 	for (size_t i = 0; i < 5; ++i) config >> junk;	// Write performance statistics into console:
 	config >> param;								// #cperf#
@@ -191,9 +211,16 @@ int main()
 	config >> param;								// #output#
 	std::string csv_file;
 	if (param != "no" && param != "n")				// no output file
+	{
 		csv_file = param;
+		FILE* test = fopen(csv_file.c_str(), "w");
+		if (!test)
+			std::cout << "Cannot open file \"" << csv_file << "\". Please check all directories are created and accessible.\n";
+		else
+			fclose(test);
+	}
 
-	Performance_Statistics perf_stats(4, iter);
+	Performance_Statistics perf_stats(5, iter);
 	std::vector<Counter> sizes;
 
 	if (type == WALKING) {
@@ -407,10 +434,20 @@ int main()
 
 	// if output file is specified
 	if (output != "") {
-		std::ofstream oFile(output);
-		// print the resulting matrix into it
-		oFile << result.Print();
-		oFile.close();
+		BMP matrix;
+		matrix.SetSize(N, N);
+		matrix.SetBitDepth(1);
+		CreateGrayscaleColorTable(matrix);
+
+		for (size_t i = 0; i < N; ++i)
+			for (size_t j = 0; j < N; ++j)
+			{
+				matrix(i, j)->Red = (ebmpBYTE)((1 - result.at(i, j)) * 255);
+				matrix(i, j)->Green = (ebmpBYTE)((1 - result.at(i, j)) * 255);
+				matrix(i, j)->Blue = (ebmpBYTE)((1 - result.at(i, j)) * 255);
+			}
+
+		matrix.WriteToFile(output.c_str());
 	}
 
 	// if performance stats file is specified

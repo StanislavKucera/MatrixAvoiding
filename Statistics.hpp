@@ -2,11 +2,60 @@
 #define STATISTICS_HPP_
 
 #include "HelpFunctionsAndStructures.hpp"
+#include "EasyBMP/EasyBMP.h"
 
 #include <ostream>
 #include <time.h>
 
 // matrix statistics
+class Matrix_Statistics
+{
+public:
+	Matrix_Statistics(const size_t from, const size_t to, const size_t n) : all_entries(n, n), max_all_entries(n, n), ones_count(0), max_ones_count(0), iter_from(from), iter_to(to) {}
+
+	void addData(const size_t iter, const size_t ones, const Matrix<size_t>& big_matrix)
+	{
+		if (iter < iter_from || iter > iter_to)
+			return;
+
+		ones_count += ones;
+
+		if (ones > max_ones_count)
+		{
+			max_ones_count = ones;
+			max_all_entries = big_matrix;
+		}
+
+		for (size_t i = 0; i < big_matrix.getRow(); ++i)
+			for (size_t j = 0; j < big_matrix.getCol(); ++j)
+				all_entries.at(i, j) += big_matrix.at(i, j);
+	}
+	void printHistogram(const char* output)
+	{
+		BMP hist;
+		hist.SetSize(all_entries.getRow(), all_entries.getCol());
+		hist.SetBitDepth(1);
+		CreateGrayscaleColorTable(hist);
+
+		for (size_t i = 0; i < all_entries.getRow(); ++i)
+			for (size_t j = 0; j < all_entries.getCol(); ++j)
+			{
+				const ebmpBYTE color = (ebmpBYTE)((1 - (all_entries.at(i, j) / (double)(iter_to - iter_from))) * 255);
+				hist(i, j)->Red = color;
+				hist(i, j)->Green = color;
+				hist(i, j)->Blue = color;
+			}
+
+		hist.WriteToFile(output);
+	}
+private:
+	Matrix<size_t> all_entries,
+		max_all_entries;
+	size_t ones_count,
+		max_ones_count;
+	const size_t iter_from,
+		iter_to;
+};
 
 // performance statistics - is size_t big enough?
 class Performance_Statistics
@@ -15,7 +64,7 @@ public:
 	Performance_Statistics(const size_t p, const size_t i) : success_sizes(0), fail_sizes(0), max_success_sizes(0), max_fail_sizes(0),
 		success_counter(0), success_levels(0), success_time(0), fail_counter(0), fail_levels(0), fail_time(0), mod(i / p), iter(i) {}
 
-	void addData(size_t iter, bool success, size_t time, const std::vector<Counter>& sizes)
+	void addData(const size_t iter, const bool success, const size_t time, const std::vector<Counter>& sizes)
 	{
 		const size_t index = iter / mod;
 
@@ -64,9 +113,11 @@ public:
 				success_sizes[index][i].tries += sizes[i].tries;
 				if (sizes[i].tries > max_success_sizes[index][i].tries)
 					max_success_sizes[index][i].tries = sizes[i].tries;
+
 				success_sizes[index][i].maps += sizes[i].maps;
 				if (sizes[i].maps > max_success_sizes[index][i].maps)
 					max_success_sizes[index][i].maps = sizes[i].maps;
+
 				success_sizes[index][i].uniques += sizes[i].uniques;
 				if (sizes[i].uniques > max_success_sizes[index][i].uniques)
 					max_success_sizes[index][i].uniques = sizes[i].uniques;
@@ -83,9 +134,11 @@ public:
 				fail_sizes[index][i].tries += sizes[i].tries;
 				if (sizes[i].tries > max_fail_sizes[index][i].tries)
 					max_fail_sizes[index][i].tries = sizes[i].tries;
+
 				fail_sizes[index][i].maps += sizes[i].maps;
 				if (sizes[i].maps > max_fail_sizes[index][i].maps)
 					max_fail_sizes[index][i].maps = sizes[i].maps;
+
 				fail_sizes[index][i].uniques += sizes[i].uniques;
 				if (sizes[i].uniques > max_fail_sizes[index][i].uniques)
 					max_fail_sizes[index][i].uniques = sizes[i].uniques;
@@ -95,17 +148,19 @@ public:
 	void printData(std::ostream& output)
 	{
 		output << "Successful calls of avoid (matrix avoids the pattern):\n";
+
 		for (size_t m = 0; m < iter / mod; ++m)
 		{
 			output << "Iteration: " << m << "\n";
 			const double s_counter = (double)success_counter[m];
-
 			output << "Count: " << success_counter[m] << " - " << s_counter / (success_counter[m] + fail_counter[m]) * 100 << "%\n";
+
 			if (success_counter[m] != 0)
 			{
 				output << "Average time per call: " << success_time[m] / s_counter / CLOCKS_PER_SEC << " sec\n";
 				output << "Average number of lines mapped: " << success_levels[m] / s_counter << "\n";
 				output << "Average number of mapping attempts - successful mappings - unique mappings for each mapped line:\n";
+
 				for (size_t i = 0; i < success_sizes[m].size(); ++i)
 				{
 					output << i + 1 << ": "
@@ -114,21 +169,24 @@ public:
 						<< success_sizes[m][i].uniques / s_counter << " (" << max_success_sizes[m][i].uniques << ")\n";
 				}
 			}
+
 			output << "\n";
 		}
 
 		output << "Unsuccessful calls of avoid (matrix doesn't avoid the pattern):\n";
+
 		for (size_t m = 0; m < iter / mod; ++m)
 		{
 			output << "Iteration: " << m << "\n";
 			const double f_counter = (double)fail_counter[m];
-
 			output << "Count: " << fail_counter[m] << " - " << f_counter / (success_counter[m] + fail_counter[m]) * 100 << "%\n";
+
 			if (fail_counter[m] != 0)
 			{
 				output << "Average time per call: " << fail_time[m] / f_counter / CLOCKS_PER_SEC << " sec\n";
 				output << "Average number of lines mapped: " << fail_levels[m] / f_counter << "\n";
 				output << "Average number of mapping attempts - successful mappings - unique mappings for each mapped line:\n";
+
 				for (size_t i = 0; i < fail_sizes[m].size(); ++i)
 				{
 					output << i + 1 << ": "
@@ -137,6 +195,7 @@ public:
 						<< fail_sizes[m][i].uniques / f_counter << " (" << max_fail_sizes[m][i].uniques << ")\n";
 				}
 			}
+
 			output << "\n";
         }
 	}
@@ -153,10 +212,12 @@ public:
 			output << m * mod + 1 << ";" << (m + 1) * mod << ";";														// from;to;
 			output << success_time[m] / CLOCKS_PER_SEC << " sec;";														// time;
 			output << success_counter[m] << ";" << s_counter / (success_counter[m] + fail_counter[m]) * 100 << " %;";	// count;ratio;
+
 			if (success_counter[m] != 0)
 			{
 				output << success_time[m] / s_counter / CLOCKS_PER_SEC << " sec;";											// average call time;
 				output << success_levels[m] / s_counter;																	// average lines mapped
+
 				for (size_t i = 0; i < success_sizes[m].size(); ++i)
 				{
 					output << ";" << i + 1 << ";"
@@ -168,6 +229,7 @@ public:
 						<< max_success_sizes[m][i].uniques;
 				}
 			}
+
 			output << "\n";
 		}
 
@@ -182,10 +244,12 @@ public:
 			output << m * mod + 1 << ";" << (m + 1) * mod << ";";													// from;to;
 			output << fail_time[m] / CLOCKS_PER_SEC << " sec;";														// time;
 			output << fail_counter[m] << ";" << f_counter / (success_counter[m] + fail_counter[m]) * 100 << " %;";	// count;ratio;
+
 			if (fail_counter[m] != 0)
 			{
 				output << fail_time[m] / f_counter / CLOCKS_PER_SEC << " sec;";											// average call time;
 				output << fail_levels[m] / f_counter;																	// average lines mapped
+
 				for (size_t i = 0; i < fail_sizes[m].size(); ++i)
 				{
 					output << ";" << i + 1 << ";"
@@ -197,6 +261,7 @@ public:
 						<< max_fail_sizes[m][i].uniques;
 				}
 			}
+
 			output << "\n";
 		}
 	}

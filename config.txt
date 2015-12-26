@@ -1,7 +1,7 @@
 Program input:
-Size of the generated matrix:			40
-Number of iterations of the generator:		2000
-Pattern file:					pattern/input-chessboard.txt
+Size of the generated matrix:			100
+Number of iterations of the generator:		100000
+Pattern file:					pattern/input2.txt
 Type of the pattern:				general
 Initial big matrix:				zero
 Map function approach:				recursion
@@ -9,7 +9,7 @@ Container for storing mappings:			hash
 Line ordering:					sum
 
 Program output:
-Output matrix file:				statistics/chessboard/output/sum.vector.semibig.new
+Output matrix file:				statistics/attempt.bmp
 Write resulting matrix into console:		no
 Write the pattern into console:			no
 Write total time of the run into console:	yes
