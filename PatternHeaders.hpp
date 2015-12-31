@@ -13,6 +13,39 @@ public:
 	virtual bool revert(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r, size_t c) = 0;
 };
 
+class Slow_pattern
+	: public Pattern
+{
+public:
+	Slow_pattern(const Matrix<size_t>& pattern) : one_entries_(0), rows_(pattern.getRow()), cols_(pattern.getCol())
+	{
+		for (size_t i = 0; i < pattern.getRow(); ++i)
+			for (size_t j = 0; j < pattern.getCol(); ++j)
+				if (pattern.at(i, j) == 1)
+					one_entries_.push_back(std::make_pair(i, j));
+	}
+
+	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r = (size_t)-1, size_t c = (size_t)-1)
+	{
+		done_ = false;
+		// goes through all subsets of rows and columns of the right cardinality and tests whether the pattern can be mapped to that subset
+		test_all_subsets(0ll, 0ll, rows_, cols_, (long long)big_matrix.getRow(), (long long)big_matrix.getCol(), big_matrix);
+
+		if (done_)
+			return false;
+
+		return true;
+	}
+	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, size_t /* r */, size_t /* c */)
+	{ return true; }
+private:
+	std::vector<std::pair<size_t, size_t> > one_entries_;	// list of all one entries of the pattern
+	long long rows_, cols_;									// size of the pattern
+	bool done_;												// indicator whether the avoidance testing has failed (the matrix does not avoid the pattern)
+
+	void test_all_subsets(long long v_map, long long h_map, long long v_ones, long long h_ones, long long v_vals, long long h_vals, const Matrix<size_t>& big_matrix);
+};
+
 template<typename T>
 class General_pattern
 	: public Pattern

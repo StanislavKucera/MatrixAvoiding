@@ -6,7 +6,7 @@
 #include <set>
 #include <unordered_set>
 
-enum Type { GENERAL, WALKING };
+enum Type { GENERAL, WALKING, SLOW };
 
 // Enum for the line ordering functions
 enum Order { DESC, SUM, MAX, AUTO, CUSTOM };

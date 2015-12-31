@@ -14,11 +14,11 @@
 #include <unordered_set>
 #include <iostream>
 #include <fstream>
-#include <string>
-#include <sstream>
-#include <assert.h>
-#include <exception>
-#include <stdexcept>
+#include <string>																							//								^
+#include <sstream>																							//								|
+#include <assert.h>																							//     <---------> horizontal	| vertical	
+#include <exception>																						//								|
+#include <stdexcept>																						//								v
 #include <time.h>
 
 
@@ -28,6 +28,8 @@ Type getType(const std::string& type)
 		return GENERAL;
 	else if (type == "walking" || type == "WALKING" || type == "W" || type == "w")
 		return WALKING;
+	else if (type == "slow" || type == "SLOW" || type == "S" || type == "s")
+		return SLOW;
 	else {
 		assert(!"Pattern type not supported.");
 		throw my_exception("Pattern type not supported. Choose WALKING or GENERAL.");
@@ -227,6 +229,12 @@ int main()
 		Walking_pattern wp(pattern, N);
 		t = clock();
 		MCMCgenerator(iter, wp, result, perf_stats);
+		t = clock() - t;
+	}
+	else if (type == SLOW) {
+		Slow_pattern sp(pattern);
+		t = clock();
+		MCMCgenerator(iter, sp, result, perf_stats);
 		t = clock() - t;
 	}
 	else if (type == GENERAL && container == VECTOR) {
