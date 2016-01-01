@@ -1,18 +1,18 @@
 Program input:
 Size of the generated matrix:			100
-Number of iterations of the generator:		100000
-Pattern file:					pattern/input2.txt
-Type of the pattern:				general
+Number of iterations of the generator:		10000
+Pattern file:					pattern/input-diagonal.txt
+Type of the pattern:				walking
 Initial big matrix:				zero
 Map function approach:				recursion
 Container for storing mappings:			hash
 Line ordering:					sum
 
 Program output:
-Output matrix file:				statistics/attempt.bmp
+Output matrix file:				walking.diag.png
 Write resulting matrix into console:		no
 Write the pattern into console:			no
 Write total time of the run into console:	yes
-Output performance statistics file:		statistics/chessboard/test.stats
+Output performance statistics file:		no
 Write performance statistics into console:	yes
-Output performance statistics csv file:		statistics/chessboard/test.csv
+Output performance statistics csv file:		no
