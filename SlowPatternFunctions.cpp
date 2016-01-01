@@ -81,14 +81,22 @@ void Slow_pattern::test_all_subsets(long long v_map, long long h_map, long long 
 	}
 
 	// I either extend the subset by 1 or by 0 or I don't change it -> 3^2 possibilities - 1 because I won't call myself on the same intance
-	test_all_subsets(v_map * 2 + 1, h_map * 2 + 1, v_ones - 1, h_ones - 1, v_vals - 1, h_vals - 1, big_matrix);
-	test_all_subsets(v_map * 2, h_map * 2 + 1, v_ones, h_ones - 1, v_vals - 1, h_vals - 1, big_matrix);
-	test_all_subsets(v_map * 2 + 1, h_map * 2, v_ones - 1, h_ones, v_vals - 1, h_vals - 1, big_matrix);
-	test_all_subsets(v_map * 2, h_map * 2, v_ones, h_ones, v_vals - 1, h_vals - 1, big_matrix);
-	test_all_subsets(v_map * 2 + 1, h_map, v_ones - 1, h_ones, v_vals - 1, h_vals, big_matrix);
-	test_all_subsets(v_map * 2, h_map, v_ones, h_ones, v_vals - 1, h_vals, big_matrix);
-	test_all_subsets(v_map, h_map * 2 + 1, v_ones, h_ones - 1, v_vals, h_vals - 1, big_matrix);
-	test_all_subsets(v_map, h_map * 2, v_ones, h_ones, v_vals, h_vals - 1, big_matrix);
+	if (v_ones > 0 && h_ones > 0 && v_vals > v_ones && h_vals > h_ones)
+		test_all_subsets(v_map * 2 + 1, h_map * 2 + 1, v_ones - 1, h_ones - 1, v_vals - 1, h_vals - 1, big_matrix);
+	if (v_vals > v_ones && h_ones > 0 && h_vals > h_ones)
+		test_all_subsets(v_map * 2, h_map * 2 + 1, v_ones, h_ones - 1, v_vals - 1, h_vals - 1, big_matrix);
+	if (v_ones > 0 && v_vals > v_ones && h_vals > h_ones)
+		test_all_subsets(v_map * 2 + 1, h_map * 2, v_ones - 1, h_ones, v_vals - 1, h_vals - 1, big_matrix);
+	if (v_vals > v_ones && h_vals > h_ones)
+		test_all_subsets(v_map * 2, h_map * 2, v_ones, h_ones, v_vals - 1, h_vals - 1, big_matrix);
+	if (h_vals == 0 && v_ones > 0 && v_vals > v_ones)
+		test_all_subsets(v_map * 2 + 1, h_map, v_ones - 1, h_ones, v_vals - 1, h_vals, big_matrix);
+	if (h_vals == 0 && v_vals > v_ones)
+		test_all_subsets(v_map * 2, h_map, v_ones, h_ones, v_vals - 1, h_vals, big_matrix);
+	if (v_vals == 0 && h_ones > 0 && h_vals > h_ones)
+		test_all_subsets(v_map, h_map * 2 + 1, v_ones, h_ones - 1, v_vals, h_vals - 1, big_matrix);
+	if (v_vals == 0 && h_vals > h_ones)
+		test_all_subsets(v_map, h_map * 2, v_ones, h_ones, v_vals, h_vals - 1, big_matrix);
 }
 
 #endif
