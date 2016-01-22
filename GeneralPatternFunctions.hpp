@@ -228,7 +228,7 @@ inline void General_pattern<T>::find_SUM_order()
 	// get the best order backtracing found shortest path from 0 lines to all lines
 	for (size_t i = 0; i < steps_; ++i)
 	{
-		order_[row_ + col_ - 1 - i] = back_trace[position];
+		order_[steps_ - 1 - i] = back_trace[position];
 		position = position - (1 << back_trace[position]);
 	}
 }
@@ -286,7 +286,7 @@ inline void General_pattern<T>::find_MAX_order()
 	// get the best order backtracing found shortest path from 0 lines to all lines
 	for (size_t i = 0; i < steps_; ++i)
 	{
-		order_[row_ + col_ - 1 - i] = back_trace[position];
+		order_[steps_ - 1 - i] = back_trace[position];
 		position = position - (1 << back_trace[position]);
 	}
 }

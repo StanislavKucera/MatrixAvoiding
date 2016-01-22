@@ -104,8 +104,19 @@ public:
 	size_t getRow() const	{ return row_; }
 	// returns the number of columns
 	size_t getCol()	const	{ return col_; }
+	// returns the number of one-entrie
+	size_t getOnes() const
+	{
+		size_t ones = 0;
+
+		for (const auto& entry : data_)
+			if (entry != 0)
+				++ones;
+
+		return ones;
+	}
 	// returns a formatted string containing the matrix
-	std::string Print()
+	std::string Print() const
 	{
 		std::stringstream out;
 		out.precision(3);

@@ -11,6 +11,7 @@ class Pattern
 public:
 	virtual bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r, size_t c) = 0;
 	virtual bool revert(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r, size_t c) = 0;
+	virtual std::vector<size_t> get_order() = 0;
 };
 
 class Slow_pattern
@@ -25,7 +26,7 @@ public:
 					one_entries_.push_back(std::make_pair(i, j));
 	}
 
-	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r = (size_t)-1, size_t c = (size_t)-1)
+	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& /* sizes */, size_t /* r */ = (size_t)-1, size_t /* c */ = (size_t)-1)
 	{
 		done_ = false;
 		// goes through all subsets of rows and columns of the right cardinality and tests whether the pattern can be mapped to that subset
@@ -38,6 +39,7 @@ public:
 	}
 	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, size_t /* r */, size_t /* c */)
 	{ return true; }
+	std::vector<size_t> get_order() { return std::vector<size_t>(); }
 private:
 	std::vector<std::pair<size_t, size_t> > one_entries_;	// list of all one entries of the pattern
 	long long rows_, cols_;									// size of the pattern
@@ -75,6 +77,7 @@ public:
 	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r = (size_t)-1, size_t c = (size_t)-1);
 	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, size_t /* r */, size_t /* c */)
 	{ return true; }
+	std::vector<size_t> get_order() { return order_; }
 private:
 	size_t	row_,										// number of rows of the pattern
 			col_;										// number of columns of the pattern
@@ -222,11 +225,13 @@ public:
 	
 	// reverts changes in max_walk_part matrix after an unsuccessful change of the big matrix
 	bool revert(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r, size_t c) { return avoid(big_matrix, sizes, r, c); }
+	std::vector<size_t> get_order() { return std::vector<size_t>(); }
 private:
 	Matrix<std::pair<size_t, size_t> > max_walk_part_;	// table of calculated [c_v,c_h] for all elements
 	
 	// indexed by index of v_i, the element of the walk, gives the direction of the next element (0 for vertical) and value of v_i.
 	std::vector<size_t> direction_, value_;
+	bool top_left;
 };
 
 #endif

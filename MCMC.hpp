@@ -11,7 +11,7 @@
 #include <iostream>
 
 // Generates random-ish matrix of given size, which is avoiding given walking pattern. Uses iter iterations on markov chain.
-inline void MCMCgenerator(size_t iter, Pattern& pattern, Matrix<size_t>& big_matrix, Performance_Statistics& perf_stats)
+inline void MCMCgenerator(size_t iter, Pattern& pattern, Matrix<size_t>& big_matrix, Performance_Statistics& perf_stats, Matrix_Statistics& matrix_stats)
 {
 	// random generator from uniform distribution [0, n-1]
 	std::random_device rd;
@@ -27,6 +27,12 @@ inline void MCMCgenerator(size_t iter, Pattern& pattern, Matrix<size_t>& big_mat
 	bool success;
 	size_t last_perc = 0;
 
+	// to show used order in the statistics
+	perf_stats.set_order(pattern.get_order());
+
+	// matrix statistics purposes
+	size_t ones = big_matrix.getOnes();
+
 	// go through iterations
 	for (size_t i = 0; i < iter; ++i)
 	{
@@ -36,7 +42,7 @@ inline void MCMCgenerator(size_t iter, Pattern& pattern, Matrix<size_t>& big_mat
 		r = uni(rng);
 		c = uni(rng);
 		// switch 0 and 1 entry of the element
-		big_matrix.at(r, c) = big_matrix.at(r, c) ? 0 : 1;
+		big_matrix.at(r, c) = big_matrix.at(r, c) ? (--ones, 0) : (++ones, 1);
 
 		t = clock();
 
@@ -46,7 +52,7 @@ inline void MCMCgenerator(size_t iter, Pattern& pattern, Matrix<size_t>& big_mat
 			success = false;
 
 			// if not return to the previous matrix
-			big_matrix.at(r, c) = big_matrix.at(r, c) ? 0 : 1;
+			big_matrix.at(r, c) = big_matrix.at(r, c) ? (--ones, 0) : (++ones, 1);
 			// and recalculate used structures if needed
 			bool ok = pattern.revert(big_matrix, sizes, r, c);
 
@@ -59,7 +65,8 @@ inline void MCMCgenerator(size_t iter, Pattern& pattern, Matrix<size_t>& big_mat
 
 		t = clock() - t;
 		
-		perf_stats.addData(i, success, t, sizes);
+		matrix_stats.add_data(i, ones, big_matrix);
+		perf_stats.add_data(i, success, t, sizes);
 
 		const size_t current_it = (i + 1) * 10 / iter;
 		

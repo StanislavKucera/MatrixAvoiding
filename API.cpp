@@ -117,6 +117,7 @@ std::vector<size_t> readOrder(const std::string& custom_order)
 int main()
 {
 	size_t N, iter;
+	size_t from, to, freq;							// matrix statistics settings
 	clock_t t;
 	std::string junk, param;
 	bool initialized = false;
@@ -193,7 +194,7 @@ int main()
 	bool console_time = getBool(param);
 
 	for (size_t i = 0; i < 4; ++i) config >> junk;	// Output performance statistics file:
-	config >> param;								// #output#
+	config >> param;								// #perf#
 	std::string perf_file;
 	if (param != "no" && param != "n")				// no output file
 	{
@@ -210,7 +211,7 @@ int main()
 	bool performance = getBool(param);
 
 	for (size_t i = 0; i < 5; ++i) config >> junk;	// Output performance statistics csv file:
-	config >> param;								// #output#
+	config >> param;								// #csv#
 	std::string csv_file;
 	if (param != "no" && param != "n")				// no output file
 	{
@@ -222,19 +223,62 @@ int main()
 			fclose(test);
 	}
 
+	for (size_t i = 0; i < 2; ++i) config >> junk;	// Matrix statistics:
+	for (size_t i = 0; i < 3; ++i) config >> junk;	// Histogram refresh frequency:
+	config >> freq;									// #freq#
+	if (freq == 0)
+		freq = (size_t)-1;
+
+	for (size_t i = 0; i < 3; ++i) config >> junk;	// Histogram refresh from:
+	config >> from;									// #freq#
+
+	for (size_t i = 0; i < 3; ++i) config >> junk;	// Histogram refresh to:
+	config >> to;									// #to#
+	if (to == 0)
+		to = iter;
+
+	for (size_t i = 0; i < 3; ++i) config >> junk;	// Histogram output file:
+	config >> param;								// #histogram#
+	std::string hist;
+	if (param != "no" && param != "n")				// no output file
+	{
+		hist = param;
+		FILE* test = fopen(hist.c_str(), "w");
+		if (!test)
+			std::cout << "Cannot open file \"" << hist << "\". Please check all directories are created and accessible.\n";
+		else
+			fclose(test);
+	}
+
+	for (size_t i = 0; i < 5; ++i) config >> junk;	// Max ones matrix output file:
+	config >> param;								// #max_ones#
+	std::string max_ones;
+	if (param != "no" && param != "n")				// no output file
+	{
+		max_ones = param;
+		FILE* test = fopen(max_ones.c_str(), "w");
+		if (!test)
+			std::cout << "Cannot open file \"" << max_ones << "\". Please check all directories are created and accessible.\n";
+		else
+			fclose(test);
+	}
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	Matrix_Statistics matrix_stats(from, to, N, freq);
 	Performance_Statistics perf_stats(5, iter);
 	std::vector<Counter> sizes;
 
 	if (type == WALKING) {
 		Walking_pattern wp(pattern, N);
 		t = clock();
-		MCMCgenerator(iter, wp, result, perf_stats);
+		MCMCgenerator(iter, wp, result, perf_stats, matrix_stats);
 		t = clock() - t;
 	}
 	else if (type == SLOW) {
 		Slow_pattern sp(pattern);
 		t = clock();
-		MCMCgenerator(iter, sp, result, perf_stats);
+		MCMCgenerator(iter, sp, result, perf_stats, matrix_stats);
 		t = clock() - t;
 	}
 	else if (type == GENERAL && container == VECTOR) {
@@ -300,7 +344,7 @@ int main()
 
 		General_pattern<std::vector<std::vector<size_t> > > gp(pattern, order, map, std::move(custom_order));
 		t = clock();
-		MCMCgenerator(iter, gp, result, perf_stats);
+		MCMCgenerator(iter, gp, result, perf_stats, matrix_stats);
 		t = clock() - t;
 	}
 	else if (type == GENERAL && container == SET) {
@@ -366,7 +410,7 @@ int main()
 
 		General_pattern<std::set<std::vector<size_t> > > gp(pattern, order, map, std::move(custom_order));
 		t = clock();
-		MCMCgenerator(iter, gp, result, perf_stats);
+		MCMCgenerator(iter, gp, result, perf_stats, matrix_stats);
 		t = clock() - t;
 	}
 	else if (type == GENERAL && container == HASH) {
@@ -432,7 +476,7 @@ int main()
 
 		General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gp(pattern, order, map, std::move(custom_order));
 		t = clock();
-		MCMCgenerator(iter, gp, result, perf_stats);
+		MCMCgenerator(iter, gp, result, perf_stats, matrix_stats);
 		t = clock() - t;
 	}
 	else {
@@ -462,7 +506,7 @@ int main()
 	if (perf_file != "") {
 		std::ofstream opFile(perf_file);
 		opFile << "Total running time: " << (double)t / CLOCKS_PER_SEC << " sec.\n\n";
-		perf_stats.printData(opFile);
+		perf_stats.print_data(opFile);
 		opFile.close();
 	}
 
@@ -470,9 +514,17 @@ int main()
 	if (csv_file != "") {
 		std::ofstream opcFile(csv_file);
 		opcFile << "Total running time: " << (double)t / CLOCKS_PER_SEC << " sec.\n\n";
-		perf_stats.printCsv(opcFile);
+		perf_stats.print_csv(opcFile);
 		opcFile.close();
 	}
+
+	// if histogram file is specified
+	if (hist != "")
+		matrix_stats.print_histogram(hist.c_str());
+
+	// if max ones file is specified
+	if (max_ones != "")
+		matrix_stats.print_histogram(max_ones.c_str());
 
 	if (console_matrix)
 		std::cout << result.Print();
@@ -483,7 +535,7 @@ int main()
 	if (performance)
 	{
 		std::cout << "\nPerformance statistics:\n";
-		perf_stats.printData(std::cout);
+		perf_stats.print_data(std::cout);
 	}
 
 	getchar();

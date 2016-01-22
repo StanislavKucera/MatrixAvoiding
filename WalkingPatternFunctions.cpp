@@ -11,13 +11,17 @@
 Walking_pattern::Walking_pattern(const Matrix<size_t>& pattern, size_t n)
 	: max_walk_part_(n, n, std::pair<size_t, size_t>(0, 0))
 {
-	// coords of the last visited 1 entry, index for the columns
+	// the diagonal walk starts in the top left corner
+	top_left = true;
+	bool not_left = false;
+
+	// coords of the last visited one-entry, index of the column
 	size_t last_i = 0, last_j = 0, j;
 
 	// all elements on the same diagonal have the same sum of their coordinates, go through diagonals
 	for (size_t sum = 0; sum < pattern.getRow() + pattern.getCol() - 1; ++sum)
 	{
-		// go through indices for the rows
+		// go through indices of rows
 		for (size_t i = 0; i <= sum; ++i)	
 		{
 			j = sum - i;
@@ -41,12 +45,12 @@ Walking_pattern::Walking_pattern(const Matrix<size_t>& pattern, size_t n)
 
 				// I have found a one-entry somewhere where it shouldn't have been
 				if (j < last_j || i < last_i) {
-					assert(!"Pattern is not a walking pattern type");
-					throw std::invalid_argument("Pattern is not a walking pattern type.");
+					not_left = true;
+					goto top_right;	// yeah goto rules
 				}
 
 				// need to find, which elements will be a part of the walk
-				// from the previously found one-entry go as for to the bottom as you can
+				// from the previously found one-entry go as far to the bottom as you can
 				for (size_t i2 = last_i; i2 < i; ++i2)
 				{
 					value_.push_back(pattern.at(i2, last_j));
@@ -69,6 +73,78 @@ Walking_pattern::Walking_pattern(const Matrix<size_t>& pattern, size_t n)
 
 	// add the last element of the walk
 	value_.push_back(pattern.at(last_i, last_j));
+
+	///////////////////////////////////////////////////
+top_right:
+
+	if (not_left)
+	{
+		// the diagonal walk starts in the top right corner
+		top_left = false;
+
+		// init containers
+		direction_.clear();
+		value_.clear();
+
+		// coords of the last visited one-entry, index of the column
+		long long last_i = 0, last_j = (long long)pattern.getCol() - 1, j;
+
+		// all elements on the same diagonal have the same difference of their coordinates, go through diagonals
+		for (long long diff = 1 - (long long)pattern.getCol(); diff < (long long)pattern.getRow(); ++diff)
+		{
+			// go through indices of rows
+			for (long long i = 0; i < (long long)pattern.getRow(); ++i)
+			{
+				j = i - diff;
+
+				// I look to the left of the pattern
+				if (i < diff)
+					continue;
+
+				// I look to the right of the pattern
+				if (j >= (long long)pattern.getCol())
+					break;
+
+				// when I find one-entry or find myself on the last diagonal
+				if (pattern.at(i, j) || diff == (long long)pattern.getRow() - 1)
+				{
+					// last visited element is 0 and I did not find any 1 entries
+					if (!pattern.at(i, j) && last_i == 0 && last_j == (long long)pattern.getCol() - 1 && !pattern.at(last_i, last_j)) {
+						assert(!"Pattern has no one entries.");
+						throw std::invalid_argument("Pattern has no one entries.");
+					}
+
+					// I have found a one-entry somewhere where it shouldn't have been
+					if (j > last_j || i < last_i) {
+						assert(!"Pattern is not a walking pattern type");
+						throw std::invalid_argument("Pattern is not a walking pattern type.");
+					}
+
+					// need to find, which elements will be a part of the walk
+					// from the previously found one-entry go as far to the bottom as you can
+					for (long long i2 = last_i; i2 < i; ++i2)
+					{
+						value_.push_back(pattern.at(i2, last_j));
+						// vertical
+						direction_.push_back(0);
+					}
+
+					// then go to the left and stop right before [i,j]
+					for (long long j2 = last_j; j2 > j; --j2)
+					{
+						value_.push_back(pattern.at(i, j2));
+						// horizontal
+						direction_.push_back(1);
+					}
+					// last element of the walk
+					last_i = i; last_j = j;
+				}
+			}
+		}
+
+		// add the last element of the walk
+		value_.push_back(pattern.at(last_i, last_j));
+	}
 }
 
 bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& /* sizes */, size_t r, size_t c)
@@ -93,11 +169,22 @@ bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counte
 		else
 			c_v_v = max_walk_part_.at(current.first - 1, current.second).first;
 
-		// element on the first column
-		if (current.second == 0)	
-			c_h_h = 0;
+		if (top_left)
+		{
+			// element on the first column
+			if (current.second == 0)
+				c_h_h = 0;
+			else
+				c_h_h = max_walk_part_.at(current.first, current.second - 1).second;
+		}
 		else
-			c_h_h = max_walk_part_.at(current.first, current.second - 1).second;
+		{
+			// element on the last column
+			if (current.second == max_walk_part_.getCol() - 1)
+				c_h_h = 0;
+			else
+				c_h_h = max_walk_part_.at(current.first, current.second + 1).second;
+		}
 			
 	// Initialization - copying those already found walks
 		max_walk_part_.at(current).first = c_v_v;
@@ -111,7 +198,7 @@ bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counte
 			if (c_v_v + 1 == value_.size()) 
 				return false;
 
-			// walk continues to the right
+			// walk continues to the right/left
 			if (direction_[c_v_v]) 
 			{
 				if (max_walk_part_.at(current).second < c_v_v + 1)
@@ -148,9 +235,18 @@ bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counte
 			if (q.empty() || q.back() != pair(current.first + 1, current.second))	
 				q.push(pair(current.first + 1, current.second));
 
-		// c_h was changed and there is still an element to the right
-		if (max_walk_part_.at(current).second != old_c_h && current.second + 1 < big_matrix.getCol())
-			q.push(pair(current.first, current.second + 1));
+		if (top_left)
+		{
+			// c_h was changed and there is still an element to the right
+			if (max_walk_part_.at(current).second != old_c_h && current.second + 1 < big_matrix.getCol())
+				q.push(pair(current.first, current.second + 1));
+		}
+		else
+		{
+			// c_h was changed and there is still an element to the left
+			if (max_walk_part_.at(current).second != old_c_h && current.second > 0)
+				q.push(pair(current.first, current.second - 1));
+		}
 	}
 
 	// I haven't mapped the last element of the walk - matrix avoids the pattern

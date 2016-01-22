@@ -22,7 +22,7 @@ void Slow_pattern::test_all_subsets(long long v_map, long long h_map, long long 
 	// There is exactly as many one-entries missing as how many entries I still need to add
 	else if (v_ones == v_vals && v_ones != 0)
 	{
-		for (size_t i = 0; i < v_vals; ++i)
+		for (long long i = 0; i < v_vals; ++i)
 		{
 			v_map *= 2;
 			v_map += 1;
@@ -41,7 +41,7 @@ void Slow_pattern::test_all_subsets(long long v_map, long long h_map, long long 
 	// There is exactly as many one-entries missing as how many entries I still need to add
 	else if (h_ones == h_vals && h_ones != 0)
 	{
-		for (size_t i = 0; i < h_vals; ++i)
+		for (long long i = 0; i < h_vals; ++i)
 		{
 			h_map *= 2;
 			h_map += 1;

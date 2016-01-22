@@ -11,9 +11,10 @@
 class Matrix_Statistics
 {
 public:
-	Matrix_Statistics(const size_t from, const size_t to, const size_t n) : all_entries(n, n), max_all_entries(n, n), ones_count(0), max_ones_count(0), iter_from(from), iter_to(to) {}
+	Matrix_Statistics(const size_t from, const size_t to, const size_t n, const size_t freq) : all_entries(n, n), max_all_entries(n, n),
+		ones_count(0), max_ones_count(0), hist_count(0), iter_from(from), iter_to(to), frequency(freq) {}
 
-	void addData(const size_t iter, const size_t ones, const Matrix<size_t>& big_matrix)
+	void add_data(const size_t iter, const size_t ones, const Matrix<size_t>& big_matrix)
 	{
 		if (iter < iter_from || iter > iter_to)
 			return;
@@ -26,21 +27,26 @@ public:
 			max_all_entries = big_matrix;
 		}
 
-		for (size_t i = 0; i < big_matrix.getRow(); ++i)
-			for (size_t j = 0; j < big_matrix.getCol(); ++j)
-				all_entries.at(i, j) += big_matrix.at(i, j);
+		if (iter % frequency == 0)
+		{
+			for (size_t i = 0; i < big_matrix.getRow(); ++i)
+				for (size_t j = 0; j < big_matrix.getCol(); ++j)
+					all_entries.at(i, j) += big_matrix.at(i, j);
+
+			++hist_count;
+		}
 	}
-	void printHistogram(const char* output)
+	void print_histogram(const char* output) const
 	{
 		BMP hist;
 		hist.SetSize(all_entries.getRow(), all_entries.getCol());
-		hist.SetBitDepth(1);
+		hist.SetBitDepth(8);
 		CreateGrayscaleColorTable(hist);
 
 		for (size_t i = 0; i < all_entries.getRow(); ++i)
 			for (size_t j = 0; j < all_entries.getCol(); ++j)
 			{
-				const ebmpBYTE color = (ebmpBYTE)((1 - (all_entries.at(i, j) / (double)(iter_to - iter_from))) * 255);
+				const ebmpBYTE color = (ebmpBYTE)((1 - (all_entries.at(i, j) / (double)hist_count)) * 255);
 				hist(i, j)->Red = color;
 				hist(i, j)->Green = color;
 				hist(i, j)->Blue = color;
@@ -48,13 +54,33 @@ public:
 
 		hist.WriteToFile(output);
 	}
+	void print_max_ones(const char* output) const
+	{
+		BMP matrix;
+		matrix.SetSize(max_all_entries.getRow(), max_all_entries.getCol());
+		matrix.SetBitDepth(1);
+		CreateGrayscaleColorTable(matrix);
+
+		for (size_t i = 0; i < max_all_entries.getRow(); ++i)
+			for (size_t j = 0; j < max_all_entries.getCol(); ++j)
+			{
+				const ebmpBYTE color = (ebmpBYTE)((1 - max_all_entries.at(i, j)) * 255);
+				matrix(i, j)->Red = color;
+				matrix(i, j)->Green = color;
+				matrix(i, j)->Blue = color;
+			}
+
+		matrix.WriteToFile(output);
+	}
 private:
 	Matrix<size_t> all_entries,
 		max_all_entries;
 	size_t ones_count,
-		max_ones_count;
+		max_ones_count,
+		hist_count;
 	const size_t iter_from,
-		iter_to;
+		iter_to,
+		frequency;
 };
 
 // performance statistics - is size_t big enough?
@@ -62,9 +88,9 @@ class Performance_Statistics
 {
 public:
 	Performance_Statistics(const size_t p, const size_t i) : success_sizes(0), fail_sizes(0), max_success_sizes(0), max_fail_sizes(0),
-		success_counter(0), success_levels(0), success_time(0), fail_counter(0), fail_levels(0), fail_time(0), mod(i / p), iter(i) {}
+		success_counter(0), success_levels(0), success_time(0), fail_counter(0), fail_levels(0), fail_time(0), order(0), mod(i / p), iter(i) {}
 
-	void addData(const size_t iter, const bool success, const size_t time, const std::vector<Counter>& sizes)
+	void add_data(const size_t iter, const bool success, const size_t time, const std::vector<Counter>& sizes)
 	{
 		const size_t index = iter / mod;
 
@@ -145,8 +171,19 @@ public:
 			}
 		}
 	}
-	void printData(std::ostream& output)
+	void set_order(std::vector<size_t>&& o) { order = std::move(o); }
+	void print_data(std::ostream& output) const
 	{
+		if (!order.empty())
+		{
+			output << "Used order:";
+
+			for (size_t i = 0; i < order.size(); ++i)
+				output << " " << order[i];
+
+			output << "\n\n";
+		}
+
 		output << "Successful calls of avoid (matrix avoids the pattern):\n";
 
 		for (size_t m = 0; m < iter / mod; ++m)
@@ -158,6 +195,14 @@ public:
 			if (success_counter[m] != 0)
 			{
 				output << "Average time per call: " << success_time[m] / s_counter / CLOCKS_PER_SEC << " sec\n";
+
+				// not a general pattern
+				if (order.empty())
+				{
+					output << "\n";
+					continue;
+				}
+
 				output << "Average number of lines mapped: " << success_levels[m] / s_counter << "\n";
 				output << "Average number of mapping attempts - successful mappings - unique mappings for each mapped line:\n";
 
@@ -184,6 +229,14 @@ public:
 			if (fail_counter[m] != 0)
 			{
 				output << "Average time per call: " << fail_time[m] / f_counter / CLOCKS_PER_SEC << " sec\n";
+
+				// not a general pattern
+				if (order.empty())
+				{
+					output << "\n";
+					continue;
+				}
+
 				output << "Average number of lines mapped: " << fail_levels[m] / f_counter << "\n";
 				output << "Average number of mapping attempts - successful mappings - unique mappings for each mapped line:\n";
 
@@ -199,8 +252,18 @@ public:
 			output << "\n";
         }
 	}
-	void printCsv(std::ostream& output)
+	void print_csv(std::ostream& output) const
 	{
+		if (!order.empty())
+		{
+			output << "Used order";
+
+			for (size_t i = 0; i < order.size(); ++i)
+				output << ";" << order[i];
+
+			output << "\n\n";
+		}
+
 		output << "Success\n";
 		output << "from;to;time;count;ratio;average call time;average lines mapped;line number;average map calls;average maps found;average unique maps;max map calls;max maps found;max unique maps";
 		output << "\n";
@@ -216,6 +279,14 @@ public:
 			if (success_counter[m] != 0)
 			{
 				output << success_time[m] / s_counter / CLOCKS_PER_SEC << " sec;";											// average call time;
+
+				// not a general pattern
+				if (order.empty())
+				{
+					output << "\n";
+					continue;
+				}
+
 				output << success_levels[m] / s_counter;																	// average lines mapped
 
 				for (size_t i = 0; i < success_sizes[m].size(); ++i)
@@ -248,6 +319,14 @@ public:
 			if (fail_counter[m] != 0)
 			{
 				output << fail_time[m] / f_counter / CLOCKS_PER_SEC << " sec;";											// average call time;
+
+				// not a general pattern
+				if (order.empty())
+				{
+					output << "\n";
+					continue;
+				}
+
 				output << fail_levels[m] / f_counter;																	// average lines mapped
 
 				for (size_t i = 0; i < fail_sizes[m].size(); ++i)
@@ -275,7 +354,8 @@ private:
 		success_time,						// total time (in processor cycles) spent in successful calls of avoid
 		fail_counter,
 		fail_levels,
-		fail_time;
+		fail_time,
+		order;								// order of the lines when using general pattern
 	size_t mod,
 		iter;
 };
