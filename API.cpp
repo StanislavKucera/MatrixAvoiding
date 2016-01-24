@@ -524,7 +524,7 @@ int main()
 
 	// if max ones file is specified
 	if (max_ones != "")
-		matrix_stats.print_histogram(max_ones.c_str());
+		matrix_stats.print_max_ones(max_ones.c_str());
 
 	if (console_matrix)
 		std::cout << result.Print();
