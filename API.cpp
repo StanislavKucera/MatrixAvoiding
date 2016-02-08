@@ -269,27 +269,25 @@ int main()
 	Performance_Statistics perf_stats(5, iter);
 	std::vector<Counter> sizes;
 
-	if (type == WALKING) {
-		Walking_pattern wp(pattern, N);
-		t = clock();
-		MCMCgenerator(iter, wp, result, perf_stats, matrix_stats);
-		t = clock() - t;
-	}
-	else if (type == SLOW) {
-		Slow_pattern sp(pattern);
-		t = clock();
-		MCMCgenerator(iter, sp, result, perf_stats, matrix_stats);
-		t = clock() - t;
-	}
+	std::vector<Pattern*> patterns;
+
+	if (type == WALKING)
+		patterns.push_back(new Walking_pattern(pattern, N));
+	else if (type == SLOW)
+		patterns.push_back(new Slow_pattern(pattern));
 	else if (type == GENERAL && container == VECTOR) {
 		if (order == AUTO) {
-			if (initialized) {
+			if (initialized) 
+			{
 				General_pattern<std::vector<std::vector<size_t> > > gpSUM(pattern, SUM, map);
 				t = clock();
-				if (!gpSUM.avoid(result, sizes)) {
+
+				if (!gpSUM.avoid(result, sizes)) 
+				{
 					assert(!"Initial big matrix does not avoid the pattern");
 					throw my_exception("Initial big matrix does not avoid the pattern");
 				}
+
 				t = clock() - t;
 				auto sum_time = t;
 
@@ -312,7 +310,8 @@ int main()
 				else
 					order = SUM;
 			}
-			else {
+			else 
+			{
 				Matrix<size_t> rand = Matrix<size_t>::random_bin_matrix(N, N);
 
 				General_pattern<std::vector<std::vector<size_t> > > gpSUM(pattern, SUM, map);
@@ -342,20 +341,23 @@ int main()
 			}
 		}
 
-		General_pattern<std::vector<std::vector<size_t> > > gp(pattern, order, map, std::move(custom_order));
-		t = clock();
-		MCMCgenerator(iter, gp, result, perf_stats, matrix_stats);
-		t = clock() - t;
+		patterns.push_back(new General_pattern<std::vector<std::vector<size_t> > >(pattern, order, map, std::move(custom_order)));
 	}
-	else if (type == GENERAL && container == SET) {
-		if (order == AUTO) {
-			if (initialized) {
+	else if (type == GENERAL && container == SET)
+	{
+		if (order == AUTO)
+		{
+			if (initialized)
+			{
 				General_pattern<std::set<std::vector<size_t> > > gpDESC(pattern, DESC, map);
 				t = clock();
-				if (!gpDESC.avoid(result, sizes)) {
+
+				if (!gpDESC.avoid(result, sizes))
+				{
 					assert(!"Initial big matrix does not avoid the pattern");
 					throw my_exception("Initial big matrix does not avoid the pattern");
 				}
+
 				t = clock() - t;
 				auto desc_time = t;
 
@@ -378,7 +380,8 @@ int main()
 				else
 					order = SUM;
 			}
-			else {
+			else
+			{
 				Matrix<size_t> rand = Matrix<size_t>::random_bin_matrix(N, N);
 
 				General_pattern<std::set<std::vector<size_t> > > gpSUM(pattern, SUM, map);
@@ -408,20 +411,23 @@ int main()
 			}
 		}
 
-		General_pattern<std::set<std::vector<size_t> > > gp(pattern, order, map, std::move(custom_order));
-		t = clock();
-		MCMCgenerator(iter, gp, result, perf_stats, matrix_stats);
-		t = clock() - t;
+		patterns.push_back(new General_pattern<std::set<std::vector<size_t> > >(pattern, order, map, std::move(custom_order)));
 	}
-	else if (type == GENERAL && container == HASH) {
-		if (order == AUTO) {
-			if (initialized) {
+	else if (type == GENERAL && container == HASH)
+	{
+		if (order == AUTO)
+		{
+			if (initialized)
+			{
 				General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpSUM(pattern, SUM, map);
 				t = clock();
-				if (!gpSUM.avoid(result, sizes)) {
+
+				if (!gpSUM.avoid(result, sizes))
+				{
 					assert(!"Initial big matrix does not avoid the pattern");
 					throw my_exception("Initial big matrix does not avoid the pattern");
 				}
+
 				t = clock() - t;
 				auto sum_time = t;
 
@@ -444,7 +450,8 @@ int main()
 				else
 					order = SUM;
 			}
-			else {
+			else
+			{
 				Matrix<size_t> rand = Matrix<size_t>::random_bin_matrix(N, N);
 
 				General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpSUM(pattern, SUM, map);
@@ -474,15 +481,18 @@ int main()
 			}
 		}
 
-		General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gp(pattern, order, map, std::move(custom_order));
-		t = clock();
-		MCMCgenerator(iter, gp, result, perf_stats, matrix_stats);
-		t = clock() - t;
+		patterns.push_back(new General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >(pattern, order, map, std::move(custom_order)));
 	}
 	else {
 		assert(!"Something bad have happened.");
 		throw my_exception("This shouldn't have happened. Please send a message to the developer team with your config file.");
 	}
+
+	//////////////////////////////////////////////////////
+	t = clock();
+	MCMCgenerator(iter, patterns, result, perf_stats, matrix_stats);
+	t = clock() - t;
+	//////////////////////////////////////////////////////
 
 	// if output file is specified
 	if (output != "") {

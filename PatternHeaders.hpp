@@ -11,7 +11,7 @@ class Pattern
 public:
 	virtual bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r, size_t c) = 0;
 	virtual bool revert(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r, size_t c) = 0;
-	virtual std::vector<size_t> get_order() = 0;
+	virtual std::vector<size_t> get_order() const = 0;
 };
 
 class Slow_pattern
@@ -37,12 +37,11 @@ public:
 
 		return true;
 	}
-	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, size_t /* r */, size_t /* c */)
-	{ return true; }
-	std::vector<size_t> get_order() { return std::vector<size_t>(); }
+	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, size_t /* r */, size_t /* c */) { return true; }
+	inline std::vector<size_t> get_order() const { return std::vector<size_t>(); }
 private:
 	std::vector<std::pair<size_t, size_t> > one_entries_;	// list of all one entries of the pattern
-	long long rows_, cols_;									// size of the pattern
+	const long long rows_, cols_;							// size of the pattern
 	bool done_;												// indicator whether the avoidance testing has failed (the matrix does not avoid the pattern)
 
 	void test_all_subsets(long long v_map, long long h_map, long long v_ones, long long h_ones, long long v_vals, long long h_vals, const Matrix<size_t>& big_matrix);
@@ -75,12 +74,11 @@ public:
 	/// <param name="c">Column of the big matrix that has been changed.</param>
 	/// <param name="sizes">Vector of numbers of found mappings on each level.</param>
 	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r = (size_t)-1, size_t c = (size_t)-1);
-	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, size_t /* r */, size_t /* c */)
-	{ return true; }
-	std::vector<size_t> get_order() { return order_; }
+	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, size_t /* r */, size_t /* c */) { return true; }
+	inline std::vector<size_t> get_order() const { return order_; }
 private:
-	size_t	row_,										// number of rows of the pattern
-			col_;										// number of columns of the pattern
+	const size_t	row_,								// number of rows of the pattern
+					col_;								// number of columns of the pattern
 	std::vector<size_t> lines_,							// binary number for each line of a pattern having one at i-th position if the pattern has one-entry there
 														// lines_[i] = (1011)_2 ... i-th line of the pattern has one-enty at 0th, 1st and 3rd position
 						order_,							// order of lines in which I am going to be mapping them
@@ -98,7 +96,7 @@ private:
 	std::vector<Container<T> > building_tree_;			// container for found mapping at each level
 	size_t	steps_,										// number of steps I'm going to do = number of lines I need to map (excluding empty lines)
 			empty_lines_;								// binary number of lines with no one-entries
-	Map map_approach_;									// choosen way of mapping algorithm - use recursion for nonmapped lines or not
+	const Map map_approach_;							// choosen way of mapping algorithm - use recursion for nonmapped lines or not
 
 	/// <summary>
 	/// For given line of the pattern computes lines of the big matrix, which bound its mapping.
@@ -117,6 +115,23 @@ private:
 	void find_parallel_bounds(size_t line, size_t level, const std::vector<size_t>& mapping, size_t rows, size_t columns,
 		size_t& from, size_t& to, size_t r = (size_t)-1, size_t c = (size_t)-1);
 	
+	/// <summary>
+	/// For given line of the pattern computes lines of the big matrix, which bound its mapping.
+	/// The bounds are stored to from and to variables meaning that "line" can be mapped to lines [from, to).
+	/// Takes constant time since it knows where to look, because indices to the vectors are precalculated.
+	/// </summary>
+	/// <param name="line">Index of the line of the pattern for which bounds are calculated.</param>
+	/// <param name="level">The level I am at - how many lines I have mapped already.</param>
+	/// <param name="mapping">The mapping I am extending.</param>
+	/// <param name="rows">Number of rows of the big matrix.</param>
+	/// <param name="columns">Number of columns of the big matrix.</param>
+	/// <param name="from">Index of the line of the big matrix which bounds "line" from the bottom.</param>
+	/// <param name="to">Index of the line of the big matrix which bounds "line" from the top.</param>
+	/// <param name="r">Row of the entry that was changed in the last iteration if I know it.</param>
+	/// <param name="c">Column of the entry that was changed in the last iteration if I know it.</param>
+	bool check_orthogonal_bounds(size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping,
+		size_t orthogonal_line, size_t big_orthognal_line, const Matrix<size_t>& big_matrix);
+
 	/// <summary>
 	/// Orders lines of the pattern according to the number of one-entries descendingly.
 	/// Takes k*log(k) time because it needs to sort the lines at the end.
@@ -225,7 +240,7 @@ public:
 	
 	// reverts changes in max_walk_part matrix after an unsuccessful change of the big matrix
 	bool revert(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r, size_t c) { return avoid(big_matrix, sizes, r, c); }
-	std::vector<size_t> get_order() { return std::vector<size_t>(); }
+	inline std::vector<size_t> get_order() const { return std::vector<size_t>(); }
 private:
 	Matrix<std::pair<size_t, size_t> > max_walk_part_;	// table of calculated [c_v,c_h] for all elements
 	

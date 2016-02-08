@@ -591,11 +591,11 @@ inline void General_pattern<T>::find_parallel_bounds(size_t line, size_t level, 
 	}
 
 	if (bot != (size_t)-1) {
-		// If I remember the pevious row, it has to be mapped to "bot" and that line is mapped before "r" then I cannot map then next row after r-th one
+		// If I remember the previous row, it has to be mapped to "bot" and that line is mapped before "r" then I cannot map then next row after r-th one
 		if (line < row_ && line != 0 && r != (size_t)-1 && ((what_to_remember_[level] >> (line - 1)) & 1) && mapping[bot] < r && r < to)
 			// if r < from the for cycle in map() will iterate through an empty set, which is ok
 			to = r + 1;
-		// If I remember the pevious column, it has to be mapped to "bot" and that line is mapped before "c" then I cannot map then next column after c-th one
+		// If I remember the previous column, it has to be mapped to "bot" and that line is mapped before "c" then I cannot map then next column after c-th one
 		else if (line < row_ && line != row_ && c != (size_t)-1 && ((what_to_remember_[level] >> (line - 1)) & 1) && mapping[bot] < c + rows && c + rows + 1 < to)
 			// if r < from the for cycle in map() will iterate through an empty set, which is ok
 			to = c + rows + 1;
@@ -603,13 +603,143 @@ inline void General_pattern<T>::find_parallel_bounds(size_t line, size_t level, 
 }
 
 template<typename T>
+inline bool General_pattern<T>::check_orthogonal_bounds(size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping,
+	size_t orthogonal_line, size_t big_orthogonal_line, const Matrix<size_t>& big_matrix)
+{
+	const size_t	bot = parallel_bound_indices_[level][line].first.first,		// index to the lower bound for currently added line in map vector
+					top = parallel_bound_indices_[level][line].first.second,	// index to the upper bound for currently added line in map vector
+					i_bot = parallel_bound_indices_[level][line].second.first,	// index of the line of the pattern which is a upper bound of currently added line 
+					i_top = parallel_bound_indices_[level][line].second.second;	// index of the line of the pattern which is a lower bound of currently added line
+
+	size_t from, to, current;
+
+	// i have parallel boundaries of (size_t)-1 if there are not any, return correct bounds in both cases:
+	// if there is no lower bound
+	if (bot == (size_t)-1)
+	{
+		// and "line" is a row
+		if (line < row_)
+		{
+			from = 0;
+			current = 0;
+		}
+		// "line" is a column
+		else
+		{
+			from = big_matrix.getRow();
+			current = row_;
+		}
+	}
+	// else return found lower bound with offset, which ensures there at least enough lines in the big matrix to map those from the pattern, which are in between
+	else
+	{
+		from = mapping[bot];
+		current = i_bot;
+	}
+
+	while (current != line)
+	{
+		// I didn't manage to find enough one-entries
+		if (big_line == from)
+			return false;
+
+		if ((orthogonal_line >> current) & 1)
+		{
+			if (big_matrix.at(big_orthogonal_line, from - big_matrix.getRow()))
+				++current;
+		}
+		else
+			++current;
+
+		++from;
+	}
+
+	// if there is no upper bound
+	if (top == (size_t)-1)
+	{
+		// and "line" is a row
+		if (line < row_) {
+			to = big_line + 1;
+			current = line + 1;
+
+			while (current != row_ + 1)
+			{
+				// I didn't manage to find enough one-entries
+				if (big_matrix.getRow() + 1 == to)
+					return false;
+
+				if ((orthogonal_line >> current) & 1)
+				{
+					if (big_matrix.at(to, big_orthogonal_line - big_matrix.getRow()))
+						++current;
+				}
+				else
+					++current;
+
+				++to;
+			}
+		}
+		// "line" is a column
+		else {
+			to = big_line + 1;
+			current = line + 1;
+
+			while (current != row_ + col_ + 1)
+			{
+				// I didn't manage to find enough one-entries
+				if (big_matrix.getRow() + big_matrix.getCol() + 1 == to)
+					return false;
+
+				if ((orthogonal_line >> current) & 1)
+				{
+					if (big_matrix.at(big_orthogonal_line, to - big_matrix.getRow()))
+						++current;
+				}
+				else
+					++current;
+
+				++to;
+			}
+		}
+	}
+	// else return found upper bound with offset, which ensures there at least enough lines in the big matrix to map those from the pattern, which are in between
+	else
+	{
+		to = big_line + 1;
+		current = line + 1;
+
+		while (current != i_top + 1)
+		{
+			// I didn't manage to find enough one-entries
+			if (to == mapping[top] + 1)
+				return false;
+
+			if ((orthogonal_line >> current) & 1)
+			{
+				if ((line >= row_ && big_matrix.at(to, big_orthogonal_line - big_matrix.getRow())) ||
+					(line < row_ && big_matrix.at(big_orthogonal_line, to - big_matrix.getRow())))
+					++current;
+			}
+			else
+				++current;
+
+			++to;
+		}
+	}
+
+	return from < to;
+}
+
+template<typename T>
 bool General_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping, const Matrix<size_t>& big_matrix)
 {
-	size_t from, to, last_one = 0;
-	bool	know_bounds = false,
-			atleast1 = false,
-			line_is_row = line < row_,
-			line_is_col = line >= row_;
+	size_t		from,
+				to,
+				last_one = 0;
+	bool		know_bounds = false,
+				atleast1 = false;
+	const bool	line_is_row = line < row_,
+				line_is_col = line >= row_;
 
 	// go through all elements of "line"
 	for (size_t l = 0; l < (line_is_row ? col_ : row_); ++l)
@@ -633,8 +763,13 @@ bool General_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t b
 					(line_is_col && (!big_matrix.at(mapping[index], big_line - big_matrix.getRow()))))
 					// I can't map the line here
 					return false;
+
+				// or there is not enough one-entries on the intersected line
+				if (map_approach_ == RECURSION && !check_orthogonal_bounds(line, level, big_line, mapping, lines_[l],
+					(line_is_row ? mapping[index] - big_matrix.getRow() : mapping[index]), big_matrix))
+					return false;
 			}
-			// I don't want to backtrack anymore - I only backtract for line being mapped from avoid algorithm
+			// I don't want to call myself recursively anymore - I only backtrack the function calls from avoid function
 			else if (!backtrack)
 				continue;
 			// I have the bounds from previously found one-entry, need to find another one from the "last one" to "to"
