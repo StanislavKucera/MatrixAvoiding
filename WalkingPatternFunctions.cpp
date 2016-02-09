@@ -8,7 +8,7 @@
 #include <assert.h>
 
 /* Walking pattern */
-Walking_pattern::Walking_pattern(const Matrix<size_t>& pattern, size_t n)
+Walking_pattern::Walking_pattern(const Matrix<size_t>& pattern, const size_t n)
 	: max_walk_part_(n, n, std::pair<size_t, size_t>(0, 0))
 {
 	// the diagonal walk starts in the top left corner
@@ -147,7 +147,7 @@ top_right:
 	}
 }
 
-bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& /* sizes */, size_t r, size_t c)
+bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& /* sizes */, const size_t r, const size_t c)
 {
 	typedef std::pair<size_t, size_t> pair;
 	std::queue<pair> q;						// queue for elements of the matrix that are supposed to be updated

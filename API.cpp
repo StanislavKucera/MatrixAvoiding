@@ -22,7 +22,7 @@
 #include <time.h>
 
 
-Type getType(const std::string& type)
+inline Type getType(const std::string& type)
 {
 	if (type == "general" || type == "GENERAL" || type == "G" || type == "g")
 		return GENERAL;
@@ -37,7 +37,7 @@ Type getType(const std::string& type)
 	}
 }
 
-Map getMap(const std::string& map)
+inline Map getMap(const std::string& map)
 {
 	if (map == "recursion" || map == "RECURSION" || map == "R" || map == "r" || map == "REC" || map == "Rec" || map == "rec")
 		return RECURSION;
@@ -52,7 +52,7 @@ Map getMap(const std::string& map)
 	}
 }
 
-Map_container getContainer(const std::string& container)
+inline Map_container getContainer(const std::string& container)
 {
 	if (container == "vector" || container == "VECTOR" || container == "V" || container == "v" || container == "std::vector")
 		return VECTOR;
@@ -67,7 +67,7 @@ Map_container getContainer(const std::string& container)
 	}
 }
 
-Order getOrder(const std::string& order)
+inline Order getOrder(const std::string& order)
 {
 	if (order == "desc" || order == "DESC" || order == "D" || order == "d")
 		return DESC;
@@ -86,7 +86,7 @@ Order getOrder(const std::string& order)
 	}
 }
 
-bool getBool(const std::string& write)
+inline bool getBool(const std::string& write)
 {
 	if (write == "yes" || write == "YES" || write == "Y" || write == "y")
 		return true;
@@ -99,7 +99,7 @@ bool getBool(const std::string& write)
 	}
 }
 
-std::vector<size_t> readOrder(const std::string& custom_order)
+inline std::vector<size_t> readOrder(const std::string& custom_order)
 {
 	std::vector<size_t> ret;
 	std::ifstream iFile(custom_order);
@@ -269,14 +269,17 @@ int main()
 	Performance_Statistics perf_stats(5, iter);
 	std::vector<Counter> sizes;
 
-	std::vector<Pattern*> patterns;
+	Patterns patterns;
 
-	if (type == WALKING)
-		patterns.push_back(new Walking_pattern(pattern, N));
+	if (type == WALKING){
+		patterns.add(new Walking_pattern(pattern, N));
+	}
 	else if (type == SLOW)
-		patterns.push_back(new Slow_pattern(pattern));
-	else if (type == GENERAL && container == VECTOR) {
-		if (order == AUTO) {
+		patterns.add(new Slow_pattern(pattern));
+	else if (type == GENERAL && container == VECTOR)
+	{
+		if (order == AUTO)
+		{
 			if (initialized) 
 			{
 				General_pattern<std::vector<std::vector<size_t> > > gpSUM(pattern, SUM, map);
@@ -341,7 +344,7 @@ int main()
 			}
 		}
 
-		patterns.push_back(new General_pattern<std::vector<std::vector<size_t> > >(pattern, order, map, std::move(custom_order)));
+		patterns.add(new General_pattern<std::vector<std::vector<size_t> > >(pattern, order, map, std::move(custom_order)));
 	}
 	else if (type == GENERAL && container == SET)
 	{
@@ -411,7 +414,7 @@ int main()
 			}
 		}
 
-		patterns.push_back(new General_pattern<std::set<std::vector<size_t> > >(pattern, order, map, std::move(custom_order)));
+		patterns.add(new General_pattern<std::set<std::vector<size_t> > >(pattern, order, map, std::move(custom_order)));
 	}
 	else if (type == GENERAL && container == HASH)
 	{
@@ -481,7 +484,7 @@ int main()
 			}
 		}
 
-		patterns.push_back(new General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >(pattern, order, map, std::move(custom_order)));
+		patterns.add(new General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >(pattern, order, map, std::move(custom_order)));
 	}
 	else {
 		assert(!"Something bad have happened.");

@@ -3,14 +3,17 @@
 
 #include "HelpFunctionsAndStructures.hpp"
 
+#include <algorithm>
+#include <assert.h>
+
 /// For the purposes of complexity, let \theta(k) be the number of lines (rows and columns) of the pattern
 /// and \theta(n) be the number of lines of the big matrix.
 
 class Pattern
 {
 public:
-	virtual bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r, size_t c) = 0;
-	virtual bool revert(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r, size_t c) = 0;
+	virtual bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c) = 0;
+	virtual bool revert(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c) = 0;
 	virtual std::vector<size_t> get_order() const = 0;
 };
 
@@ -26,7 +29,7 @@ public:
 					one_entries_.push_back(std::make_pair(i, j));
 	}
 
-	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& /* sizes */, size_t /* r */ = (size_t)-1, size_t /* c */ = (size_t)-1)
+	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& /* sizes */, const size_t /* r */ = (size_t)-1, const size_t /* c */ = (size_t)-1)
 	{
 		done_ = false;
 		// goes through all subsets of rows and columns of the right cardinality and tests whether the pattern can be mapped to that subset
@@ -37,8 +40,8 @@ public:
 
 		return true;
 	}
-	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, size_t /* r */, size_t /* c */) { return true; }
-	inline std::vector<size_t> get_order() const { return std::vector<size_t>(); }
+	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, const size_t /* r */, const size_t /* c */) { return true; }
+	std::vector<size_t> get_order() const { return std::vector<size_t>(); }
 private:
 	std::vector<std::pair<size_t, size_t> > one_entries_;	// list of all one entries of the pattern
 	const long long rows_, cols_;							// size of the pattern
@@ -60,7 +63,7 @@ public:
 	/// <param name="order">Enum determining which function will be used for line ordering.</param>
 	/// <param name="map">Enum determining what conditions will map function check.</param>
 	/// <param name="custom_order">Order of lines given by user in case order is set to CUSTOM.</param>
-	General_pattern(const Matrix<size_t>& pattern, Order order = DESC, Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>());
+	General_pattern(const Matrix<size_t>& pattern, const Order order = DESC, const Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>());
 
 	/// <summary>
 	/// Tests if the pattern avoids given matrix as a submatrix.
@@ -73,9 +76,9 @@ public:
 	/// <param name="r">Row of the big matrix that has been changed.</param>
 	/// <param name="c">Column of the big matrix that has been changed.</param>
 	/// <param name="sizes">Vector of numbers of found mappings on each level.</param>
-	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r = (size_t)-1, size_t c = (size_t)-1);
-	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, size_t /* r */, size_t /* c */) { return true; }
-	inline std::vector<size_t> get_order() const { return order_; }
+	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r = (size_t)-1, const size_t c = (size_t)-1);
+	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, const size_t /* r */, const size_t /* c */) { return true; }
+	std::vector<size_t> get_order() const { return order_; }
 private:
 	const size_t	row_,								// number of rows of the pattern
 					col_;								// number of columns of the pattern
@@ -112,8 +115,8 @@ private:
 	/// <param name="to">Index of the line of the big matrix which bounds "line" from the top.</param>
 	/// <param name="r">Row of the entry that was changed in the last iteration if I know it.</param>
 	/// <param name="c">Column of the entry that was changed in the last iteration if I know it.</param>
-	void find_parallel_bounds(size_t line, size_t level, const std::vector<size_t>& mapping, size_t rows, size_t columns,
-		size_t& from, size_t& to, size_t r = (size_t)-1, size_t c = (size_t)-1);
+	void find_parallel_bounds(const size_t line, const size_t level, const std::vector<size_t>& mapping, const size_t rows, const size_t columns,
+		size_t& from, size_t& to, const size_t r = (size_t)-1, const size_t c = (size_t)-1) const;
 	
 	/// <summary>
 	/// For given line of the pattern computes lines of the big matrix, which bound its mapping.
@@ -129,8 +132,8 @@ private:
 	/// <param name="to">Index of the line of the big matrix which bounds "line" from the top.</param>
 	/// <param name="r">Row of the entry that was changed in the last iteration if I know it.</param>
 	/// <param name="c">Column of the entry that was changed in the last iteration if I know it.</param>
-	bool check_orthogonal_bounds(size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping,
-		size_t orthogonal_line, size_t big_orthognal_line, const Matrix<size_t>& big_matrix);
+	bool check_orthogonal_bounds(const size_t line, const size_t level, const size_t big_line, const std::vector<size_t>& mapping,
+		const size_t orthogonal_line, const size_t big_orthognal_line, const Matrix<size_t>& big_matrix) const;
 
 	/// <summary>
 	/// Orders lines of the pattern according to the number of one-entries descendingly.
@@ -160,7 +163,7 @@ private:
 	/// and if they are it checks the same condition for all the lines that intersect the line in a one-entry.
 	/// </summary>
 	/// <param name="current">Given subset of lines for which I calculate how many lines I need to remember.</param>
-	size_t count_what_to_remember(size_t current);
+	size_t count_what_to_remember(const size_t current) const;
 	
 	/// <summary>
 	/// For given order computes, which already mapped lines need to be stored and which can be forgotten
@@ -182,7 +185,7 @@ private:
 	/// </summary>
 	/// <param name="line">Given line for which bounds are being precalculated.</param>
 	/// <param name="level">The level I am at - how many lines I have mapped already.</param>
-	void find_bound_indices(size_t line, size_t level);
+	void find_bound_indices(const size_t line, const size_t level);
 
 	/// <summary>
 	/// Precomputes which values of mapping I need to store in the one which is one step forward.
@@ -204,7 +207,7 @@ private:
 	/// <param name="big_line">Index of the line of the big matrix which I am trying to map the line to.</param>
 	/// <param name="mapping">The mapping I am extending.</param>
 	/// <param name="big_matrix">Reference to the big matrix for which I test pattern avoiding.</param>
-	bool map(bool backtrack, size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping, const Matrix<size_t>& big_matrix);
+	bool map(const bool backtrack, const size_t line, const size_t level, const size_t big_line, const std::vector<size_t>& mapping, const Matrix<size_t>& big_matrix);
 	
 	/// <summary>
 	/// Extends previous mapping after deciding to which big line the line should be mapped.
@@ -215,7 +218,7 @@ private:
 	/// <param name="level">The level I am at - how many lines I have mapped already.</param>
 	/// <param name="big_line">Index of the line of the big matrix which I mapped the line to.</param>
 	/// <param name="mapping">The mapping I am extending.</param>
-	std::vector<size_t> extend(size_t level, size_t big_line, const std::vector<size_t>& mapping);
+	std::vector<size_t> extend(const size_t level, const size_t big_line, const std::vector<size_t>& mapping) const;
 };
 
 /// A matrix pattern in which exists a walk from left-upper corner to right-bottom corner, which contains all one-entries.
@@ -224,7 +227,7 @@ class Walking_pattern
 	: public Pattern
 {
 public:
-	Walking_pattern(const Matrix<size_t>& pattern, size_t n);
+	Walking_pattern(const Matrix<size_t>& pattern, const size_t n);
 	
 	/// <summary>
 	/// Tests if the pattern avoids given matrix as a submatrix.
@@ -236,17 +239,77 @@ public:
 	/// <param name="r">Row of the big matrix that has been changed.</param>
 	/// <param name="c">Column of the big matrix that has been changed.</param>
 	/// <param name="sizes">Vector of numbers of found mappings on each level.</param>
-	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r = (size_t)-1, size_t c = (size_t)-1);
+	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r = (size_t)-1, const size_t c = (size_t)-1);
 	
 	// reverts changes in max_walk_part matrix after an unsuccessful change of the big matrix
-	bool revert(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r, size_t c) { return avoid(big_matrix, sizes, r, c); }
-	inline std::vector<size_t> get_order() const { return std::vector<size_t>(); }
+	bool revert(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c) { return avoid(big_matrix, sizes, r, c); }
+	std::vector<size_t> get_order() const { return std::vector<size_t>(); }
 private:
 	Matrix<std::pair<size_t, size_t> > max_walk_part_;	// table of calculated [c_v,c_h] for all elements
 	
 	// indexed by index of v_i, the element of the walk, gives the direction of the next element (0 for vertical) and value of v_i.
 	std::vector<size_t> direction_, value_;
 	bool top_left;
+};
+
+class Patterns
+{
+public:
+	Patterns() : patterns_(0), changed_(-1) {}
+
+	bool avoid(const Matrix<size_t>& big_matrix, std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c)
+	{
+		if (changed_ == patterns_.size() - 1)
+			changed_ = -1;
+
+		if (changed_ != -1)
+		{
+			assert(!"A pattern is not in a valid state!");
+			throw my_exception("A pattern is not in a valid state!");
+		}
+
+		sizes.resize(patterns_.size());
+
+		for (auto& pattern : patterns_)
+		{
+			++changed_;
+
+			if (!pattern->avoid(big_matrix, sizes[changed_], r, c))
+				return false;
+		}
+
+		return true;
+	}
+	bool revert(const Matrix<size_t>& big_matrix, std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c)
+	{
+		for (; changed_ != -1; --changed_)
+		{
+			if (!patterns_[changed_]->revert(big_matrix, sizes[changed_], r, c))
+			{
+				assert(!"Matrix after reverting contains the pattern!");
+				throw my_exception("Matrix after reverting contains the pattern!");
+			}
+		}
+
+		return true;
+	}
+	std::vector<std::vector<size_t> > get_order() const
+	{
+		std::vector<std::vector<size_t> > orders(patterns_.size());
+
+		for (size_t i = 0; i < patterns_.size(); ++i)
+			orders[i] = std::move(patterns_[i]->get_order());
+
+		return orders;
+	}
+
+	void add(Pattern* pattern)
+	{
+		patterns_.push_back(pattern);
+	}
+private:
+	std::vector<Pattern*> patterns_;
+	long long changed_;
 };
 
 #endif

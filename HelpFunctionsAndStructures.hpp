@@ -130,7 +130,7 @@ struct Counter
 /// Takes constant time and space.
 /// </summary>
 /// <param name="n">A binary number for which number of bits is computed.</param>
-inline size_t bit_count(size_t n)	// I have used a function from the internet: -http://blogs.msdn.com/b/jeuge/archive/2005/06/08/hakmem-bit-count.aspx
+inline size_t bit_count(const size_t n)	// I have used a function from the internet: -http://blogs.msdn.com/b/jeuge/archive/2005/06/08/hakmem-bit-count.aspx
 {
 	const size_t uCount = n - ((n >> 1) & 033333333333) - ((n >> 2) & 011111111111);
 	return ((uCount + (uCount >> 3)) & 030707070707) % 63;

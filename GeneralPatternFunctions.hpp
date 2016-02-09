@@ -8,7 +8,7 @@
 #include <assert.h>
 
 template<typename T>
-General_pattern<T>::General_pattern(const Matrix<size_t>& pattern, Order order, Map map_approach, std::vector<size_t>&& custom_order)
+General_pattern<T>::General_pattern(const Matrix<size_t>& pattern, const Order order, const Map map_approach, std::vector<size_t>&& custom_order)
 	: row_(pattern.getRow()),
 	col_(pattern.getCol()), 
 	lines_(row_ + col_),
@@ -85,7 +85,7 @@ General_pattern<T>::General_pattern(const Matrix<size_t>& pattern, Order order, 
 }
 
 template<typename T>
-inline bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, size_t r, size_t c)
+bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c)
 {
 	// There was a change from one-entry to zero-entry
 	if (r != (size_t)-1 && c != (size_t)-1 && big_matrix.at(r, c) == 0)
@@ -149,7 +149,7 @@ inline bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vec
 }
 
 template<typename T>
-inline void General_pattern<T>::find_DESC_order()
+void General_pattern<T>::find_DESC_order()
 {
 	// vector of pairs (number of one-entries, line_ID) of nonempty lines
 	std::vector<std::pair<size_t, size_t> > pairs(row_ + col_ - bit_count(empty_lines_));
@@ -165,7 +165,7 @@ inline void General_pattern<T>::find_DESC_order()
 			continue;
 
 		pairs[index] = std::make_pair(row_ + col_ - bit_count(lines_[index]), index);
-		index++;
+		++index;
 	}
 
 	// sorts the vector according to the first elements of each pair
@@ -179,7 +179,7 @@ inline void General_pattern<T>::find_DESC_order()
 }
 
 template<typename T>
-inline void General_pattern<T>::find_SUM_order()
+void General_pattern<T>::find_SUM_order()
 {
 	// queue for subsets of lines
 	std::queue<size_t> q;
@@ -234,7 +234,7 @@ inline void General_pattern<T>::find_SUM_order()
 }
 
 template<typename T>
-inline void General_pattern<T>::find_MAX_order()
+void General_pattern<T>::find_MAX_order()
 {
 	// queue for subsets of lines
 	std::queue<size_t> q;
@@ -292,7 +292,7 @@ inline void General_pattern<T>::find_MAX_order()
 }
 
 template<typename T>
-inline size_t General_pattern<T>::count_what_to_remember(size_t current)
+size_t General_pattern<T>::count_what_to_remember(const size_t current) const
 {
 	bool needed;
 	size_t count = bit_count(current);
@@ -348,7 +348,7 @@ inline size_t General_pattern<T>::count_what_to_remember(size_t current)
 }
 
 template<typename T>
-inline void General_pattern<T>::find_what_to_remember()
+void General_pattern<T>::find_what_to_remember()
 {
 	bool needed;
 	// at the beginning I don't know any line
@@ -423,7 +423,7 @@ inline void General_pattern<T>::find_what_to_remember()
 }
 
 template<typename T>
-inline void General_pattern<T>::find_extending_order()
+void General_pattern<T>::find_extending_order()
 {
 	for (size_t i = 0; i < steps_; ++i)
 	{
@@ -454,7 +454,7 @@ inline void General_pattern<T>::find_extending_order()
 }
 
 template<typename T>
-inline void General_pattern<T>::find_parralel_bound_indices()
+void General_pattern<T>::find_parralel_bound_indices()
 {
 	for (size_t i = 0; i < steps_; ++i)
 	{
@@ -472,7 +472,7 @@ inline void General_pattern<T>::find_parralel_bound_indices()
 }
 
 template<typename T>
-inline void General_pattern<T>::find_bound_indices(size_t line, size_t level)
+void General_pattern<T>::find_bound_indices(const size_t line, const size_t level)
 {
 	size_t	index = (size_t)-1,	// index into map m
 			bot = (size_t)-1,	// index to the lower bound for currently added line in map vector
@@ -522,8 +522,8 @@ inline void General_pattern<T>::find_bound_indices(size_t line, size_t level)
 }
 
 template<typename T>
-inline void General_pattern<T>::find_parallel_bounds(size_t line, size_t level, const std::vector<size_t>& mapping, size_t rows, size_t columns,
-	size_t& from, size_t& to, size_t r, size_t c)
+void General_pattern<T>::find_parallel_bounds(const size_t line, const size_t level, const std::vector<size_t>& mapping, const size_t rows, const size_t columns,
+	size_t& from, size_t& to, const size_t r, const size_t c) const
 {
 	const size_t	bot = parallel_bound_indices_[level][line].first.first,		// index to the lower bound for currently added line in map vector
 					top = parallel_bound_indices_[level][line].first.second,	// index to the upper bound for currently added line in map vector
@@ -603,8 +603,8 @@ inline void General_pattern<T>::find_parallel_bounds(size_t line, size_t level, 
 }
 
 template<typename T>
-inline bool General_pattern<T>::check_orthogonal_bounds(size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping,
-	size_t orthogonal_line, size_t big_orthogonal_line, const Matrix<size_t>& big_matrix)
+bool General_pattern<T>::check_orthogonal_bounds(const size_t line, const size_t level, const size_t big_line, const std::vector<size_t>& mapping,
+	const size_t orthogonal_line, const size_t big_orthogonal_line, const Matrix<size_t>& big_matrix) const
 {
 	const size_t	bot = parallel_bound_indices_[level][line].first.first,		// index to the lower bound for currently added line in map vector
 					top = parallel_bound_indices_[level][line].first.second,	// index to the upper bound for currently added line in map vector
@@ -731,7 +731,7 @@ inline bool General_pattern<T>::check_orthogonal_bounds(size_t line, size_t leve
 }
 
 template<typename T>
-bool General_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t big_line, const std::vector<size_t>& mapping, const Matrix<size_t>& big_matrix)
+bool General_pattern<T>::map(const bool backtrack, const size_t line, const size_t level, const size_t big_line, const std::vector<size_t>& mapping, const Matrix<size_t>& big_matrix)
 {
 	size_t		from,
 				to,
@@ -837,7 +837,7 @@ bool General_pattern<T>::map(bool backtrack, size_t line, size_t level, size_t b
 }
 
 template<typename T>
-inline std::vector<size_t> General_pattern<T>::extend(size_t level, size_t value, const std::vector<size_t>& mapping)
+std::vector<size_t> General_pattern<T>::extend(const size_t level, const size_t value, const std::vector<size_t>& mapping) const
 {
 	const size_t max = extending_order_[level].size();
 
