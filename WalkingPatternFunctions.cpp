@@ -147,8 +147,8 @@ top_right:
 	}
 }
 
-bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& /* sizes */, const size_t r, const size_t c)
-{
+//bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& /* sizes */, const size_t r, const size_t c)
+/*{
 	typedef std::pair<size_t, size_t> pair;
 	std::queue<pair> q;						// queue for elements of the matrix that are supposed to be updated
 	pair current;							// [x,y] of the currently updated element
@@ -246,6 +246,174 @@ bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counte
 			// c_h was changed and there is still an element to the left
 			if (max_walk_part_.at(current).second != old_c_h && current.second > 0)
 				q.push(pair(current.first, current.second - 1));
+		}
+	}
+
+	// I haven't mapped the last element of the walk - matrix avoids the pattern
+	return true;
+}*/
+
+bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& /* sizes */, const size_t r, const size_t c)
+{
+	typedef std::pair<size_t, size_t> pair;
+	pair current;							// [x,y] of the currently updated element
+	size_t old_c_v, old_c_h, c_v_v, c_h_h;	// c_v and c_h before an update, c_v of element to the top of current, c_h of element to the left
+
+	if (top_left)
+	{
+	// all elements on the same diagonal have the same sum of their coordinates, go through diagonals
+		for (size_t sum = r + c; sum < max_walk_part_.getRow() + max_walk_part_.getCol() - 1; ++sum)
+		{
+			// go through indices of rows
+			for (current.first = r; current.first <= sum; ++current.first)
+			{
+				current.second = sum - current.first;
+
+				// I look under the pattern
+				if (current.first >= max_walk_part_.getRow())
+					break;
+
+				// I look to the right of the pattern
+				if (current.second >= max_walk_part_.getCol() || current.second < c)
+					continue;
+
+				old_c_v = max_walk_part_.at(current).first;
+				old_c_h = max_walk_part_.at(current).second;
+
+				// element on the first row
+				if (current.first == 0)
+					c_v_v = 0;
+				else
+					c_v_v = max_walk_part_.at(current.first - 1, current.second).first;
+
+				// element on the first column
+				if (current.second == 0)
+					c_h_h = 0;
+				else
+					c_h_h = max_walk_part_.at(current.first, current.second - 1).second;
+
+				// Initialization - copying those already found walks
+				max_walk_part_.at(current).first = c_v_v;
+				max_walk_part_.at(current).second = c_h_h;
+
+				// Search for longer part of the walk
+				// b == 1 or v_{c_v_v + 1} == 0
+				if (big_matrix.at(current) || !value_[c_v_v])
+				{
+					// I found the last element of the walk
+					if (c_v_v + 1 == value_.size())
+						return false;
+
+					// walk continues to the right/left
+					if (direction_[c_v_v])
+					{
+						if (max_walk_part_.at(current).second < c_v_v + 1)
+							max_walk_part_.at(current).second = c_v_v + 1;
+					}
+					// walk continues to the bottom
+					else
+					{
+						if (max_walk_part_.at(current).first < c_v_v + 1)
+							max_walk_part_.at(current).first = c_v_v + 1;
+					}
+				}
+
+				// N[i,j] == 1
+				if (big_matrix.at(current) || !value_[c_h_h])
+				{
+					if (c_h_h + 1 == value_.size())
+						return false;
+					if (direction_[c_h_h])
+					{
+						if (max_walk_part_.at(current).second < c_h_h + 1)
+							max_walk_part_.at(current).second = c_h_h + 1;
+					}
+					else
+					{
+						if (max_walk_part_.at(current).first < c_h_h + 1)
+							max_walk_part_.at(current).first = c_h_h + 1;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		// all elements on the same diagonal have the same difference of their coordinates, go through diagonals
+		for (long long diff = 1 - (long long)max_walk_part_.getCol(); diff < (long long)max_walk_part_.getRow(); ++diff)
+		{
+			// go through indices of rows
+			for (current.first = 0; current.first < (long long)max_walk_part_.getRow(); ++current.first)
+			{
+				current.second = current.first - diff;
+
+				// I look to the left of the pattern
+				if (current.first < diff)
+					continue;
+
+				// I look to the right of the pattern
+				if (current.second >= (long long)max_walk_part_.getCol())
+					break;
+
+				old_c_v = max_walk_part_.at(current).first;
+				old_c_h = max_walk_part_.at(current).second;
+
+				// element on the first row
+				if (current.first == 0)
+					c_v_v = 0;
+				else
+					c_v_v = max_walk_part_.at(current.first - 1, current.second).first;
+
+				
+				// element on the last column
+				if (current.second == max_walk_part_.getCol() - 1)
+					c_h_h = 0;
+				else
+					c_h_h = max_walk_part_.at(current.first, current.second + 1).second;
+
+				// Initialization - copying those already found walks
+				max_walk_part_.at(current).first = c_v_v;
+				max_walk_part_.at(current).second = c_h_h;
+
+				// Search for longer part of the walk
+				// b == 1 or v_{c_v_v + 1} == 0
+				if (big_matrix.at(current) || !value_[c_v_v])
+				{
+					// I found the last element of the walk
+					if (c_v_v + 1 == value_.size())
+						return false;
+
+					// walk continues to the right/left
+					if (direction_[c_v_v])
+					{
+						if (max_walk_part_.at(current).second < c_v_v + 1)
+							max_walk_part_.at(current).second = c_v_v + 1;
+					}
+					// walk continues to the bottom
+					else
+					{
+						if (max_walk_part_.at(current).first < c_v_v + 1)
+							max_walk_part_.at(current).first = c_v_v + 1;
+					}
+				}
+
+				// N[i,j] == 1
+				if (big_matrix.at(current) || !value_[c_h_h])
+				{
+					if (c_h_h + 1 == value_.size())
+						return false;
+					if (direction_[c_h_h])
+					{
+						if (max_walk_part_.at(current).second < c_h_h + 1)
+							max_walk_part_.at(current).second = c_h_h + 1;
+					}
+					else
+					{
+						if (max_walk_part_.at(current).first < c_h_h + 1)
+							max_walk_part_.at(current).first = c_h_h + 1;
+					}
+				}
+			}
 		}
 	}
 

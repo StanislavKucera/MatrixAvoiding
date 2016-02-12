@@ -264,6 +264,11 @@ int main()
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//result = Matrix<size_t>("matrix/try.txt");
+	//Walking_pattern wp(pattern, N);
+	//std::vector<Counter> sizes;
+	//bool ahoj = wp.avoid(result, sizes, 0, 0);
+
 
 	Matrix_Statistics matrix_stats(from, to, N, freq);
 	Performance_Statistics perf_stats(5, iter);
@@ -271,9 +276,8 @@ int main()
 
 	Patterns patterns;
 
-	if (type == WALKING){
+	if (type == WALKING)
 		patterns.add(new Walking_pattern(pattern, N));
-	}
 	else if (type == SLOW)
 		patterns.add(new Slow_pattern(pattern));
 	else if (type == GENERAL && container == VECTOR)
@@ -493,6 +497,7 @@ int main()
 
 	//////////////////////////////////////////////////////
 	t = clock();
+	//parallelMCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, 2);
 	MCMCgenerator(iter, patterns, result, perf_stats, matrix_stats);
 	t = clock() - t;
 	//////////////////////////////////////////////////////

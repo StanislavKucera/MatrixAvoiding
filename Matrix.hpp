@@ -100,6 +100,14 @@ public:
 			throw std::out_of_range("Index out of bounds.");
 		return data_[index.first * col_ + index.second];
 	}
+	bool flip(const size_t i, const size_t j)
+	{
+		if (i >= row_ || j >= col_)
+			throw std::out_of_range("Index out of bounds.");
+		data_[i * col_ + j] = data_[i * col_ + j] ? 0 : 1;
+		return data_[i * col_ + j];
+	}
+
 	// returns the number of rows
 	size_t getRow() const	{ return row_; }
 	// returns the number of columns
@@ -150,5 +158,14 @@ private:
 	std::vector<T> data_;
 	size_t row_, col_;
 };
+
+template<>
+bool Matrix<bool>::flip(const size_t i, const size_t j)
+{
+	if (i >= row_ || j >= col_)
+		throw std::out_of_range("Index out of bounds.");
+	data_[i * col_ + j].flip();
+	return data_[i * col_ + j];
+}
 
 #endif

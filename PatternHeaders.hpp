@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <assert.h>
 
+#include <iostream>
+
 /// For the purposes of complexity, let \theta(k) be the number of lines (rows and columns) of the pattern
 /// and \theta(n) be the number of lines of the big matrix.
 
@@ -13,8 +15,9 @@ class Pattern
 {
 public:
 	virtual bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c) = 0;
-	virtual bool revert(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c) = 0;
+	virtual bool revert(const Matrix<size_t>& big_matrix, const size_t r, const size_t c) = 0;
 	virtual std::vector<size_t> get_order() const = 0;
+	virtual Pattern* get_new_instance() const = 0;
 };
 
 class Slow_pattern
@@ -40,8 +43,9 @@ public:
 
 		return true;
 	}
-	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, const size_t /* r */, const size_t /* c */) { return true; }
+	bool revert(const Matrix<size_t>& /* big_matrix */, const size_t /* r */, const size_t /* c */) { return true; }
 	std::vector<size_t> get_order() const { return std::vector<size_t>(); }
+	Pattern* get_new_instance() const { return new Slow_pattern(*this); }
 private:
 	std::vector<std::pair<size_t, size_t> > one_entries_;	// list of all one entries of the pattern
 	const long long rows_, cols_;							// size of the pattern
@@ -77,8 +81,9 @@ public:
 	/// <param name="c">Column of the big matrix that has been changed.</param>
 	/// <param name="sizes">Vector of numbers of found mappings on each level.</param>
 	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r = (size_t)-1, const size_t c = (size_t)-1);
-	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, const size_t /* r */, const size_t /* c */) { return true; }
+	bool revert(const Matrix<size_t>& /* big_matrix */, const size_t /* r */, const size_t /* c */) { return true; }
 	std::vector<size_t> get_order() const { return order_; }
+	Pattern* get_new_instance() const { return new General_pattern(*this); }
 private:
 	const size_t	row_,								// number of rows of the pattern
 					col_;								// number of columns of the pattern
@@ -242,8 +247,9 @@ public:
 	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r = (size_t)-1, const size_t c = (size_t)-1);
 	
 	// reverts changes in max_walk_part matrix after an unsuccessful change of the big matrix
-	bool revert(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c) { return avoid(big_matrix, sizes, r, c); }
+	bool revert(const Matrix<size_t>& big_matrix, const size_t r, const size_t c) { std::vector<Counter> sizes; return avoid(big_matrix, sizes, r, c); }
 	std::vector<size_t> get_order() const { return std::vector<size_t>(); }
+	Pattern* get_new_instance() const { return new Walking_pattern(*this); }
 private:
 	Matrix<std::pair<size_t, size_t> > max_walk_part_;	// table of calculated [c_v,c_h] for all elements
 	
@@ -255,7 +261,12 @@ private:
 class Patterns
 {
 public:
-	Patterns() : patterns_(0), changed_(-1) {}
+	Patterns() : patterns_(0), big_matrix_(), changed_(-1) {}
+	Patterns(const Patterns& copy) : big_matrix_(copy.big_matrix_), changed_(-1)
+	{
+		for (auto& pattern : copy.patterns_)
+			patterns_.push_back(pattern->get_new_instance());
+	}
 
 	bool avoid(const Matrix<size_t>& big_matrix, std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c)
 	{
@@ -280,11 +291,11 @@ public:
 
 		return true;
 	}
-	bool revert(const Matrix<size_t>& big_matrix, std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c)
+	bool revert(const Matrix<size_t>& big_matrix, const size_t r, const size_t c)
 	{
 		for (; changed_ != -1; --changed_)
 		{
-			if (!patterns_[changed_]->revert(big_matrix, sizes[changed_], r, c))
+			if (!patterns_[changed_]->revert(big_matrix, r, c))
 			{
 				assert(!"Matrix after reverting contains the pattern!");
 				throw my_exception("Matrix after reverting contains the pattern!");
@@ -303,13 +314,88 @@ public:
 		return orders;
 	}
 
-	void add(Pattern* pattern)
+	bool avoid(std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c, const std::vector<bool>::reference forced_end)
 	{
-		patterns_.push_back(pattern);
+		big_matrix_.flip(r, c);
+
+		long long changed = -1;
+
+		sizes.resize(patterns_.size());
+
+		for (auto& pattern : patterns_)
+		{
+			++changed;
+
+			// forcing abort from outside or the matrix doesn't avoid the pattern
+			if (forced_end || !pattern->avoid(big_matrix_, sizes[changed], r, c))
+			{
+				/*// flip the bit back
+				big_matrix_.flip(r, c);
+				//std::cout << "Avoid [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " (" << forced_end << ")fail" << std::endl;
+
+				// and revert pattern structures if needed
+				for (; changed != -1; --changed)
+				{
+					if (!patterns_[changed]->revert(big_matrix_, r, c))
+					{
+						assert(!"Matrix after reverting contains the pattern!");
+						throw my_exception("Matrix after reverting contains the pattern!");
+					}
+				}*/
+
+				return false;
+			}
+		}
+		//std::cout << "Avoid [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " (" << forced_end << ")success" << std::endl;
+		changes.push_back(std::make_pair(r, c));
+
+		return true;
 	}
+	bool revert(const size_t r, const size_t c, const Matrix<size_t>& mat)
+	{
+		// flip the bit back
+		big_matrix_.flip(r, c);
+		changes.push_back(std::make_pair(r, c));
+		//std::cout << "Revert [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " ()success" << std::endl;
+
+		//std::vector<Counter> sizes;
+
+		// and revert pattern structures if needed
+		for (auto& pattern : patterns_)
+		{
+			if (!pattern->revert(big_matrix_, r, c))
+			//if (!pattern->avoid(big_matrix_, sizes, r, c))
+			{
+				if (check_matrix(mat))
+					assert(!"Matrix after reverting contains the pattern!");
+				throw my_exception("Matrix after reverting contains the pattern!");
+			}
+		}
+
+		return true;
+	}
+	bool check_matrix(const Matrix<size_t>& mat)
+	{
+		bool diff = false;
+
+		for (size_t i = 0; i != 50; ++i)
+			for (size_t j = 0; j != 50; ++j)
+				if (mat.at(i, j) != big_matrix_.at(i, j))
+				{
+					diff = true;
+					std::cout << "[" << i << "," << j << "]" << std::endl;
+				}
+
+		return diff;
+	}
+
+	void add(Pattern* pattern) { patterns_.push_back(pattern); }
+	void set_matrix(const Matrix<size_t>& big_matrix) { big_matrix_ = big_matrix; }
 private:
 	std::vector<Pattern*> patterns_;
+	Matrix<size_t> big_matrix_;
 	long long changed_;
+	std::vector<std::pair<size_t, size_t> > changes;
 };
 
 #endif
