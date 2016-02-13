@@ -14,7 +14,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#include <tuple>
+#include <array>
 #include <deque>
 #include <queue>
 
@@ -81,18 +81,18 @@ inline void MCMCgenerator(const size_t iter, Patterns& patterns, Matrix<size_t>&
 	}
 }
 
-void parallel_avoid(Patterns& patterns, std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c, const std::vector<bool>::reference forced_end,
-	std::vector<bool>::reference ret, std::vector<bool>::reference done, std::vector<bool>::reference ret_read)
+void parallel_avoid(Patterns& patterns, std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c, const size_t& forced_end,
+	size_t& ret, size_t& done, size_t& ret_read)
 {
-	ret = patterns.avoid(sizes, r, c, forced_end);
-	ret_read = false;
-	done = true;
+	ret = patterns.avoid(sizes, r, c, forced_end) ? 1 : 0;
+	ret_read = 0;
+	done = 1;
 }
 
-void parallel_revert(Patterns& patterns, const size_t r, const size_t c, std::vector<bool>::reference done, const Matrix<size_t>& mat)
+void parallel_revert(Patterns& patterns, const size_t r, const size_t c, size_t& done, const Matrix<size_t>& mat)
 {
 	patterns.revert(r, c, mat);
-	done = true;
+	done = 1;
 }
 
 // Generates random-ish matrix of given size, which is avoiding given walking pattern. Uses iter iterations on markov chain.
@@ -115,11 +115,11 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 	// the same patterns for each thread
 	std::vector<Patterns> patterns_v(threads_count, patterns);
 	// this forces the end of calculation if the main thread finds out there was a successful call of avoid in a calculation with lower id
-	std::vector<bool> force_end(threads_count);
+	std::vector<size_t> force_end(threads_count);
 	// return value of avoid function for each thread and indicator whether the calculation is done. Those are the only variables the threads can modify (besides the patterns itself)
-	std::vector<bool> ret(threads_count), state(threads_count);
+	std::vector<size_t> ret(threads_count), state(threads_count);
 	// indicator whether the returned value was already read. Wouldn't be nice if I occasionally changed the returned value of a random call.
-	std::vector<bool> ret_read(threads_count);
+	std::vector<size_t> ret_read(threads_count);
 	// for each thread there is an pair saying which calculations need to be reverted
 	// reverting[i] = a; means that in the i-th thread all calculations with id greater than or equal to a need to be reverted 
 	std::vector<size_t> reverting(threads_count);
@@ -128,7 +128,7 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 	// for each thread there is a list of tasks done. Deque is used because I want to pop_front and pop_back
 	// queue[thread][i] = <id, r, c, return_val, reverted>; means that the i-th not checked (by the main thread) calculation has id, changed the entry at position [r,c],
 	// the avoid ended up with return_val and it has been reverted already (that is needed either when avoid returns false or when calculation with smaller id succeeds)
-	std::vector<std::deque<std::tuple<size_t, size_t, size_t, bool, bool, bool> > > queue(threads_count);
+	std::vector<std::deque<std::array<size_t, 6> > > queue(threads_count);
 
 	// random generator from uniform distribution [0, n-1]
 	std::random_device rd;
@@ -157,11 +157,12 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 		r = uni(rng);
 		c = uni(rng);
 
-		force_end[i] = false;
-		state[i] = false;
-		queue[i].push_back(std::make_tuple(++last, r, c, false, false, true));
+		force_end[i] = 0;
+		state[i] = 0;
+		ret_read[i] = 1;
+		queue[i].push_back(std::array<size_t, 6>{{++last, r, c, 0, 0, 1}});
 		ar << i << ": avoid [" << r << "," << c << "]" << std::endl;
-		threads[i] = std::thread(parallel_avoid, std::ref(patterns_v[i]), std::ref(sizes), r, c, force_end[i], ret[i], state[i], ret_read[i]);
+		threads[i] = std::thread(parallel_avoid, std::ref(patterns_v[i]), std::ref(sizes), r, c, std::ref(force_end[i]), std::ref(ret[i]), std::ref(state[i]), std::ref(ret_read[i]));
 	}
 
 	// go through iterations
@@ -181,29 +182,29 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 			const size_t index = priority.top().second;
 			priority.pop();
 
-			// special value indicating that there is a calculation with a smaller id using the same thread
-			if (index == threads_count)
-				continue;
-
-			// required calculation isn't done yet
+			// there is only one job and it is still running
 			if (queue[index].size() == 1 && !state[index])
 				continue;
 
 			// special id value indicating that there was a synchronization running
 			if (std::get<0>(queue[index].front()) == 0)
 			{
-				if (queue[index].size() > 1)
-					assert(!"After sync there are more than one calculations assigned to a thread.");
+				if (queue[index].size() > 1 || !state[index])
+					assert(!"After sync there are more than one jobs assigned to a thread.");
 
 				threads[index].join();
 				goto sync_block;
 			}
-			
-			// just in case front = back
-			if (queue[index].size() == 1 && !ret_read[index])
+
+			if (std::get<0>(queue[index].front()) != current && force_end[index])
+				goto reverting;		
+
+			if (!ret_read[index])
 			{
+				// ret_read is only set false after an avoid call and after the returned value is set,
+				// there is a possibility the thread is not done yet, but it won't change anything
 				std::get<3>(queue[index].back()) = ret[index];
-				ret_read[index] = true;
+				ret_read[index] = 1;
 			}
 
 			// if other threads are waiting for this one or there is nothing to revert
@@ -259,7 +260,7 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 							if (std::get<0>(queue[j].back()) > id)
 							{
 								// this only affects calls of avoid, not revert
-								force_end[j] = true;
+								force_end[j] = 1;
 
 								if (reverting[j] > id || reverting[j] == 0)
 									reverting[j] = id;
@@ -288,22 +289,37 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 					{
 						threads[index].join();
 
+						if (!ret_read[index])
+						{
+							std::get<3>(queue[index].back()) = ret[index];
+							ret_read[index] = true;
+						}
+
 						std::get<4>(queue[index].front()) = true;
 						state[index] = false;
 						ar << index << ": revert [" << std::get<1>(queue[index].front()) << "," << std::get<2>(queue[index].front()) << "] - " << std::get<0>(queue[index].front()) << std::endl;
-						threads[index] = std::thread(parallel_revert, std::ref(patterns_v[index]), std::get<1>(queue[index].front()), std::get<2>(queue[index].front()), state[index], std::ref(big_matrix));
+						threads[index] = std::thread(parallel_revert, std::ref(patterns_v[index]), std::get<1>(queue[index].front()), std::get<2>(queue[index].front()), std::ref(state[index]), std::ref(big_matrix));
 						continue;
 					}
 				}
 			}
 
+			if (!ret_read[index])
+			{
+				// ret_read is only set false after an avoid call and after the returned value is set,
+				// there is a possibility the thread is not done yet, but it won't change anything
+				std::get<3>(queue[index].back()) = ret[index];
+				ret_read[index] = true;
+			}
+
+		reverting:
+
 			if (!state[index])
 				continue;
 
-			// it should be done
 			threads[index].join();
-			
-			if (state[index] && !ret_read[index])
+
+			if (!ret_read[index])
 			{
 				std::get<3>(queue[index].back()) = ret[index];
 				ret_read[index] = true;
@@ -312,52 +328,43 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 			// reverting
 			if (force_end[index])
 			{
-				// this should not happen, but just in case
+				// no job needs to be reverted
 				if (std::get<0>(queue[index].back()) <= reverting[index] || reverting[index] == 0)
 					assert(!"The thread is in a forced_end state while having no incorrect calculations.");
+				if (!ret_read[index])
+					assert(!"Somehow didn't notice the returned value of a previous avoid call.");
 
-				// it was already reverted
-				if (/*!std::get<3>(queue[index].back()) ||*/ std::get<4>(queue[index].back()))
-				{
+				// delete everything that has been reverted already
+				while (!queue[index].empty() && std::get<0>(queue[index].back()) > reverting[index] && (/*!std::get<3>(queue[index].back()) ||*/ std::get<4>(queue[index].back())))
 					queue[index].pop_back();
 
-					while (!queue[index].empty() && std::get<0>(queue[index].back()) > reverting[index] && (/*!std::get<3>(queue[index].back()) ||*/ std::get<4>(queue[index].back())))
-						queue[index].pop_back();
-
-					// I've reverted everything I had to
-					if (queue[index].empty() || std::get<0>(queue[index].back()) <= reverting[index])
-					{
-						force_end[index] = false;
-						reverting[index] = 0;
-					}
-					else
-					{
-						/*if (!std::get<3>(queue[index].back()))
-							std::cout << "Something is bad ";*/
-						std::get<4>(queue[index].back()) = true;
-						state[index] = false;
-						ar << index << ": revert [" << std::get<1>(queue[index].back()) << "," << std::get<2>(queue[index].back()) << "] - " << std::get<0>(queue[index].back()) << std::endl;
-						threads[index] = std::thread(parallel_revert, std::ref(patterns_v[index]), std::get<1>(queue[index].back()), std::get<2>(queue[index].back()), state[index], std::ref(big_matrix));
-						break;
-					}
+				// I've reverted everything I had to
+				if (queue[index].empty() || std::get<0>(queue[index].back()) <= reverting[index])
+				{
+					force_end[index] = 0;
+					reverting[index] = 0;
 				}
+				// there is still something to revert
 				else
 				{
-					/*if (!std::get<3>(queue[index].back()))
-						std::cout << "Something is bad ";*/
-					std::get<4>(queue[index].back()) = true;
-					state[index] = false;
+					if (!ret_read[index])
+						assert(!"Somehow didn't notice the returned value of a previous avoid call.");
+
+					std::get<4>(queue[index].back()) = 1;
+					state[index] = 0;
 					ar << index << ": revert [" << std::get<1>(queue[index].back()) << "," << std::get<2>(queue[index].back()) << "] - " << std::get<0>(queue[index].back()) << std::endl;
-					threads[index] = std::thread(parallel_revert, std::ref(patterns_v[index]), std::get<1>(queue[index].back()), std::get<2>(queue[index].back()), state[index], std::ref(big_matrix));
-					break;
+					threads[index] = std::thread(parallel_revert, std::ref(patterns_v[index]), std::get<1>(queue[index].back()), std::get<2>(queue[index].back()), std::ref(state[index]), std::ref(big_matrix));
+					continue;
 				}
 			}
 
 		sync_block:
 
+			// the last job was to synchronize and it is done
 			if (!queue[index].empty() && std::get<0>(queue[index].front()) == 0)
 				queue[index].pop_front();
 
+			// there are synchrozations to make
 			if (!sync[index].empty())
 			{
 				if (!queue[index].empty())
@@ -365,15 +372,21 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 
 				std::pair<size_t, size_t> pair = sync[index].front();
 				sync[index].pop();
+
+				if (!ret_read[index])
+					assert(!"Somehow didn't notice the returned value of a previous avoid call.");
 				
 				state[index] = false;
-				queue[index].push_front(std::make_tuple(0, pair.first, pair.second, false, false, true));
+				queue[index].push_front(std::array<size_t, 6>{{0, pair.first, pair.second, 0, 0, 1}});
 				ar << index << ": sync [" << pair.first << "," << pair.second << "] - " << 0 << std::endl;
-				threads[index] = std::thread(parallel_revert, std::ref(patterns_v[index]), pair.first, pair.second, state[index], std::ref(big_matrix));
+				// I call revert since this change was already proved to be successful by another thread
+				threads[index] = std::thread(parallel_revert, std::ref(patterns_v[index]), pair.first, pair.second, std::ref(state[index]), std::ref(big_matrix));
 				continue;
 			}
 			//if (queue[index].empty())
 			//	if (patterns_v[index].check_matrix(big_matrix))
+
+		next_job:
 
 			r = uni(rng);
 			c = uni(rng);
@@ -382,10 +395,12 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 
 			if (force_end[index] || reverting[index] != 0)
 				assert(!"The thread is in a forced_end state while calling a new avoid.");
+			if (!ret_read[index])
+				assert(!"Somehow didn't notice the returned value of a previous avoid call.");
 			state[index] = false;
-			queue[index].push_back(std::make_tuple(++last, r, c, false, false, true));
+			queue[index].push_back(std::array<size_t, 6>{{++last, r, c, false, false, true}});
 			ar << index << ": avoid [" << r << "," << c << "] - " << last << std::endl;
-			threads[index] = std::thread(parallel_avoid, std::ref(patterns_v[index]), std::ref(sizes), r, c, force_end[index], ret[index], state[index], ret_read[index]);
+			threads[index] = std::thread(parallel_avoid, std::ref(patterns_v[index]), std::ref(sizes), r, c, std::ref(force_end[index]), std::ref(ret[index]), std::ref(state[index]), std::ref(ret_read[index]));
 
 			//t = clock() - t;
 

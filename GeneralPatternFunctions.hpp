@@ -104,44 +104,59 @@ bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vector<Cou
 	{
 		counter.maps = 0;
 		counter.tries = 0;
-
-		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
-		if (building_tree_[level % 2].size() == 0)
-			return true;
-
-		building_tree_[(level + 1) % 2].clear();
-
-		// loop through the mappings found in the last iteration
-		for (const std::vector<size_t>& mapping : building_tree_[level % 2])
-		{
-			// find boundaries of added line:
-			find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to, r, c);
-
-			// map orders_[level] to j-th line of N if possible
-			for (size_t big_line = from; big_line < to; ++big_line)
+		try{
+			// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
+			if (building_tree_[level % 2].size() == 0)
+				return true;
+			try{
+				building_tree_[(level + 1) % 2].clear();
+			}
+			catch (...)
 			{
-				++counter.tries;
+				building_tree_[(level + 1) % 2].clear();
+			}
+			// loop through the mappings found in the last iteration
+			for (const std::vector<size_t>& mapping : building_tree_[level % 2])
+			{
+				// find boundaries of added line:
+				find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to, r, c);
 
-				// if currenly added line can be mapped to big_line in mapping map
-				if (map(map_approach_ != NORECURSION, order_[level], level, big_line, mapping, big_matrix))
+				// map orders_[level] to j-th line of N if possible
+				for (size_t big_line = from; big_line < to; ++big_line)
 				{
-					++counter.maps;
+					++counter.tries;
 
-					// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
-					if (level == steps_ - 1) {
-						counter.uniques = building_tree_[(level + 1) % 2].size();
-						sizes.push_back(counter);
-						return false;
+					try{
+						// if currenly added line can be mapped to big_line in mapping map
+						if (map(map_approach_ != NORECURSION, order_[level], level, big_line, mapping, big_matrix))
+						{
+							++counter.maps;
+
+							// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
+							if (level == steps_ - 1) {
+								counter.uniques = building_tree_[(level + 1) % 2].size();
+								sizes.push_back(counter);
+								return false;
+							}
+
+							// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line, and add it to the building_tree_
+							building_tree_[(level + 1) % 2].insert_without_duplicates(extend(level, big_line, mapping));
+						}
 					}
-
-					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line, and add it to the building_tree_
-					building_tree_[(level + 1) % 2].insert_without_duplicates(extend(level, big_line, mapping));
+					catch (...)
+					{
+						++counter.tries;
+					}
 				}
 			}
-		}
 
-		counter.uniques = building_tree_[(level + 1) % 2].size();
-		sizes.push_back(counter);
+			counter.uniques = building_tree_[(level + 1) % 2].size();
+			sizes.push_back(counter);
+		}
+		catch (...)
+		{
+			sizes.push_back(counter);
+		}
 	}
 
 	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
@@ -645,7 +660,8 @@ bool General_pattern<T>::check_orthogonal_bounds(const size_t line, const size_t
 
 		if ((orthogonal_line >> current) & 1)
 		{
-			if (big_matrix.at(big_orthogonal_line, from - big_matrix.getRow()))
+			if ((line < row_ && big_matrix.at(from, big_orthogonal_line)) ||
+				(line >= row_ && big_matrix.at(big_orthogonal_line, from - big_matrix.getRow())))
 				++current;
 		}
 		else
@@ -670,7 +686,7 @@ bool General_pattern<T>::check_orthogonal_bounds(const size_t line, const size_t
 
 				if ((orthogonal_line >> current) & 1)
 				{
-					if (big_matrix.at(to, big_orthogonal_line - big_matrix.getRow()))
+					if (big_matrix.at(to, big_orthogonal_line))
 						++current;
 				}
 				else
@@ -716,8 +732,8 @@ bool General_pattern<T>::check_orthogonal_bounds(const size_t line, const size_t
 
 			if ((orthogonal_line >> current) & 1)
 			{
-				if ((line >= row_ && big_matrix.at(to, big_orthogonal_line - big_matrix.getRow())) ||
-					(line < row_ && big_matrix.at(big_orthogonal_line, to - big_matrix.getRow())))
+				if ((line < row_ && big_matrix.at(to, big_orthogonal_line)) ||
+					(line >= row_ && big_matrix.at(big_orthogonal_line, to - big_matrix.getRow())))
 					++current;
 			}
 			else
@@ -765,9 +781,9 @@ bool General_pattern<T>::map(const bool backtrack, const size_t line, const size
 					return false;
 
 				// or there is not enough one-entries on the intersected line
-				if (map_approach_ == RECURSION && !check_orthogonal_bounds(line, level, big_line, mapping, lines_[l],
-					(line_is_row ? mapping[index] - big_matrix.getRow() : mapping[index]), big_matrix))
-					return false;
+				//if (map_approach_ == RECURSION && !check_orthogonal_bounds(line, level, big_line, mapping, lines_[l],
+				//	(line_is_row ? mapping[index] - big_matrix.getRow() : mapping[index]), big_matrix))
+				//	return false;
 			}
 			// I don't want to call myself recursively anymore - I only backtrack the function calls from avoid function
 			else if (!backtrack)

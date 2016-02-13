@@ -314,7 +314,7 @@ public:
 		return orders;
 	}
 
-	bool avoid(std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c, const std::vector<bool>::reference forced_end)
+	bool avoid(std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c, const size_t& forced_end)
 	{
 		big_matrix_.flip(r, c);
 
@@ -326,24 +326,30 @@ public:
 		{
 			++changed;
 
-			// forcing abort from outside or the matrix doesn't avoid the pattern
-			if (forced_end || !pattern->avoid(big_matrix_, sizes[changed], r, c))
-			{
-				/*// flip the bit back
-				big_matrix_.flip(r, c);
-				//std::cout << "Avoid [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " (" << forced_end << ")fail" << std::endl;
-
-				// and revert pattern structures if needed
-				for (; changed != -1; --changed)
+			try{
+				// forcing abort from outside or the matrix doesn't avoid the pattern
+				if (forced_end || !pattern->avoid(big_matrix_, sizes[changed], r, c))
 				{
+					/*// flip the bit back
+					big_matrix_.flip(r, c);
+					//std::cout << "Avoid [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " (" << forced_end << ")fail" << std::endl;
+
+					// and revert pattern structures if needed
+					for (; changed != -1; --changed)
+					{
 					if (!patterns_[changed]->revert(big_matrix_, r, c))
 					{
-						assert(!"Matrix after reverting contains the pattern!");
-						throw my_exception("Matrix after reverting contains the pattern!");
+					assert(!"Matrix after reverting contains the pattern!");
+					throw my_exception("Matrix after reverting contains the pattern!");
 					}
-				}*/
+					}*/
 
-				return false;
+					return false;
+				}
+			}
+			catch (...)
+			{
+				changed = 0;
 			}
 		}
 		//std::cout << "Avoid [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " (" << forced_end << ")success" << std::endl;
@@ -358,17 +364,23 @@ public:
 		changes.push_back(std::make_pair(r, c));
 		//std::cout << "Revert [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " ()success" << std::endl;
 
-		//std::vector<Counter> sizes;
+		std::vector<Counter> sizes;
 
 		// and revert pattern structures if needed
 		for (auto& pattern : patterns_)
 		{
-			if (!pattern->revert(big_matrix_, r, c))
-			//if (!pattern->avoid(big_matrix_, sizes, r, c))
+			try{
+				//if (!pattern->revert(big_matrix_, r, c))
+				if (!pattern->avoid(big_matrix_, sizes, r, c))
+				{
+					if (check_matrix(mat))
+						assert(!"Matrix after reverting contains the pattern!");
+					throw my_exception("Matrix after reverting contains the pattern!");
+				}
+			}
+			catch (...)
 			{
-				if (check_matrix(mat))
-					assert(!"Matrix after reverting contains the pattern!");
-				throw my_exception("Matrix after reverting contains the pattern!");
+				sizes.clear();
 			}
 		}
 

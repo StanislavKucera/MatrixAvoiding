@@ -497,8 +497,8 @@ int main()
 
 	//////////////////////////////////////////////////////
 	t = clock();
-	//parallelMCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, 2);
-	MCMCgenerator(iter, patterns, result, perf_stats, matrix_stats);
+	parallelMCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, 2);
+	//MCMCgenerator(iter, patterns, result, perf_stats, matrix_stats);
 	t = clock() - t;
 	//////////////////////////////////////////////////////
 
