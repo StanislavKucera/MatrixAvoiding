@@ -20,6 +20,7 @@
 #include <exception>																						//								|
 #include <stdexcept>																						//								v
 #include <time.h>
+#include <chrono>
 
 
 inline Type getType(const std::string& type)
@@ -119,6 +120,7 @@ int main()
 	size_t N, iter;
 	size_t from, to, freq;							// matrix statistics settings
 	clock_t t;
+	std::chrono::system_clock::time_point start, end;
 	std::string junk, param;
 	bool initialized = false;
 
@@ -501,10 +503,10 @@ int main()
 	}
 
 	//////////////////////////////////////////////////////
-	t = clock();
+	start = std::chrono::system_clock::now();
 	//parallelMCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, 3);
 	MCMCgenerator(iter, patterns, result, perf_stats, matrix_stats);
-	t = clock() - t;
+	end = std::chrono::system_clock::now();
 	//////////////////////////////////////////////////////
 
 	// if output file is specified
@@ -528,7 +530,7 @@ int main()
 	// if performance stats file is specified
 	if (perf_file != "") {
 		std::ofstream opFile(perf_file);
-		opFile << "Total running time: " << (double)t / CLOCKS_PER_SEC << " sec.\n\n";
+		opFile << "Total running time: " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << " sec.\n\n";
 		perf_stats.print_data(opFile);
 		opFile.close();
 	}
@@ -536,7 +538,7 @@ int main()
 	// if performance stats csv file is specified
 	if (csv_file != "") {
 		std::ofstream opcFile(csv_file);
-		opcFile << "Total running time: " << (double)t / CLOCKS_PER_SEC << " sec.\n\n";
+		opcFile << "Total running time: " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << " sec.\n\n";
 		perf_stats.print_csv(opcFile);
 		opcFile.close();
 	}
@@ -553,8 +555,9 @@ int main()
 		std::cout << result.Print();
 	if (console_pattern)
 		std::cout << "\nAvoiding pattern:\n\n" << pattern.Print();
-	if (console_time)
-		std::cout << "\nRunning time: " << (double)t / CLOCKS_PER_SEC << " sec.\n";
+	if (console_time) {
+		std::cout << "\nTotal running time (core count independent): " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << " sec.\n";
+	}
 	if (performance)
 	{
 		std::cout << "\nPerformance statistics:\n";

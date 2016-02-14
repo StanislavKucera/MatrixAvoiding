@@ -20,9 +20,10 @@ class size_t_vector_hasher {
 public:
 	size_t operator()(const std::vector<size_t>& vec) const {
 		size_t seed = 0;
-		for (auto& i : vec) {
+
+		for (auto& i : vec)
 			seed ^= i + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-		}
+
 		return seed;
 	}
 };
