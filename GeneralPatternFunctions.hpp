@@ -97,66 +97,50 @@ bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vector<Cou
 	Counter counter;
 	size_t from, to;
 	const size_t big_matrix_rows = big_matrix.getRow(),
-				 big_matrix_cols = big_matrix.getCol();
+		big_matrix_cols = big_matrix.getCol();
 
 	// main loop through added lines (loops 2*k times)
 	for (size_t level = 0; level < steps_; ++level)
 	{
 		counter.maps = 0;
 		counter.tries = 0;
-		try{
-			// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
-			if (building_tree_[level % 2].size() == 0)
-				return true;
-			try{
-				building_tree_[(level + 1) % 2].clear();
-			}
-			catch (...)
-			{
-				building_tree_[(level + 1) % 2].clear();
-			}
-			// loop through the mappings found in the last iteration
-			for (const std::vector<size_t>& mapping : building_tree_[level % 2])
-			{
-				// find boundaries of added line:
-				find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to, r, c);
+		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
+		if (building_tree_[level % 2].size() == 0)
+			return true;
 
-				// map orders_[level] to j-th line of N if possible
-				for (size_t big_line = from; big_line < to; ++big_line)
+		building_tree_[(level + 1) % 2].clear();
+
+		// loop through the mappings found in the last iteration
+		for (const std::vector<size_t>& mapping : building_tree_[level % 2])
+		{
+			// find boundaries of added line:
+			find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to, r, c);
+
+			// map orders_[level] to j-th line of N if possible
+			for (size_t big_line = from; big_line < to; ++big_line)
+			{
+				++counter.tries;
+
+				// if currenly added line can be mapped to big_line in mapping map
+				if (map(map_approach_ != NORECURSION, order_[level], level, big_line, mapping, big_matrix))
 				{
-					++counter.tries;
+					++counter.maps;
 
-					try{
-						// if currenly added line can be mapped to big_line in mapping map
-						if (map(map_approach_ != NORECURSION, order_[level], level, big_line, mapping, big_matrix))
-						{
-							++counter.maps;
-
-							// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
-							if (level == steps_ - 1) {
-								counter.uniques = building_tree_[(level + 1) % 2].size();
-								sizes.push_back(counter);
-								return false;
-							}
-
-							// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line, and add it to the building_tree_
-							building_tree_[(level + 1) % 2].insert_without_duplicates(extend(level, big_line, mapping));
-						}
+					// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
+					if (level == steps_ - 1) {
+						counter.uniques = building_tree_[(level + 1) % 2].size();
+						sizes.push_back(counter);
+						return false;
 					}
-					catch (...)
-					{
-						++counter.tries;
-					}
+
+					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line, and add it to the building_tree_
+					building_tree_[(level + 1) % 2].insert_without_duplicates(extend(level, big_line, mapping));
 				}
 			}
+		}
 
-			counter.uniques = building_tree_[(level + 1) % 2].size();
-			sizes.push_back(counter);
-		}
-		catch (...)
-		{
-			sizes.push_back(counter);
-		}
+		counter.uniques = building_tree_[(level + 1) % 2].size();
+		sizes.push_back(counter);
 	}
 
 	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern

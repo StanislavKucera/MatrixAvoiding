@@ -107,7 +107,8 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 	// calculation ids - current means currently being checked (waited for) by the main thread, last is the lastly assigned id
 	size_t current = 1, last = 0;
 	// calculations ordered by id - use this to find the order in which I deal with the threads
-	std::priority_queue<std::pair<size_t, size_t>, std::vector<std::pair<size_t, size_t> >, std::greater<std::pair<size_t, size_t> > > priority;
+	//std::priority_queue<std::pair<size_t, size_t>, std::vector<std::pair<size_t, size_t> >, std::greater<std::pair<size_t, size_t> > > priority;
+	//std::set<std::pair<size_t, size_t> > priority;
 
 	std::vector<std::thread> threads(threads_count);
 	// when parallel, each patterns has its own copy of a big_matrix, the copies may differ during the calculations by a little bit
@@ -139,9 +140,9 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 	size_t r, c;
 
 	// this is gonna be here for now
-	std::vector<std::vector<Counter> > sizes;
-	clock_t t;
-	bool success;
+	std::vector<std::vector<std::vector<Counter> > > sizes(threads_count);
+	//clock_t t;
+	//bool success;
 	size_t last_perc = 0;
 
 	std::ofstream oFile("changes.txt"), ar("avoidrevert.txt");
@@ -150,9 +151,9 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 	//perf_stats.set_order(patterns.get_order());
 
 	// matrix statistics purposes
-	size_t ones = big_matrix.getOnes();
+	//size_t ones = big_matrix.getOnes();
 	
-	for (int i = 0; i != threads_count; ++i)
+	for (size_t i = 0; i != threads_count; ++i)
 	{
 		r = uni(rng);
 		c = uni(rng);
@@ -162,7 +163,7 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 		ret_read[i] = 1;
 		queue[i].push_back(std::array<size_t, 6>{{++last, r, c, 0, 0, 1}});
 		ar << i << ": avoid [" << r << "," << c << "]" << std::endl;
-		threads[i] = std::thread(parallel_avoid, std::ref(patterns_v[i]), std::ref(sizes), r, c, std::ref(force_end[i]), std::ref(ret[i]), std::ref(state[i]), std::ref(ret_read[i]));
+		threads[i] = std::thread(parallel_avoid, std::ref(patterns_v[i]), std::ref(sizes[i]), r, c, std::ref(force_end[i]), std::ref(ret[i]), std::ref(state[i]), std::ref(ret_read[i]));
 	}
 
 	// go through iterations
@@ -172,15 +173,21 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 		//success = true;
 		//sizes.clear();
 
-		for (size_t i = 0; i < threads_count; ++i)
-		{
-			priority.push(std::make_pair(std::get<0>(queue[i].front()), i));
-		}
+		//priority.clear();
 
-		while (!priority.empty())
+		//for (size_t i = 0; i < threads_count; ++i)
+	//	{
+			//priority.push(std::make_pair(std::get<0>(queue[i].front()), i));
+		//	priority.insert(std::make_pair(std::get<0>(queue[i].front()), i));
+		//}
+
+		//while (!priority.empty())
+		for (size_t index = 0; index != threads_count; ++index)
+		//for (auto& prior : priority)
 		{
-			const size_t index = priority.top().second;
-			priority.pop();
+			//const size_t index = prior.second;
+			//const size_t index = priority.top().second;
+			//priority.pop();
 
 			// there is only one job and it is still running
 			if (queue[index].size() == 1 && !state[index])
@@ -270,36 +277,15 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 				}
 				else
 				{
-					if (std::get<4>(queue[index].front()))
+					// the calculation I was waiting for is done
+					if (std::get<0>(queue[index].front()) == current)
 					{
-						// the calculation I was waiting for is done
-						if (std::get<0>(queue[index].front()) == current)
-						{
-							++current;
-							++iterations;
-							if (iterations == iter)
-								goto while_end;
+						++current;
+						++iterations;
+						if (iterations == iter)
+							goto while_end;
 
-							queue[index].pop_front();
-						}
-					}
-					else if (!state[index])
-						continue;
-					else
-					{
-						threads[index].join();
-
-						if (!ret_read[index])
-						{
-							std::get<3>(queue[index].back()) = ret[index];
-							ret_read[index] = true;
-						}
-
-						std::get<4>(queue[index].front()) = true;
-						state[index] = false;
-						ar << index << ": revert [" << std::get<1>(queue[index].front()) << "," << std::get<2>(queue[index].front()) << "] - " << std::get<0>(queue[index].front()) << std::endl;
-						threads[index] = std::thread(parallel_revert, std::ref(patterns_v[index]), std::get<1>(queue[index].front()), std::get<2>(queue[index].front()), std::ref(state[index]), std::ref(big_matrix));
-						continue;
+						queue[index].pop_front();
 					}
 				}
 			}
@@ -335,7 +321,7 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 					assert(!"Somehow didn't notice the returned value of a previous avoid call.");
 
 				// delete everything that has been reverted already
-				while (!queue[index].empty() && std::get<0>(queue[index].back()) > reverting[index] && (/*!std::get<3>(queue[index].back()) ||*/ std::get<4>(queue[index].back())))
+				while (!queue[index].empty() && std::get<0>(queue[index].back()) > reverting[index] && (!std::get<3>(queue[index].back()) || std::get<4>(queue[index].back())))
 					queue[index].pop_back();
 
 				// I've reverted everything I had to
@@ -386,8 +372,6 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 			//if (queue[index].empty())
 			//	if (patterns_v[index].check_matrix(big_matrix))
 
-		next_job:
-
 			r = uni(rng);
 			c = uni(rng);
 
@@ -400,7 +384,7 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 			state[index] = false;
 			queue[index].push_back(std::array<size_t, 6>{{++last, r, c, false, false, true}});
 			ar << index << ": avoid [" << r << "," << c << "] - " << last << std::endl;
-			threads[index] = std::thread(parallel_avoid, std::ref(patterns_v[index]), std::ref(sizes), r, c, std::ref(force_end[index]), std::ref(ret[index]), std::ref(state[index]), std::ref(ret_read[index]));
+			threads[index] = std::thread(parallel_avoid, std::ref(patterns_v[index]), std::ref(sizes[index]), r, c, std::ref(force_end[index]), std::ref(ret[index]), std::ref(state[index]), std::ref(ret_read[index]));
 
 			//t = clock() - t;
 

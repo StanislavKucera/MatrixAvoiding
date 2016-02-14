@@ -65,6 +65,7 @@ Walking_pattern::Walking_pattern(const Matrix<size_t>& pattern, const size_t n)
 					// horizontal
 					direction_.push_back(1);					
 				}
+
 				// last element of the walk
 				last_i = i; last_j = j;							
 			}
@@ -136,6 +137,7 @@ top_right:
 						// horizontal
 						direction_.push_back(1);
 					}
+
 					// last element of the walk
 					last_i = i; last_j = j;
 				}
@@ -257,7 +259,7 @@ bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counte
 {
 	typedef std::pair<size_t, size_t> pair;
 	pair current;							// [x,y] of the currently updated element
-	size_t old_c_v, old_c_h, c_v_v, c_h_h;	// c_v and c_h before an update, c_v of element to the top of current, c_h of element to the left
+	size_t c_v_v, c_h_h;	// c_v and c_h before an update, c_v of element to the top of current, c_h of element to the left
 
 	if (top_left)
 	{
@@ -276,9 +278,6 @@ bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counte
 				// I look to the right of the pattern
 				if (current.second >= max_walk_part_.getCol() || current.second < c)
 					continue;
-
-				old_c_v = max_walk_part_.at(current).first;
-				old_c_h = max_walk_part_.at(current).second;
 
 				// element on the first row
 				if (current.first == 0)
@@ -354,9 +353,6 @@ bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counte
 				// I look to the right of the pattern
 				if (current.second >= (long long)max_walk_part_.getCol())
 					break;
-
-				old_c_v = max_walk_part_.at(current).first;
-				old_c_h = max_walk_part_.at(current).second;
 
 				// element on the first row
 				if (current.first == 0)

@@ -294,13 +294,11 @@ public:
 	bool revert(const Matrix<size_t>& big_matrix, const size_t r, const size_t c)
 	{
 		for (; changed_ != -1; --changed_)
-		{
 			if (!patterns_[changed_]->revert(big_matrix, r, c))
 			{
 				assert(!"Matrix after reverting contains the pattern!");
 				throw my_exception("Matrix after reverting contains the pattern!");
 			}
-		}
 
 		return true;
 	}
@@ -326,35 +324,27 @@ public:
 		{
 			++changed;
 
-			try{
-				// forcing abort from outside or the matrix doesn't avoid the pattern
-				if (forced_end || !pattern->avoid(big_matrix_, sizes[changed], r, c))
-				{
-					/*// flip the bit back
-					big_matrix_.flip(r, c);
-					//std::cout << "Avoid [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " (" << forced_end << ")fail" << std::endl;
+			// forcing abort from outside or the matrix doesn't avoid the pattern
+			if (forced_end || !pattern->avoid(big_matrix_, sizes[changed], r, c))
+			{
+				// flip the bit back
+				big_matrix_.flip(r, c);
+				//std::cout << "Avoid [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " (" << forced_end << ")fail" << std::endl;
 
-					// and revert pattern structures if needed
-					for (; changed != -1; --changed)
-					{
+				// and revert pattern structures if needed
+				for (; changed != -1; --changed)
 					if (!patterns_[changed]->revert(big_matrix_, r, c))
 					{
-					assert(!"Matrix after reverting contains the pattern!");
-					throw my_exception("Matrix after reverting contains the pattern!");
+						assert(!"Matrix after reverting contains the pattern!");
+						throw my_exception("Matrix after reverting contains the pattern!");
 					}
-					}*/
 
-					return false;
-				}
-			}
-			catch (...)
-			{
-				changed = 0;
+				return false;
 			}
 		}
+
 		//std::cout << "Avoid [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " (" << forced_end << ")success" << std::endl;
 		changes.push_back(std::make_pair(r, c));
-
 		return true;
 	}
 	bool revert(const size_t r, const size_t c, const Matrix<size_t>& mat)
@@ -364,23 +354,17 @@ public:
 		changes.push_back(std::make_pair(r, c));
 		//std::cout << "Revert [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " ()success" << std::endl;
 
-		std::vector<Counter> sizes;
+		//std::vector<Counter> sizes;
 
 		// and revert pattern structures if needed
 		for (auto& pattern : patterns_)
 		{
-			try{
-				//if (!pattern->revert(big_matrix_, r, c))
-				if (!pattern->avoid(big_matrix_, sizes, r, c))
-				{
-					if (check_matrix(mat))
-						assert(!"Matrix after reverting contains the pattern!");
-					throw my_exception("Matrix after reverting contains the pattern!");
-				}
-			}
-			catch (...)
+			if (!pattern->revert(big_matrix_, r, c))
+			//if (!pattern->avoid(big_matrix_, sizes, r, c))
 			{
-				sizes.clear();
+				if (check_matrix(mat))
+					assert(!"Matrix after reverting contains the pattern!");
+				throw my_exception("Matrix after reverting contains the pattern!");
 			}
 		}
 
@@ -390,8 +374,8 @@ public:
 	{
 		bool diff = false;
 
-		for (size_t i = 0; i != 50; ++i)
-			for (size_t j = 0; j != 50; ++j)
+		for (size_t i = 0; i != big_matrix_.getRow(); ++i)
+			for (size_t j = 0; j != big_matrix_.getCol(); ++j)
 				if (mat.at(i, j) != big_matrix_.at(i, j))
 				{
 					diff = true;

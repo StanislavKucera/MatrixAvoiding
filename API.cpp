@@ -175,6 +175,7 @@ int main()
 	{
 		output = param;
 		FILE* test = fopen(output.c_str(), "w");
+
 		if (!test)
 			std::cout << "Cannot open file \"" << output << "\". Please check all directories are created and accessible.\n";
 		else
@@ -200,6 +201,7 @@ int main()
 	{
 		perf_file = param;
 		FILE* test = fopen(perf_file.c_str(), "w");
+
 		if (!test)
 			std::cout << "Cannot open file \"" << perf_file << "\". Please check all directories are created and accessible.\n";
 		else
@@ -217,6 +219,7 @@ int main()
 	{
 		csv_file = param;
 		FILE* test = fopen(csv_file.c_str(), "w");
+
 		if (!test)
 			std::cout << "Cannot open file \"" << csv_file << "\". Please check all directories are created and accessible.\n";
 		else
@@ -244,6 +247,7 @@ int main()
 	{
 		hist = param;
 		FILE* test = fopen(hist.c_str(), "w");
+
 		if (!test)
 			std::cout << "Cannot open file \"" << hist << "\". Please check all directories are created and accessible.\n";
 		else
@@ -257,6 +261,7 @@ int main()
 	{
 		max_ones = param;
 		FILE* test = fopen(max_ones.c_str(), "w");
+
 		if (!test)
 			std::cout << "Cannot open file \"" << max_ones << "\". Please check all directories are created and accessible.\n";
 		else
@@ -497,8 +502,8 @@ int main()
 
 	//////////////////////////////////////////////////////
 	t = clock();
-	parallelMCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, 2);
-	//MCMCgenerator(iter, patterns, result, perf_stats, matrix_stats);
+	//parallelMCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, 3);
+	MCMCgenerator(iter, patterns, result, perf_stats, matrix_stats);
 	t = clock() - t;
 	//////////////////////////////////////////////////////
 
