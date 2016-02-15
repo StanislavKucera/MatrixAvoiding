@@ -123,7 +123,7 @@ bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vector<Cou
 				++counter.tries;
 
 				// if currenly added line can be mapped to big_line in mapping map
-				if (map(map_approach_ != NORECURSION, order_[level], level, big_line, mapping, big_matrix))
+				if (map(map_approach_ > LAZY, order_[level], level, big_line, mapping, big_matrix))
 				{
 					++counter.maps;
 
@@ -606,10 +606,10 @@ template<typename T>
 bool General_pattern<T>::check_orthogonal_bounds(const size_t line, const size_t level, const size_t big_line, const std::vector<size_t>& mapping,
 	const size_t orthogonal_line, const size_t big_orthogonal_line, const Matrix<size_t>& big_matrix) const
 {
-	const size_t	bot = parallel_bound_indices_[level][line].first.first,		// index to the lower bound for currently added line in map vector
-					top = parallel_bound_indices_[level][line].first.second,	// index to the upper bound for currently added line in map vector
-					i_bot = parallel_bound_indices_[level][line].second.first,	// index of the line of the pattern which is a upper bound of currently added line 
-					i_top = parallel_bound_indices_[level][line].second.second;	// index of the line of the pattern which is a lower bound of currently added line
+	const size_t bot = parallel_bound_indices_[level][line].first.first,	// index to the lower bound for currently added line in map vector
+		top = parallel_bound_indices_[level][line].first.second,			// index to the upper bound for currently added line in map vector
+		i_bot = parallel_bound_indices_[level][line].second.first,			// index of the line of the pattern which is a upper bound of currently added line 
+		i_top = parallel_bound_indices_[level][line].second.second;			// index of the line of the pattern which is a lower bound of currently added line
 
 	size_t from, to, current;
 
@@ -645,7 +645,8 @@ bool General_pattern<T>::check_orthogonal_bounds(const size_t line, const size_t
 
 		if ((orthogonal_line >> current) & 1)
 		{
-			if (big_matrix.at(big_orthogonal_line, from - big_matrix.getRow()))
+			if ((line < row_ && big_matrix.at(from, big_orthogonal_line)) ||
+				(line >= row_ && big_matrix.at(big_orthogonal_line, from - big_matrix.getRow())))
 				++current;
 		}
 		else
@@ -670,7 +671,7 @@ bool General_pattern<T>::check_orthogonal_bounds(const size_t line, const size_t
 
 				if ((orthogonal_line >> current) & 1)
 				{
-					if (big_matrix.at(to, big_orthogonal_line - big_matrix.getRow()))
+					if (big_matrix.at(to, big_orthogonal_line))
 						++current;
 				}
 				else
@@ -716,8 +717,8 @@ bool General_pattern<T>::check_orthogonal_bounds(const size_t line, const size_t
 
 			if ((orthogonal_line >> current) & 1)
 			{
-				if ((line >= row_ && big_matrix.at(to, big_orthogonal_line - big_matrix.getRow())) ||
-					(line < row_ && big_matrix.at(big_orthogonal_line, to - big_matrix.getRow())))
+				if ((line < row_ && big_matrix.at(to, big_orthogonal_line)) ||
+					(line >= row_ && big_matrix.at(big_orthogonal_line, to - big_matrix.getRow())))
 					++current;
 			}
 			else
@@ -733,13 +734,13 @@ bool General_pattern<T>::check_orthogonal_bounds(const size_t line, const size_t
 template<typename T>
 bool General_pattern<T>::map(const bool backtrack, const size_t line, const size_t level, const size_t big_line, const std::vector<size_t>& mapping, const Matrix<size_t>& big_matrix)
 {
-	size_t		from,
-				to,
-				last_one = 0;
-	bool		know_bounds = false,
-				atleast1 = false;
-	const bool	line_is_row = line < row_,
-				line_is_col = line >= row_;
+	size_t from,
+		to,
+		last_one = 0;
+	bool know_bounds = false,
+		atleast1 = false;
+	const bool line_is_row = line < row_,
+		line_is_col = line >= row_;
 
 	// go through all elements of "line"
 	for (size_t l = 0; l < (line_is_row ? col_ : row_); ++l)
@@ -765,7 +766,7 @@ bool General_pattern<T>::map(const bool backtrack, const size_t line, const size
 					return false;
 
 				// or there is not enough one-entries on the intersected line
-				if (map_approach_ == RECURSION && !check_orthogonal_bounds(line, level, big_line, mapping, lines_[l],
+				if ((map_approach_ == LAZY || map_approach_ > SEMILAZY) && !check_orthogonal_bounds(line, level, big_line, mapping, lines_[l],
 					(line_is_row ? mapping[index] - big_matrix.getRow() : mapping[index]), big_matrix))
 					return false;
 			}
@@ -787,7 +788,7 @@ bool General_pattern<T>::map(const bool backtrack, const size_t line, const size
 						(line_is_col && big_matrix.at(last_one, big_line - big_matrix.getRow())))
 					{
 						// can l-th line be mapped to last_one?
-						if (map_approach_ == COMPROMISE || map(false, l_index, level, last_one, mapping, big_matrix))
+						if (map_approach_ == SUPERACTIVE || map(false, l_index, level, last_one, mapping, big_matrix))
 						{
 							// yes, it can
 							atleast1 = true;
@@ -816,7 +817,7 @@ bool General_pattern<T>::map(const bool backtrack, const size_t line, const size
 						(line_is_col && big_matrix.at(last_one, big_line - big_matrix.getRow())))
 					{
 						// can l-th line be mapped to last_one?
-						if (map_approach_ == COMPROMISE || map(false, l_index, level, last_one, mapping, big_matrix))
+						if (map_approach_ == SUPERACTIVE || map(false, l_index, level, last_one, mapping, big_matrix))
 						{
 							// yes, it can
 							atleast1 = true;

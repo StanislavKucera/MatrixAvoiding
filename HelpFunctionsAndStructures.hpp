@@ -11,7 +11,7 @@ enum Type { GENERAL, WALKING, SLOW };
 // Enum for the line ordering functions
 enum Order { DESC, SUM, MAX, AUTO, CUSTOM };
 
-enum Map { RECURSION, COMPROMISE, NORECURSION };
+enum Map { SUPERLAZY, LAZY, SEMILAZY, SEMIACTIVE, ACTIVE, SUPERACTIVE };
 
 enum Map_container { VECTOR, SET, HASH };
 
