@@ -765,15 +765,9 @@ bool General_pattern<T>::map(const bool backtrack, const size_t line, const size
 					return false;
 
 				// or there is not enough one-entries on the intersected line
-<<<<<<< HEAD
-				//if (map_approach_ == RECURSION && !check_orthogonal_bounds(line, level, big_line, mapping, lines_[l],
-				//	(line_is_row ? mapping[index] - big_matrix.getRow() : mapping[index]), big_matrix))
-				//	return false;
-=======
 				if ((map_approach_ == LAZY || map_approach_ > SEMILAZY) && !check_orthogonal_bounds(line, level, big_line, mapping, lines_[l],
 					(line_is_row ? mapping[index] - big_matrix.getRow() : mapping[index]), big_matrix))
 					return false;
->>>>>>> refs/remotes/origin/master
 			}
 			// I don't want to call myself recursively anymore - I only backtrack the function calls from avoid function
 			else if (!backtrack)

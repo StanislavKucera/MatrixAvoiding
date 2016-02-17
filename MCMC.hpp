@@ -151,7 +151,7 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 	//perf_stats.set_order(patterns.get_order());
 
 	// matrix statistics purposes
-	//size_t ones = big_matrix.getOnes();
+	size_t ones = big_matrix.getOnes();
 	
 	for (size_t i = 0; i != threads_count; ++i)
 	{
@@ -246,7 +246,13 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 						// all the calculations including the last one are useless
 						current = last + 1;
 						++iterations;
-						big_matrix.flip(std::get<1>(queue[index].front()), std::get<2>(queue[index].front()));
+
+						if (big_matrix.flip(std::get<1>(queue[index].front()), std::get<2>(queue[index].front())))
+							++ones;
+						else
+							--ones;
+						
+						matrix_stats.add_data(iterations, ones, big_matrix);
 						oFile << std::get<1>(queue[index].front()) << " " << std::get<2>(queue[index].front()) << std::endl;
 						
 
@@ -282,6 +288,8 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 					{
 						++current;
 						++iterations;
+						matrix_stats.add_data(iterations, ones, big_matrix);
+
 						if (iterations == iter)
 							goto while_end;
 
@@ -392,7 +400,6 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 
 	while_end:
 
-		//matrix_stats.add_data(i, ones, big_matrix);
 		//perf_stats.add_data(i, success, t, sizes);
 
 		const size_t current_it = (iterations + 1) * 10 / iter;

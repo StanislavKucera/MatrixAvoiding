@@ -15,6 +15,8 @@ enum Map { SUPERLAZY, LAZY, SEMILAZY, SEMIACTIVE, ACTIVE, SUPERACTIVE };
 
 enum Map_container { VECTOR, SET, HASH };
 
+enum Parallel_mode { SERIAL, MCMC, MAP };
+
 // hash function for a vector of size_t
 class size_t_vector_hasher {
 public:

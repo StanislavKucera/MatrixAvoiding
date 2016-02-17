@@ -54,6 +54,21 @@ public:
 
 		hist.WriteToFile(output);
 	}
+	void print_histogram(std::ostream& output) const
+	{
+		for (size_t i = 0; i < all_entries.getRow(); i++)
+		{
+			for (size_t j = 0; j < all_entries.getCol(); j++)
+			{
+				if (j != 0)
+					output << " ";
+
+				output << all_entries.at(i, j) / (double)hist_count;
+			}
+
+			output << "\n";
+		}
+	}
 	void print_max_ones(const char* output) const
 	{
 		BMP matrix;
@@ -72,6 +87,7 @@ public:
 
 		matrix.WriteToFile(output);
 	}
+	void print_max_ones(std::ostream& output) const { output << max_all_entries.Print(); }
 private:
 	Matrix<size_t> all_entries,
 		max_all_entries;
@@ -87,13 +103,8 @@ private:
 class Performance_Statistics
 {
 public:
-<<<<<<< HEAD
-	Performance_Statistics(const size_t p, const size_t i) : success_sizes(0), fail_sizes(0), max_success_sizes(0), max_fail_sizes(0), orders(0),
-		success_counter(0), success_levels(0), success_time(0), fail_counter(0), fail_levels(0), fail_time(0), mod(i / p), iter(i) {}
-=======
 	Performance_Statistics(const size_t p, const size_t i) : success_sizes(0), fail_sizes(0), max_success_sizes(0), max_fail_sizes(0),
 		orders(0), success_counter(0), success_levels(0), success_time(0), fail_counter(0), fail_levels(0), fail_time(0), mod(i / p), iter(i) {}
->>>>>>> refs/remotes/origin/master
 
 	void add_data(const size_t iter, const bool success, const size_t time, const std::vector<std::vector<Counter> >& sizes)
 	{

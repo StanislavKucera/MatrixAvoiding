@@ -1,34 +1,9 @@
-<<<<<<< HEAD
-Program input:
-Size of the generated matrix:			10
-Number of iterations of the generator:		1000
-Pattern file:					pattern/input.txt
-Type of the pattern:				general
-Initial big matrix:				zero
-Map function approach:				recursion
-Container for storing mappings:			hash
-Line ordering:					desc
-
-Program output:
-Output matrix file:				no
-Write resulting matrix into console:		yes
-Write the pattern into console:			no
-Write total time of the run into console:	yes
-Output performance statistics file:		no
-Write performance statistics into console:	no
-Output performance statistics csv file:		no
-
-Matrix statistics:
-Histogram refresh frequency:		1000
-Histogram refresh from:				500
-Histogram refresh to:				0
-Histogram output file:				no
-Max ones matrix output file:		no
-=======
 [input]
 size = 100
 iterations = 10000
 matrix = zero
+parallel_mod = serial
+threads_count = 1
 
 [pattern]
 pattern_file = pattern/input-diagonal.txt
@@ -54,4 +29,3 @@ histogram_initial = 1000
 histogram_final = 0
 histogram_file = hist.bmp
 max_ones_matrix_file = max_ones.bmp
->>>>>>> refs/remotes/origin/master

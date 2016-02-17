@@ -18,11 +18,11 @@
 
 inline Type get_type(const std::string& type)
 {
-	if (type == "general" || type == "GENERAL" || type == "G" || type == "g")
+	if (type == "general" ||  type == "g")
 		return GENERAL;
-	else if (type == "walking" || type == "WALKING" || type == "W" || type == "w")
+	else if (type == "walking" || type == "w")
 		return WALKING;
-	else if (type == "slow" || type == "SLOW" || type == "S" || type == "s")
+	else if (type == "slow" || type == "s")
 		return SLOW;
 	else {
 		throw my_exception("Pattern type not supported. Choose WALKING, GENERAL or SLOW.");
@@ -52,11 +52,11 @@ inline Map get_map(const std::string& map)
 
 inline Map_container get_map_container(const std::string& container)
 {
-	if (container == "vector" || container == "VECTOR" || container == "V" || container == "v")
+	if (container == "vector" || container == "v")
 		return VECTOR;
-	else if (container == "set" || container == "SET" || container == "S" || container == "s")
+	else if (container == "set" || container == "s")
 		return SET;
-	else if (container == "hash" || container == "HASH" || container == "H" || container == "h")
+	else if (container == "hash" || container == "h")
 		return HASH;
 	else {
 		throw my_exception("Map container not supported. Choose VECTOR, SET or HASH.");
@@ -66,16 +66,30 @@ inline Map_container get_map_container(const std::string& container)
 
 inline Order get_order(const std::string& order)
 {
-	if (order == "desc" || order == "DESC" || order == "D" || order == "d")
+	if (order == "desc" || order == "d")
 		return DESC;
-	else if (order == "max" || order == "MAX" || order == "M" || order == "m")
+	else if (order == "max" || order == "m")
 		return MAX;
-	else if (order == "sum" || order == "SUM" || order == "S" || order == "s")
+	else if (order == "sum" || order == "s")
 		return SUM;
-	else if (order == "auto" || order == "AUTO" || order == "A" || order == "a" || "automatic")
+	else if (order == "auto" || order == "a" || "automatic")
 		return AUTO;
 	else
 		return CUSTOM;
+}
+
+inline Parallel_mode get_parallel_mode(const std::string& mode)
+{
+	if (mode == "serial" || mode == "s")
+		return SERIAL;
+	else if (mode == "mcmc" || mode == "m")
+		return MCMC;
+	else if (mode == "map" || mode == "general")
+		return MAP;
+	else {
+		throw my_exception("Pattern type not supported. Choose SERIAL, MCMC or MAP.");
+		return SERIAL;
+	}
 }
 
 inline bool get_bool(const std::string& write)
@@ -257,7 +271,8 @@ Pattern* create_new_pattern(Matrix<size_t>&& pattern, const Type type, const Map
 
 void parse_config(std::istream& config, size_t& N, size_t& iter, size_t& hist_from, size_t& hist_to, size_t& hist_freq, Patterns& patterns, Matrix<size_t>& result,
 	std::string& bmp_file, std::string& hist_file, std::string& max_ones_file, std::string& csv_file, std::string& perf_file,
-	bool& console_time, bool& console_pattern, bool& console_matrix, bool& console_perf, bool& console_csv, bool& console_hist, bool& console_max_ones, bool& initialized)
+	bool& console_time, bool& console_pattern, bool& console_matrix, bool& console_perf, bool& console_csv, bool& console_hist, bool& console_max_ones, bool& initialized,
+	size_t& threads_count, Parallel_mode& parallel_mode)
 {
 	std::string input, var, value;
 	bool new_pattern = false;
@@ -303,6 +318,10 @@ void parse_config(std::istream& config, size_t& N, size_t& iter, size_t& hist_fr
 			N = std::stoul(value);
 		else if (var == "iter" || var == "iterations")
 			iter = std::stoul(value);
+		else if (var == "threads" || var == "threads_count")
+			threads_count = std::stoul(value);
+		else if (var == "parallel_mode" || var == "parallelism")
+			parallel_mode = get_parallel_mode(value);
 		else if (var == "matrix_file" || var == "matrix")
 		{
 			if (value == "zero")
@@ -358,7 +377,6 @@ void parse_config(std::istream& config, size_t& N, size_t& iter, size_t& hist_fr
 			if (hist_to == 0)
 				hist_to = (size_t)-1;
 		}
-		// TODO parallelism and performace stats block size
 	}
 
 	// add the last defined pattern if it hasn't been added already
