@@ -67,7 +67,7 @@ public:
 	/// <param name="order">Enum determining which function will be used for line ordering.</param>
 	/// <param name="map">Enum determining what conditions will map function check.</param>
 	/// <param name="custom_order">Order of lines given by user in case order is set to CUSTOM.</param>
-	General_pattern(const Matrix<size_t>& pattern, const Order order = DESC, const Map map_approach = RECURSION, std::vector<size_t>&& custom_order = std::vector<size_t>());
+	General_pattern(const Matrix<size_t>& pattern, const Order order = DESC, const Map map_approach = SUPERACTIVE, std::vector<size_t>&& custom_order = std::vector<size_t>());
 
 	/// <summary>
 	/// Tests if the pattern avoids given matrix as a submatrix.

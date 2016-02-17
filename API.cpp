@@ -6,9 +6,9 @@
 #ifndef API_cpp_
 #define API_cpp_
 
-#include "GeneralPatternFunctions.hpp"
-#include "Matrix.hpp"
+#include "API.hpp"
 #include "MCMC.hpp"
+<<<<<<< HEAD
 
 #include <set>
 #include <unordered_set>
@@ -276,9 +276,43 @@ int main()
 	//std::vector<Counter> sizes;
 	//bool ahoj = wp.avoid(result, sizes, 0, 0);
 
+=======
+#include "GeneralPatternFunctions.hpp"
 
-	Matrix_Statistics matrix_stats(from, to, N, freq);
+int main()
+{
+	size_t N = 100,
+		iter = 1000;
+	size_t hist_from = 0,
+		hist_to = 1000,
+		hist_freq = 100;							// matrix statistics settings
+	Patterns patterns;
+	Matrix<size_t> result;
+	std::string bmp_file,
+		hist_file,
+		max_ones_file,
+		csv_file,
+		perf_file;
+	bool console_time = false,
+		console_pattern = false,
+		console_matrix = false,
+		console_perf = false,
+		console_csv = false,
+		console_hist = false,
+		console_max_ones = false,
+		initialized = false;
+
+	std::ifstream config("config.txt");
+
+	parse_config(config, N, iter, hist_from, hist_to, hist_freq, patterns, result, bmp_file, hist_file, max_ones_file, csv_file, perf_file,
+		console_time, console_pattern, console_matrix, console_perf, console_csv, console_hist, console_max_ones, initialized);
+
+	std::chrono::system_clock::time_point start, end;
+>>>>>>> refs/remotes/origin/master
+
+	Matrix_Statistics matrix_stats(hist_from, hist_to, N, hist_freq);
 	Performance_Statistics perf_stats(5, iter);
+<<<<<<< HEAD
 	std::vector<Counter> sizes;
 
 	Patterns patterns;
@@ -505,12 +539,17 @@ int main()
 	//////////////////////////////////////////////////////
 	start = std::chrono::system_clock::now();
 	//parallelMCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, 3);
+=======
+
+	//////////////////////////////////////////////////////
+	start = std::chrono::system_clock::now();
+>>>>>>> refs/remotes/origin/master
 	MCMCgenerator(iter, patterns, result, perf_stats, matrix_stats);
 	end = std::chrono::system_clock::now();
 	//////////////////////////////////////////////////////
 
 	// if output file is specified
-	if (output != "") {
+	if (bmp_file != "") {
 		BMP matrix;
 		matrix.SetSize(N, N);
 		matrix.SetBitDepth(1);
@@ -524,13 +563,17 @@ int main()
 				matrix(i, j)->Blue = (ebmpBYTE)((1 - result.at(i, j)) * 255);
 			}
 
-		matrix.WriteToFile(output.c_str());
+		matrix.WriteToFile(bmp_file.c_str());
 	}
 
 	// if performance stats file is specified
 	if (perf_file != "") {
 		std::ofstream opFile(perf_file);
+<<<<<<< HEAD
 		opFile << "Total running time: " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << " sec.\n\n";
+=======
+		opFile << "Total running time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000000.0 << " sec.\n\n";
+>>>>>>> refs/remotes/origin/master
 		perf_stats.print_data(opFile);
 		opFile.close();
 	}
@@ -538,31 +581,49 @@ int main()
 	// if performance stats csv file is specified
 	if (csv_file != "") {
 		std::ofstream opcFile(csv_file);
+<<<<<<< HEAD
 		opcFile << "Total running time: " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << " sec.\n\n";
+=======
+		opcFile << "Total running time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000000.0 << " sec.\n\n";
+>>>>>>> refs/remotes/origin/master
 		perf_stats.print_csv(opcFile);
 		opcFile.close();
 	}
 
 	// if histogram file is specified
-	if (hist != "")
-		matrix_stats.print_histogram(hist.c_str());
+	if (hist_file != "")
+		matrix_stats.print_histogram(hist_file.c_str());
 
 	// if max ones file is specified
-	if (max_ones != "")
-		matrix_stats.print_max_ones(max_ones.c_str());
+	if (max_ones_file != "")
+		matrix_stats.print_max_ones(max_ones_file.c_str());
 
 	if (console_matrix)
 		std::cout << result.Print();
+<<<<<<< HEAD
 	if (console_pattern)
 		std::cout << "\nAvoiding pattern:\n\n" << pattern.Print();
 	if (console_time) {
 		std::cout << "\nTotal running time (core count independent): " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << " sec.\n";
 	}
 	if (performance)
+=======
+	//if (console_pattern)
+	//	std::cout << "\nAvoiding patterns:\n\n" << pattern.Print();
+	if (console_time)
+		std::cout << "\nRunning time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000000.0 << " sec.\n";
+	if (console_perf)
+>>>>>>> refs/remotes/origin/master
 	{
 		std::cout << "\nPerformance statistics:\n";
 		perf_stats.print_data(std::cout);
 	}
+	if (console_csv)
+	{
+		std::cout << "\nPerformance csv statistics:\n";
+		perf_stats.print_csv(std::cout);
+	}
+	// TODO histogram and max_ones to console
 
 	getchar();
 	return 0;

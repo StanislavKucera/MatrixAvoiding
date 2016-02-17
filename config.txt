@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Program input:
 Size of the generated matrix:			10
 Number of iterations of the generator:		1000
@@ -23,3 +24,34 @@ Histogram refresh from:				500
 Histogram refresh to:				0
 Histogram output file:				no
 Max ones matrix output file:		no
+=======
+[input]
+size = 100
+iterations = 10000
+matrix = zero
+
+[pattern]
+pattern_file = pattern/input-diagonal.txt
+pattern_type = walking
+
+[pattern]
+pattern_file = pattern/input.txt
+pattern_type = general
+map_approach = super active
+map_container = hash
+line_order = max
+
+[output]
+matrix_output = matrix.bmp
+matrix_output = console
+performance_stats = console
+performance_csv_stats =	stats.csv
+time_to_console = yes
+
+[matrix statistics]
+histogram_frequency = 100
+histogram_initial = 1000
+histogram_final = 0
+histogram_file = hist.bmp
+max_ones_matrix_file = max_ones.bmp
+>>>>>>> refs/remotes/origin/master

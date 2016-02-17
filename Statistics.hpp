@@ -87,8 +87,13 @@ private:
 class Performance_Statistics
 {
 public:
+<<<<<<< HEAD
 	Performance_Statistics(const size_t p, const size_t i) : success_sizes(0), fail_sizes(0), max_success_sizes(0), max_fail_sizes(0), orders(0),
 		success_counter(0), success_levels(0), success_time(0), fail_counter(0), fail_levels(0), fail_time(0), mod(i / p), iter(i) {}
+=======
+	Performance_Statistics(const size_t p, const size_t i) : success_sizes(0), fail_sizes(0), max_success_sizes(0), max_fail_sizes(0),
+		orders(0), success_counter(0), success_levels(0), success_time(0), fail_counter(0), fail_levels(0), fail_time(0), mod(i / p), iter(i) {}
+>>>>>>> refs/remotes/origin/master
 
 	void add_data(const size_t iter, const bool success, const size_t time, const std::vector<std::vector<Counter> >& sizes)
 	{
