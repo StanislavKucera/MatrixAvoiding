@@ -15,7 +15,7 @@ class Matrix
 {
 public:
 	// constructs an empty 0x0 matrix 
-	Matrix() : row_(0), col_(0) {}
+	Matrix() : data_(), row_(0), col_(0) {}
 	// constructs a matrix of given size with default value in each element
 	Matrix(size_t r, size_t c) : data_(r*c), row_(r), col_(c) {}
 	// constructs a matrix of given size with given value in each element

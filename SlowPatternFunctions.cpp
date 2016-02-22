@@ -3,8 +3,17 @@
 
 #include "PatternHeaders.hpp"
 
-void Slow_pattern::test_all_subsets(long long v_map, long long h_map, long long v_ones, long long h_ones, long long v_vals, long long h_vals, const Matrix<size_t>& big_matrix)
+bool Slow_pattern::parallel_avoid(const size_t /* threads_count */, const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, const size_t /* r */, const size_t /* c */)
 {
+	return false;
+}
+
+void Slow_pattern::test_all_subsets(long long v_map, long long h_map, long long v_ones, long long h_ones, long long v_vals, long long h_vals, const Matrix<size_t>& big_matrix, const size_t& force_end)
+{
+	// the function is forced to end from outside
+	if (force_end == 1)
+		done_ = true;
+
 	// I have already found a mapping
 	if (done_)
 		return;
@@ -82,21 +91,21 @@ void Slow_pattern::test_all_subsets(long long v_map, long long h_map, long long 
 
 	// I either extend the subset by 1 or by 0 or I don't change it -> 3^2 possibilities - 1 because I won't call myself on the same intance
 	if (v_ones > 0 && h_ones > 0 && v_vals > v_ones && h_vals > h_ones)
-		test_all_subsets(v_map * 2 + 1, h_map * 2 + 1, v_ones - 1, h_ones - 1, v_vals - 1, h_vals - 1, big_matrix);
+		test_all_subsets(v_map * 2 + 1, h_map * 2 + 1, v_ones - 1, h_ones - 1, v_vals - 1, h_vals - 1, big_matrix, force_end);
 	if (v_vals > v_ones && h_ones > 0 && h_vals > h_ones)
-		test_all_subsets(v_map * 2, h_map * 2 + 1, v_ones, h_ones - 1, v_vals - 1, h_vals - 1, big_matrix);
+		test_all_subsets(v_map * 2, h_map * 2 + 1, v_ones, h_ones - 1, v_vals - 1, h_vals - 1, big_matrix, force_end);
 	if (v_ones > 0 && v_vals > v_ones && h_vals > h_ones)
-		test_all_subsets(v_map * 2 + 1, h_map * 2, v_ones - 1, h_ones, v_vals - 1, h_vals - 1, big_matrix);
+		test_all_subsets(v_map * 2 + 1, h_map * 2, v_ones - 1, h_ones, v_vals - 1, h_vals - 1, big_matrix, force_end);
 	if (v_vals > v_ones && h_vals > h_ones)
-		test_all_subsets(v_map * 2, h_map * 2, v_ones, h_ones, v_vals - 1, h_vals - 1, big_matrix);
+		test_all_subsets(v_map * 2, h_map * 2, v_ones, h_ones, v_vals - 1, h_vals - 1, big_matrix, force_end);
 	if (h_vals == 0 && v_ones > 0 && v_vals > v_ones)
-		test_all_subsets(v_map * 2 + 1, h_map, v_ones - 1, h_ones, v_vals - 1, h_vals, big_matrix);
+		test_all_subsets(v_map * 2 + 1, h_map, v_ones - 1, h_ones, v_vals - 1, h_vals, big_matrix, force_end);
 	if (h_vals == 0 && v_vals > v_ones)
-		test_all_subsets(v_map * 2, h_map, v_ones, h_ones, v_vals - 1, h_vals, big_matrix);
+		test_all_subsets(v_map * 2, h_map, v_ones, h_ones, v_vals - 1, h_vals, big_matrix, force_end);
 	if (v_vals == 0 && h_ones > 0 && h_vals > h_ones)
-		test_all_subsets(v_map, h_map * 2 + 1, v_ones, h_ones - 1, v_vals, h_vals - 1, big_matrix);
+		test_all_subsets(v_map, h_map * 2 + 1, v_ones, h_ones - 1, v_vals, h_vals - 1, big_matrix, force_end);
 	if (v_vals == 0 && h_vals > h_ones)
-		test_all_subsets(v_map, h_map * 2, v_ones, h_ones, v_vals, h_vals - 1, big_matrix);
+		test_all_subsets(v_map, h_map * 2, v_ones, h_ones, v_vals, h_vals - 1, big_matrix, force_end);
 }
 
 #endif

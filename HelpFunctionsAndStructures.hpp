@@ -5,6 +5,10 @@
 
 #include <set>
 #include <unordered_set>
+#include <mutex>
+#include <string>
+#include <sstream>
+//#include <concurrent_unordered_set.h>
 
 enum Type { GENERAL, WALKING, SLOW };
 
@@ -34,7 +38,7 @@ struct my_exception : std::exception
 {
 	my_exception(const char* message) : message_(message) {}
 
-	const char* what() throw() { return message_; }
+	const char* what() const throw() { return message_; }
 private:
 	const char* message_;
 };
@@ -45,6 +49,9 @@ class Container
 public:
 	typedef typename T::iterator		iterator;
 	typedef typename T::const_iterator	const_iterator;
+
+	Container() : container_(), write_() {}
+	Container(const Container<T>& cont) : container_(cont.container_), write_() {}
 
 	/// <summary>
 	/// Initializes the container by erasing all item inside and filling it with mapping of size 0.
@@ -58,6 +65,8 @@ public:
 	/// </summary>
 	void insert_without_duplicates(std::vector<size_t>&& mapping);
 
+	void parallel_insert_without_duplicates(std::vector<size_t>&& mapping);
+
 	void clear()					{ container_.clear(); }
 	size_t size() const				{ return container_.size(); }
 
@@ -67,6 +76,7 @@ public:
 	const_iterator cend() const		{ return container_.cend(); }
 private:
 	T container_;
+	std::mutex write_;
 };
 
 template<>
@@ -80,14 +90,14 @@ template<>
 inline void Container<std::set<std::vector<size_t> > >::init()
 {
 	container_.clear();
-	container_.insert(std::vector<size_t>(0));
+	container_.emplace(std::vector<size_t>(0));
 }
 
 template<>
 inline void Container<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >::init()
 {
 	container_.clear();
-	container_.insert(std::vector<size_t>(0));
+	container_.emplace(std::vector<size_t>(0));
 }
 
 template<>
@@ -102,21 +112,58 @@ inline void Container<std::vector<std::vector<size_t> > >::insert_without_duplic
 	}
 
 	// if extended is not yet an element, add it to the tree
-	container_.push_back(mapping);
+	container_.push_back(std::move(mapping));
 }
 
 template<>
 inline void Container<std::set<std::vector<size_t> > >::insert_without_duplicates(std::vector<size_t>&& mapping)
 {
 	// duplicates are dealt with automagically
-	container_.insert(mapping);
+	container_.emplace(mapping);
 }
 
 template<>
 inline void Container<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >::insert_without_duplicates(std::vector<size_t>&& mapping)
 {
 	// duplicates are dealt with automagically
-	container_.insert(mapping);
+	container_.emplace(mapping);
+}
+
+template<>
+inline void Container<std::vector<std::vector<size_t> > >::parallel_insert_without_duplicates(std::vector<size_t>&& mapping)
+{
+	// I will play with this later
+	write_.lock();
+	// go through all already found mappings in (i+1)-th step and check if extended is not already in there
+	for (auto& mapping2 : container_)
+	{
+		// extended has already been added (atleast its different class) - I won't add it for the second time
+		if (mapping == mapping2)
+			return;
+	}
+
+	// if extended is not yet an element, add it to the tree
+	container_.push_back(std::move(mapping));
+
+	write_.unlock();
+}
+
+template<>
+inline void Container<std::set<std::vector<size_t> > >::parallel_insert_without_duplicates(std::vector<size_t>&& mapping)
+{
+	write_.lock();
+	// duplicates are dealt with automagically
+	container_.emplace(mapping);
+	write_.unlock();
+}
+
+template<>
+inline void Container<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >::parallel_insert_without_duplicates(std::vector<size_t>&& mapping)
+{
+	write_.lock();
+	// duplicates are dealt with automagically
+	container_.emplace(mapping);
+	write_.unlock();
 }
 
 struct Counter
@@ -137,6 +184,15 @@ inline size_t bit_count(const size_t n)	// I have used a function from the inter
 {
 	const size_t uCount = n - ((n >> 1) & 033333333333) - ((n >> 2) & 011111111111);
 	return ((uCount + (uCount >> 3)) & 030707070707) % 63;
+}
+
+namespace you_must_be_kidding_me {
+	inline size_t stoul(const std::string& s) {
+		std::istringstream str(s);
+		size_t ret;
+		str >> ret;
+		return ret;
+	}
 }
 
 #endif

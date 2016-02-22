@@ -21,7 +21,7 @@
 #include <fstream>
 
 // Generates random-ish matrix of given size, which is avoiding given walking pattern. Uses iter iterations on markov chain.
-inline void MCMCgenerator(const size_t iter, Patterns& patterns, Matrix<size_t>& big_matrix, Performance_Statistics& perf_stats, Matrix_Statistics& matrix_stats)
+inline void MCMCgenerator(const size_t iter, Patterns& patterns, Matrix<size_t>& big_matrix, Performance_Statistics& perf_stats, Matrix_Statistics& matrix_stats, const size_t threads_count)
 {
 	// random generator from uniform distribution [0, n-1]
 	std::random_device rd;
@@ -33,7 +33,7 @@ inline void MCMCgenerator(const size_t iter, Patterns& patterns, Matrix<size_t>&
 
 	// this is gonna be here for now
 	std::vector<std::vector<Counter> > sizes;
-	clock_t t;
+	std::chrono::system_clock::time_point start, end;
 	bool success;
 	size_t last_perc = 0;
 
@@ -54,22 +54,26 @@ inline void MCMCgenerator(const size_t iter, Patterns& patterns, Matrix<size_t>&
 		// switch 0 and 1 entry of the element
 		big_matrix.at(r, c) = big_matrix.at(r, c) ? (--ones, 0) : (++ones, 1);
 
-		t = clock();
+		start = std::chrono::system_clock::now();
 
 		// test if the changed matrix still avoids the pattern
-		if (!patterns.avoid(big_matrix, sizes, r, c))
+		if ((threads_count <= 1 && !patterns.avoid(big_matrix, sizes, r, c)) ||
+			(threads_count > 1 && !patterns.parallel_avoid(threads_count, big_matrix, sizes, r, c)))
 		{
 			success = false;
 			// if not return to the previous matrix
 			big_matrix.at(r, c) = big_matrix.at(r, c) ? (--ones, 0) : (++ones, 1);
 			// and recalculate used structures if needed
-			patterns.revert(big_matrix, r, c);
+			if (threads_count <= 1)
+				patterns.revert(big_matrix, r, c);
+			else
+				patterns.parallel_revert(2, big_matrix, r, c);
 		}
 
-		t = clock() - t;
+		end = std::chrono::system_clock::now();
 		
 		matrix_stats.add_data(i, ones, big_matrix);
-		perf_stats.add_data(i, success, t, sizes);
+		perf_stats.add_data(i, success, std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / 1000000000.0, sizes);
 
 		const size_t current_it = (i + 1) * 10 / iter;
 		
@@ -98,9 +102,10 @@ void parallel_revert(Patterns& patterns, const size_t r, const size_t c, size_t&
 // Generates random-ish matrix of given size, which is avoiding given walking pattern. Uses iter iterations on markov chain.
 inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<size_t>& big_matrix, Performance_Statistics& perf_stats, Matrix_Statistics& matrix_stats, const size_t threads_count)
 {
+	// I wouldn't accomplish anothing using 0 workers
 	if (threads_count == 0)
 	{
-		MCMCgenerator(iter, patterns, big_matrix, perf_stats, matrix_stats);
+		MCMCgenerator(iter, patterns, big_matrix, perf_stats, matrix_stats, 1);
 		return;
 	}
 

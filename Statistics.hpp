@@ -104,9 +104,9 @@ class Performance_Statistics
 {
 public:
 	Performance_Statistics(const size_t p, const size_t i) : success_sizes(0), fail_sizes(0), max_success_sizes(0), max_fail_sizes(0),
-		orders(0), success_counter(0), success_levels(0), success_time(0), fail_counter(0), fail_levels(0), fail_time(0), mod(i / p), iter(i) {}
+		orders(0), success_time(0), fail_time(0), success_counter(0), success_levels(0), fail_counter(0), fail_levels(0), mod(i / p), iter(i) {}
 
-	void add_data(const size_t iter, const bool success, const size_t time, const std::vector<std::vector<Counter> >& sizes)
+	void add_data(const size_t iter, const bool success, const double time, const std::vector<std::vector<Counter> >& sizes)
 	{
 		const size_t index = iter / mod;
 
@@ -393,13 +393,13 @@ private:
 													 fail_sizes;
 	std::vector<std::vector<std::vector<Counter> > > max_success_sizes,	// for each mapped line, there is a sum of all mappings found during the whole MCMC generation process while mapping the line
 													 max_fail_sizes;
-	std::vector<std::vector<size_t> > orders;
-	std::vector<size_t> success_counter,					// count of the successful calls of avoid(), successful mean the matrix did avoid the pattern
-						success_levels,						// sum of the numbers of lines mapped until the end of avoid
-						success_time,						// total time (in processor cycles) spent in successful calls of avoid
+	std::vector<std::vector<size_t> > orders;							// order of the lines when using general pattern
+	std::vector<double> success_time,									// total time (in processor cycles) spent in successful calls of avoid
+						fail_time;
+	std::vector<size_t> success_counter,								// count of the successful calls of avoid(), successful mean the matrix did avoid the pattern
+						success_levels,									// sum of the numbers of lines mapped until the end of avoid
 						fail_counter,
-						fail_levels,
-						fail_time;							// order of the lines when using general pattern
+						fail_levels;
 	const size_t mod,
 				 iter;
 };

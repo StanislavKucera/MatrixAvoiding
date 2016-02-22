@@ -5,7 +5,6 @@
 
 #include <queue>
 #include <algorithm>
-#include <assert.h>
 
 template<typename T>
 General_pattern<T>::General_pattern(const Matrix<size_t>& pattern, const Order order, const Map map_approach, std::vector<size_t>&& custom_order)
@@ -85,7 +84,106 @@ General_pattern<T>::General_pattern(const Matrix<size_t>& pattern, const Order o
 }
 
 template<typename T>
-bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c)
+bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c, const size_t& force_end)
+{
+	// There was a change from one-entry to zero-entry
+	if (r != (size_t)-1 && c != (size_t)-1 && big_matrix.at(r, c) == 0)
+		return true;
+
+	// I start with empty mapping - no lines are mapped
+	building_tree_[0].init();
+
+	Counter counter;
+	size_t from, to;
+	const size_t big_matrix_rows = big_matrix.getRow(),
+		big_matrix_cols = big_matrix.getCol();
+
+	// main loop through added lines (loops 2*k times)
+	for (size_t level = 0; level < steps_; ++level)
+	{
+		// the function is forced to end from outside
+		if (force_end == 1)
+			return false;
+
+		counter.maps = 0;
+		counter.tries = 0;
+		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
+		if (building_tree_[level % 2].size() == 0)
+			return true;
+
+		building_tree_[(level + 1) % 2].clear();
+
+		// loop through the mappings found in the last iteration
+		for (const std::vector<size_t>& mapping : building_tree_[level % 2])
+		{
+			// the function is forced to end from outside
+			if (force_end == 1)
+				return false;
+
+			// find boundaries of added line:
+			find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to, r, c);
+
+			// map orders_[level] to j-th line of N if possible
+			for (size_t big_line = from; big_line < to; ++big_line)
+			{
+				++counter.tries;
+
+				// if currenly added line can be mapped to big_line in mapping map
+				if (map(map_approach_ > LAZY, order_[level], level, big_line, mapping, big_matrix))
+				{
+					++counter.maps;
+
+					// I have mapped the last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
+					if (level == steps_ - 1) {
+						counter.uniques = building_tree_[(level + 1) % 2].size();
+						sizes.push_back(counter);
+						return false;
+					}
+
+					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line, and add it to the building_tree_
+					building_tree_[(level + 1) % 2].insert_without_duplicates(extend(level, big_line, mapping));
+				}
+			}
+		}
+
+		counter.uniques = building_tree_[(level + 1) % 2].size();
+		sizes.push_back(counter);
+	}
+
+	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
+	return true;
+}
+
+template<typename T>
+void General_pattern<T>::parallel_map(std::atomic_size_t& big_line_from, const size_t big_line_to, const size_t level,
+	const std::vector<size_t>& mapping, const Matrix<size_t>& big_matrix, bool& done, std::mutex& mutex, std::queue<std::vector<size_t> >& q)
+{
+	while (!done)
+	{
+		size_t big_line = ++big_line_from;
+
+		if (big_line >= big_line_to)
+		{
+			done = true;
+			break;
+		}
+
+		// if currenly added line can be mapped to big_line in mapping map
+		if (map(map_approach_ > LAZY, order_[level], level, big_line, mapping, big_matrix))
+		{
+			// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
+			if (level == steps_ - 1)
+				done = true;
+
+			mutex.lock();
+			q.push(extend(level, big_line, mapping));
+			mutex.unlock();
+		}
+	}
+}
+
+template<typename T>
+bool General_pattern<T>::parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c)
 {
 	// There was a change from one-entry to zero-entry
 	if (r != (size_t)-1 && c != (size_t)-1 && big_matrix.at(r, c) == 0)
@@ -116,26 +214,66 @@ bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vector<Cou
 			// find boundaries of added line:
 			find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to, r, c);
 
+			// this value will be wrong if the last is mapped not using the last possible line
+			counter.tries += to - from;
+
+			std::atomic_size_t big_line(from - 1);
+			std::vector<std::thread> threads(threads_count - 1);
+			std::vector<std::mutex> mutexes(threads_count - 1);
+			std::vector<std::queue<std::vector<size_t> > > qs(threads_count - 1);
+			bool done = false;
+
 			// map orders_[level] to j-th line of N if possible
-			for (size_t big_line = from; big_line < to; ++big_line)
+			for (size_t index = 0; index < threads_count - 1; ++index)
+				threads[index] = std::thread(&General_pattern::parallel_map, this, std::ref(big_line), to, level,
+					std::ref(mapping), std::ref(big_matrix), std::ref(done), std::ref(mutexes[index]), std::ref(qs[index]));
+			
+			// extend
+			// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line, and add it to the building_tree_
+			bool extended = true;
+			while (!done || extended)
 			{
-				++counter.tries;
+				extended = false;
 
-				// if currenly added line can be mapped to big_line in mapping map
-				if (map(map_approach_ > LAZY, order_[level], level, big_line, mapping, big_matrix))
+				for (size_t index = 0; index < threads_count - 1; ++index)
 				{
-					++counter.maps;
+					mutexes[index].lock();
 
-					// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
-					if (level == steps_ - 1) {
-						counter.uniques = building_tree_[(level + 1) % 2].size();
-						sizes.push_back(counter);
-						return false;
+					if (qs[index].empty())
+					{
+						mutexes[index].unlock();
+						continue;
 					}
 
-					// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line, and add it to the building_tree_
-					building_tree_[(level + 1) % 2].insert_without_duplicates(extend(level, big_line, mapping));
+					extended = true;
+					auto current = qs[index].front();
+					qs[index].pop();
+					mutexes[index].unlock();
+
+					++counter.maps;
+					building_tree_[(level + 1) % 2].insert_without_duplicates(std::move(current));
 				}
+			}
+
+			for (size_t index = 0; index < threads_count - 1; ++index)
+				threads[index].join();
+
+			for (size_t index = 0; index < threads_count - 1; ++index)
+			{
+				while (!qs[index].empty())
+				{
+					auto current = qs[index].front();
+					qs[index].pop();
+
+					++counter.maps;
+					building_tree_[(level + 1) % 2].insert_without_duplicates(std::move(current));
+				}
+			}
+
+			if (level == steps_ - 1) {
+				counter.uniques = building_tree_[(level + 1) % 2].size();
+				sizes.push_back(counter);
+				return false;
 			}
 		}
 

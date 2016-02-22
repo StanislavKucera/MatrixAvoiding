@@ -1,7 +1,7 @@
 [input]
 size = 100
 iterations = 10000
-matrix = zero
+init_matrix = zero
 parallel_mod = serial
 threads_count = 1
 
