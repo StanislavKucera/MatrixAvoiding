@@ -2,7 +2,7 @@
 size = 100
 iterations = 10000
 init_matrix = zero
-parallel_mod = serial
+parallel_mode = serial
 threads_count = 1
 
 [pattern]
