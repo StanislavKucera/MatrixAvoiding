@@ -250,6 +250,10 @@ bool General_pattern<T>::parallel_avoid(const size_t threads_count, const Matrix
 					qs[index].pop();
 					mutexes[index].unlock();
 
+					// I found a mapping of the last line
+					if (level == steps_ - 1)
+						done = true;
+
 					++counter.maps;
 					building_tree_[(level + 1) % 2].insert_without_duplicates(std::move(current));
 				}
@@ -258,22 +262,30 @@ bool General_pattern<T>::parallel_avoid(const size_t threads_count, const Matrix
 			for (size_t index = 0; index < threads_count - 1; ++index)
 				threads[index].join();
 
+			// I found atleast one mapping of the last line
+			if (level == steps_ - 1 && !building_tree_[(level + 1) % 2].empty()) {
+				counter.uniques = building_tree_[(level + 1) % 2].size();
+				sizes.push_back(counter);
+				return false;
+			}
+
 			for (size_t index = 0; index < threads_count - 1; ++index)
 			{
 				while (!qs[index].empty())
 				{
+					// I found a mapping of the last line
+					if (level == steps_ - 1) {
+						counter.uniques = building_tree_[(level + 1) % 2].size();
+						sizes.push_back(counter);
+						return false;
+					}
+
 					auto current = qs[index].front();
 					qs[index].pop();
 
 					++counter.maps;
 					building_tree_[(level + 1) % 2].insert_without_duplicates(std::move(current));
 				}
-			}
-
-			if (level == steps_ - 1) {
-				counter.uniques = building_tree_[(level + 1) % 2].size();
-				sizes.push_back(counter);
-				return false;
 			}
 		}
 

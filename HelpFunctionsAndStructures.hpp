@@ -69,6 +69,7 @@ public:
 
 	void clear()					{ container_.clear(); }
 	size_t size() const				{ return container_.size(); }
+	bool empty() const				{ return container_.empty(); }
 
 	iterator begin()				{ return container_.begin(); }
 	const_iterator cbegin() const	{ return container_.cbegin(); }
