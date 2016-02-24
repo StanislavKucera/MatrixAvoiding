@@ -20,7 +20,7 @@ line_order = max
 matrix_output = matrix.bmp
 matrix_output = console
 performance_stats = console
-performance_csv_stats =	stats.csv
+performance_csv_stats = stats.csv
 time_to_console = yes
 
 [matrix statistics]

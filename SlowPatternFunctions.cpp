@@ -3,9 +3,20 @@
 
 #include "PatternHeaders.hpp"
 
-bool Slow_pattern::parallel_avoid(const size_t /* threads_count */, const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, const size_t /* r */, const size_t /* c */)
+bool Slow_pattern::parallel_avoid(const size_t /* threads_count */, const Matrix<size_t>& big_matrix, std::vector<Counter>& /* sizes */, const size_t /* r */, const size_t /* c */, const size_t& force_end)
 {
-	return false;
+	/////////////////////////
+	// not parallel for now//
+	/////////////////////////
+
+	done_ = false;
+	// goes through all subsets of rows and columns of the right cardinality and tests whether the pattern can be mapped to that subset
+	test_all_subsets(0ll, 0ll, rows_, cols_, (long long)big_matrix.getRow(), (long long)big_matrix.getCol(), big_matrix, force_end);
+
+	if (done_)
+		return false;
+
+	return true;
 }
 
 void Slow_pattern::test_all_subsets(long long v_map, long long h_map, long long v_ones, long long h_ones, long long v_vals, long long h_vals, const Matrix<size_t>& big_matrix, const size_t& force_end)

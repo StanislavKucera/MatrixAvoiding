@@ -183,7 +183,7 @@ void General_pattern<T>::parallel_map(std::atomic_size_t& big_line_from, const s
 }
 
 template<typename T>
-bool General_pattern<T>::parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c)
+bool General_pattern<T>::parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c, const size_t& force_end)
 {
 	// There was a change from one-entry to zero-entry
 	if (r != (size_t)-1 && c != (size_t)-1 && big_matrix.at(r, c) == 0)
@@ -200,6 +200,10 @@ bool General_pattern<T>::parallel_avoid(const size_t threads_count, const Matrix
 	// main loop through added lines (loops 2*k times)
 	for (size_t level = 0; level < steps_; ++level)
 	{
+		// the function is forced to end from outside
+		if (force_end == 1)
+			return false;
+
 		counter.maps = 0;
 		counter.tries = 0;
 		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
@@ -211,6 +215,10 @@ bool General_pattern<T>::parallel_avoid(const size_t threads_count, const Matrix
 		// loop through the mappings found in the last iteration
 		for (const std::vector<size_t>& mapping : building_tree_[level % 2])
 		{
+			// the function is forced to end from outside
+			if (force_end == 1)
+				return false;
+
 			// find boundaries of added line:
 			find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to, r, c);
 

@@ -14,7 +14,7 @@ class Pattern
 public:
 	virtual bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c, const size_t& force_end = 0) = 0;
 	virtual bool revert(const Matrix<size_t>& big_matrix, const size_t r, const size_t c) = 0;
-	virtual bool parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c) = 0;
+	virtual bool parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c, const size_t& force_end = 0) = 0;
 	virtual bool parallel_revert(const size_t threads_count, const Matrix<size_t>& big_matrix, const size_t r, const size_t c) = 0;
 	virtual std::vector<size_t> get_order() const = 0;
 	virtual Pattern* get_new_instance() const = 0;
@@ -44,7 +44,7 @@ public:
 		return true;
 	}
 	bool revert(const Matrix<size_t>& /* big_matrix */, const size_t /* r */, const size_t /* c */) { return true; }
-	bool parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c);
+	bool parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c, const size_t& force_end = 0);
 	bool parallel_revert(const size_t /* threads_count */, const Matrix<size_t>& /* big_matrix */, const size_t /* r */, const size_t /* c */) { return true; }
 	std::vector<size_t> get_order() const { return std::vector<size_t>(); }
 	Pattern* get_new_instance() const { return new Slow_pattern(*this); }
@@ -84,7 +84,7 @@ public:
 	/// <param name="sizes">Vector of numbers of found mappings on each level.</param>
 	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r = (size_t)-1, const size_t c = (size_t)-1, const size_t& force_end = 0);
 	bool revert(const Matrix<size_t>& /* big_matrix */, const size_t /* r */, const size_t /* c */) { return true; }
-	bool parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c);
+	bool parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c, const size_t& force_end = 0);
 	bool parallel_revert(const size_t /* threads_count */, const Matrix<size_t>& /* big_matrix */, const size_t /* r */, const size_t /* c */) { return true; }
 	std::vector<size_t> get_order() const { return order_; }
 	Pattern* get_new_instance() const { return new General_pattern(*this); }
@@ -255,7 +255,7 @@ public:
 	
 	// reverts changes in max_walk_part matrix after an unsuccessful change of the big matrix
 	bool revert(const Matrix<size_t>& big_matrix, const size_t r, const size_t c) { std::vector<Counter> sizes; return avoid(big_matrix, sizes, r, c); }
-	bool parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c);
+	bool parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c, const size_t& force_end = 0);
 	bool parallel_revert(const size_t threads_count, const Matrix<size_t>& big_matrix, const size_t r, const size_t c)
 	{ 
 		std::vector<Counter> sizes;

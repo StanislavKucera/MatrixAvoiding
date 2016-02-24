@@ -113,13 +113,9 @@ public:
         if (success_sizes.size() <= index)
         {
             success_sizes.push_back(std::vector<std::vector<Counter> >());
-			success_sizes[index].resize(sizes.size());
 			fail_sizes.push_back(std::vector<std::vector<Counter> >());
-			fail_sizes[index].resize(sizes.size());
 			max_success_sizes.push_back(std::vector<std::vector<Counter> >());
-			max_success_sizes[index].resize(sizes.size());
 			max_fail_sizes.push_back(std::vector<std::vector<Counter> >());
-			max_fail_sizes[index].resize(sizes.size());
 			success_counter.push_back(0);
 			success_levels.push_back(0);
 			success_time.push_back(0);
@@ -127,6 +123,14 @@ public:
 			fail_levels.push_back(0);
 			fail_time.push_back(0);
         }
+
+		if (success_sizes[index].size() < sizes.size())
+		{
+			success_sizes[index].resize(sizes.size());
+			fail_sizes[index].resize(sizes.size());
+			max_success_sizes[index].resize(sizes.size());
+			max_fail_sizes[index].resize(sizes.size());
+		}
 
 		if (success)
 		{

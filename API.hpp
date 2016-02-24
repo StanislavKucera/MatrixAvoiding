@@ -315,6 +315,10 @@ std::vector<Pattern_info> parse_config(std::istream& config, size_t& N, size_t& 
 		if (input.empty())
 			continue;
 
+		// comment starts with ';'
+		if (input.front() == ';')
+			continue;
+
 		// if config contains CR and getline doesn't expect it
 		if (input.back() == '\r')
 			input.resize(input.size() - 1);
@@ -414,7 +418,7 @@ std::vector<Pattern_info> parse_config(std::istream& config, size_t& N, size_t& 
 		// matrix stats
 		else if (var == "histogram_file" || var == "histogram")
 			set_file_or_bool(value, hist_file, console_hist);
-		else if (var == "max_ones_file" || var == "max_ones")
+		else if (var == "max_ones_file" || var == "max_ones" || var == "max_ones_matrix_file")
 			set_file_or_bool(value, max_ones_file, console_max_ones);
 		else if (var == "histogram_frequency" || var == "frequency")
 			hist_freq = you_must_be_kidding_me::stoul(value);
@@ -427,6 +431,8 @@ std::vector<Pattern_info> parse_config(std::istream& config, size_t& N, size_t& 
 			if (hist_to == 0)
 				hist_to = (size_t)-1;
 		}
+		else
+			std::cerr << "Couldn't parse the line \"" << var << " = " << value << "\" from config file. Make sure there are no spelling errors." << std::endl;
 	}
 
 	// add the last defined pattern if it hasn't been added already
