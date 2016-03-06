@@ -227,7 +227,7 @@ bool General_pattern<T>::parallel_avoid(const size_t threads_count, const Matrix
 	// I start with empty mapping - no lines are mapped
 	building_tree_[0].init();
 
-	Counter counter; 
+	Counter counter;
 	size_t from, to;
 	const size_t big_matrix_rows = big_matrix.getRow(),
 		big_matrix_cols = big_matrix.getCol();

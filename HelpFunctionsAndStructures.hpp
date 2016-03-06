@@ -180,9 +180,25 @@ struct Job
 {
 	Job() : r((size_t)-1), c((size_t)-1), avoid(true) {}
 	Job(size_t row, size_t col, bool a) : r(row), c(col), avoid(a) {}
+	Job(const Job& j) : r(j.r), c(j.c), avoid(j.avoid) {}
 	
 	size_t r, c;
 	bool avoid;
+};
+
+inline bool operator<(const Job& left, const Job& right) { return false; }
+
+struct Task
+{
+	Task() : job(), id(-1), next_id(-1), returned(false), reverted(false), synced(false) {}
+	Task(const Job& j, const int i, const int ni, const bool r, const bool rev, const bool s) : job(j), id(i), next_id(ni), returned(r), reverted(rev), synced(s) {}
+
+	Job job;
+	int id,
+		next_id;
+	bool returned,
+		reverted,
+		synced;
 };
 
 /// <summary>
