@@ -176,6 +176,15 @@ struct Counter
 		uniques;	// number of unique mappings (two mapping are the same if the important mapped lines are the same)
 };
 
+struct Job
+{
+	Job() : r((size_t)-1), c((size_t)-1), avoid(true) {}
+	Job(size_t row, size_t col, bool a) : r(row), c(col), avoid(a) {}
+	
+	size_t r, c;
+	bool avoid;
+};
+
 /// <summary>
 /// Computes the number of one-entries of a binary number.
 /// Takes constant time and space.

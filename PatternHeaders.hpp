@@ -6,6 +6,7 @@
 #include <atomic>
 #include <queue>
 #include <condition_variable>
+#include <thread>
 
 /// For the purposes of complexity, let \theta(k) be the number of lines (rows and columns) of the pattern
 /// and \theta(n) be the number of lines of the big matrix.
@@ -76,7 +77,7 @@ public:
 	/// <param name="custom_order">Order of lines given by user in case order is set to CUSTOM.</param>
 	General_pattern(const Matrix<size_t>& pattern, const size_t threads_count, const Order order = DESC, const Map map_approach = SUPERACTIVE,  std::vector<size_t>&& custom_order = std::vector<size_t>());
 	General_pattern(const General_pattern<T>& copy) : row_(copy.row_), col_(copy.col_), lines_(copy.lines_), order_(copy.order_), what_to_remember_(copy.what_to_remember_),
-		parallel_bound_indices_(copy.parallel_bound_indices_), extending_order_(copy.extending_order_), map_index_(copy.map_index_), steps_(copy.steps_),
+		parallel_bound_indices_(copy.parallel_bound_indices_), extending_order_(copy.extending_order_), map_index_(copy.map_index_), building_tree_(2), steps_(copy.steps_),
 		empty_lines_(copy.empty_lines_), map_approach_(copy.map_approach_) {}
 
 	/// <summary>
@@ -360,7 +361,7 @@ public:
 	std::vector<std::vector<size_t> > get_order() const;
 
 	bool avoid(std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c, const size_t& forced_end);
-	bool revert(const size_t r, const size_t c, const Matrix<size_t>& mat);
+	bool revert(const size_t r, const size_t c);// , const Matrix<size_t>& mat);
 	bool check_matrix(const Matrix<size_t>& mat);
 
 	void add(Pattern* pattern) { patterns_.push_back(pattern); }

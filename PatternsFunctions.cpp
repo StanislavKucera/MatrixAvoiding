@@ -112,7 +112,7 @@ bool Patterns::avoid(std::vector<std::vector<Counter> >& sizes, const size_t r, 
 	return true;
 }
 
-bool Patterns::revert(const size_t r, const size_t c, const Matrix<size_t>& mat)
+bool Patterns::revert(const size_t r, const size_t c)//, const Matrix<size_t>& mat)
 {
 	// flip the bit back
 	big_matrix_.flip(r, c);
@@ -126,7 +126,7 @@ bool Patterns::revert(const size_t r, const size_t c, const Matrix<size_t>& mat)
 	{
 		if (!pattern->revert(big_matrix_, r, c)) {
 			//if (!pattern->avoid(big_matrix_, sizes, r, c))
-			if (check_matrix(mat))
+			//if (check_matrix(mat))
 				throw my_exception("Matrix after reverting contains the pattern!");
 			throw my_exception("Matrix after reverting contains the pattern!");
 		}
