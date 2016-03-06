@@ -7,7 +7,7 @@
 #include <algorithm>
 
 template<typename T>
-General_pattern<T>::General_pattern(const Matrix<size_t>& pattern, const Order order, const Map map_approach, std::vector<size_t>&& custom_order)
+General_pattern<T>::General_pattern(const Matrix<size_t>& pattern, const size_t threads_count, const Order order, const Map map_approach, std::vector<size_t>&& custom_order)
 	: row_(pattern.getRow()),
 	col_(pattern.getCol()), 
 	lines_(row_ + col_),
@@ -19,7 +19,15 @@ General_pattern<T>::General_pattern(const Matrix<size_t>& pattern, const Order o
 	building_tree_(2),
 	steps_(row_ + col_),
 	empty_lines_(0),
-	map_approach_(map_approach)
+	map_approach_(map_approach), 
+	threads_(threads_count),
+	qs_(threads_count),
+	mutexes_(threads_count),
+	cvs_(threads_count),
+	mtxs_(threads_count),
+	sleeps_(threads_count),
+	done_(true),
+	end_(false)
 {
 	for (size_t i = 0; i < row_; ++i)
 	{
@@ -155,29 +163,57 @@ bool General_pattern<T>::avoid(const Matrix<size_t>& big_matrix, std::vector<Cou
 }
 
 template<typename T>
-void General_pattern<T>::parallel_map(std::atomic_size_t& big_line_from, const size_t big_line_to, const size_t level,
-	const std::vector<size_t>& mapping, const Matrix<size_t>& big_matrix, bool& done, std::mutex& mutex, std::queue<std::vector<size_t> >& q)
+void General_pattern<T>::parallel_map(const size_t index, const Matrix<size_t>& big_matrix)
 {
-	while (!done)
+	// the loop end (and the thread dies) at the end of MCMCgenerator
+	while (!end_)
 	{
-		size_t big_line = ++big_line_from;
-
-		if (big_line >= big_line_to)
 		{
-			done = true;
-			break;
+			// the mutex to not allow waiting when the condition variable is being notified. This situation won't happen but this syntax is "best practice"
+			std::unique_lock<std::mutex> lck(mtxs_[index]);
+			// indicator that the thread sleeps
+			sleeps_[index] = true;
+			
+			// before waiting I notify the main thread - either to let it know something was mapped or that the last mapping is being computed
+			{
+				// to prevent the situation main threads fall asleep right after I notify it
+				std::unique_lock<std::mutex> lck2(mtx_);
+				something_is_mapped_or_done_ = true;
+				cv_.notify_one();
+			}
+
+			// the last mapping of current level is being computed or was computed and MCMCgenerator doesn't end 
+			while (done_ && !end_)
+				cvs_[index].wait(lck);
+
+			// the worker doesn't sleep, it computes another mapping
+			sleeps_[index] = false;
 		}
 
-		// if currenly added line can be mapped to big_line in mapping map
-		if (map(map_approach_ > LAZY, order_[level], level, big_line, mapping, big_matrix))
+		// a line of the big_matrix to which I want to try to map currently mapped line of the pattern
+		size_t big_line = ++big_line_;
+
+		// the line I have is beyong the last one which is worth trying or MCMCgenerator ended
+		if (big_line >= big_line_to_ || end_)
+		{
+			done_ = true;
+			continue;
+		}
+
+		// compute whether the currenly mapped line can be mapped to big_line and extend the mapping (mapping_ptr)
+		if (map(map_approach_ > LAZY, order_[level_], level_, big_line, *mapping_ptr_, big_matrix))
 		{
 			// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
-			if (level == steps_ - 1)
-				done = true;
+			if (level_ == steps_ - 1)
+				done_ = true;
 
-			mutex.lock();
-			q.push(extend(level, big_line, mapping));
-			mutex.unlock();
+			// compute the extension of the mapping (mapping_ptr_) with the big_line
+			auto extended = extend(level_, big_line, *mapping_ptr_);
+
+			// and add it to the queue
+			mutexes_[index].lock();
+			qs_[index].push(std::move(extended));
+			mutexes_[index].unlock();
 		}
 	}
 }
@@ -192,13 +228,13 @@ bool General_pattern<T>::parallel_avoid(const size_t threads_count, const Matrix
 	// I start with empty mapping - no lines are mapped
 	building_tree_[0].init();
 
-	Counter counter;
-	size_t from, to;
+	Counter counter; 
+	size_t level = 0, from, to = 0;
 	const size_t big_matrix_rows = big_matrix.getRow(),
 		big_matrix_cols = big_matrix.getCol();
 
 	// main loop through added lines (loops 2*k times)
-	for (size_t level = 0; level < steps_; ++level)
+	for (level_ = 0; level_ < steps_; ++level_)
 	{
 		// the function is forced to end from outside
 		if (force_end == 1)
@@ -207,97 +243,140 @@ bool General_pattern<T>::parallel_avoid(const size_t threads_count, const Matrix
 		counter.maps = 0;
 		counter.tries = 0;
 		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
-		if (building_tree_[level % 2].size() == 0)
+		if (building_tree_[level_ % 2].size() == 0)
 			return true;
 
-		building_tree_[(level + 1) % 2].clear();
+		building_tree_[(level_ + 1) % 2].clear();
 
 		// loop through the mappings found in the last iteration
-		for (const std::vector<size_t>& mapping : building_tree_[level % 2])
+		for (const std::vector<size_t>& mapping : building_tree_[level_ % 2])
 		{
+			// this is how I give access to a mapping to threads
+			mapping_ptr_ = &mapping;
+
 			// the function is forced to end from outside
 			if (force_end == 1)
 				return false;
 
 			// find boundaries of added line:
-			find_parallel_bounds(order_[level], level, mapping, big_matrix_rows, big_matrix_cols, from, to, r, c);
+			find_parallel_bounds(order_[level_], level_, mapping, big_matrix_rows, big_matrix_cols, from, to, r, c);
 
 			// this value will be wrong if the last is mapped not using the last possible line
 			counter.tries += to - from;
 
-			std::atomic_size_t big_line(from - 1);
-			std::vector<std::thread> threads(threads_count - 1);
-			std::vector<std::mutex> mutexes(threads_count - 1);
-			std::vector<std::queue<std::vector<size_t> > > qs(threads_count - 1);
-			bool done = false;
+			// the first line I want to try to map the currently mapped line to - 1
+			big_line_ = from - 1;
+			// the last line I want to try to map the currently mapped line to  + 1
+			big_line_to_ = to;
+			// all the attempts haven't been computed
+			done_ = false;
+			something_is_mapped_or_done_ = false;
 
-			// map orders_[level] to j-th line of N if possible
+			// wake up the threads
 			for (size_t index = 0; index < threads_count - 1; ++index)
-				threads[index] = std::thread(&General_pattern::parallel_map, this, std::ref(big_line), to, level,
-					std::ref(mapping), std::ref(big_matrix), std::ref(done), std::ref(mutexes[index]), std::ref(qs[index]));
-			
-			// extend
-			// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line, and add it to the building_tree_
-			bool extended = true;
-			while (!done || extended)
 			{
-				extended = false;
+				// again using a mutex here is useless since I know the thread sleeps
+				std::unique_lock<std::mutex> lck(mtxs_[index]);
+				cvs_[index].notify_one();
+			}
+			
+			// indicator whether I managed to map the last mapped line
+			bool extended = false;
 
+			// waits until there is a mapping found and there is one, it adds the mapping to the building_tree_
+			// if workers are done (done_) and they all sleep - meaning no more mappings are being computed - the loop breaks
+			while (true)
+			{
+				{
+					// this mutex is here to prevent the case when the process starts waiting without noticing it was just notified
+					std::unique_lock<std::mutex> lck(mtx_);
+
+					// nothing new mapped and something is still running
+					while (!something_is_mapped_or_done_)
+						cv_.wait(lck);
+
+					something_is_mapped_or_done_ = false;
+				}
+
+				// the last mapping is computed or being computed
+				if (done_)
+				{
+					// all maps are computed
+					bool level_done = true;
+
+					for (size_t i = 0; i < threads_count - 1; ++i)
+						if (!sleeps_[i]) {
+							level_done = false;
+							break;
+						}
+
+					// the working threads all wait, meaning all map attempts of current level are computed - this is the only way to get out of the loop
+					if (level_done)
+						break;
+				}
+
+				std::vector<size_t> current;
+
+				// iterate through queues and if one is not empty, take its first element and add it to building_tree_
 				for (size_t index = 0; index < threads_count - 1; ++index)
 				{
-					mutexes[index].lock();
-
-					if (qs[index].empty())
 					{
-						mutexes[index].unlock();
-						continue;
+						// need a mutex since accessing a queue which is being filled by a different thread
+						std::unique_lock<std::mutex> lck(mutexes_[index]);
+
+						if (qs_[index].empty())
+							continue;
+
+						// take the first element, pop it and unlock the mutex
+						current = qs_[index].front();
+						qs_[index].pop();
 					}
 
-					extended = true;
-					auto current = qs[index].front();
-					qs[index].pop();
-					mutexes[index].unlock();
-
-					// I found a mapping of the last line
-					if (level == steps_ - 1)
-						done = true;
+					// I found a mapping of the pattern since the queue was not empty and I mapped the last line
+					if (level_ == steps_ - 1)
+					{
+						done_ = true;
+						extended = true;
+						break;
+					}
 
 					++counter.maps;
-					building_tree_[(level + 1) % 2].insert_without_duplicates(std::move(current));
+					building_tree_[(level_ + 1) % 2].insert_without_duplicates(std::move(current));
 				}
 			}
 
-			for (size_t index = 0; index < threads_count - 1; ++index)
-				threads[index].join();
-
-			// I found atleast one mapping of the last line
-			if (level == steps_ - 1 && !building_tree_[(level + 1) % 2].empty()) {
-				counter.uniques = building_tree_[(level + 1) % 2].size();
+			// I found atleast one mapping of the last line -> the matrix contains the pattern
+			if (level_ == steps_ - 1 && extended) {
+				counter.uniques = 1;
 				sizes.push_back(counter);
+
 				return false;
 			}
-
+			
+			// now I know all the workers sleep but it is possible the queues are not empty - but no need to lock them up because the main thread is the only one to access them now
 			for (size_t index = 0; index < threads_count - 1; ++index)
 			{
-				while (!qs[index].empty())
+				// no need to lock mutex since all workers sleep
+				while (!qs_[index].empty())
 				{
 					// I found a mapping of the last line
-					if (level == steps_ - 1) {
-						counter.uniques = building_tree_[(level + 1) % 2].size();
+					if (level_ == steps_ - 1) {
+						counter.uniques = 1;
 						sizes.push_back(counter);
+
 						return false;
 					}
 
-					auto current = qs[index].front();
-					qs[index].pop();
+					auto current = qs_[index].front();
+					qs_[index].pop();
 
 					++counter.maps;
-					building_tree_[(level + 1) % 2].insert_without_duplicates(std::move(current));
+					building_tree_[(level_ + 1) % 2].insert_without_duplicates(std::move(current));
 				}
 			}
 		}
 
-		counter.uniques = building_tree_[(level + 1) % 2].size();
+		counter.uniques = building_tree_[(level_ + 1) % 2].size();
 		sizes.push_back(counter);
 	}
 

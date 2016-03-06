@@ -7,7 +7,6 @@
 #define API_cpp_
 
 #include "API.hpp"
-#include "MCMC.hpp"
 #include "GeneralPatternFunctions.hpp"
 
 int main()
@@ -56,7 +55,7 @@ int main()
 		}
 	}
 
-	set_patterns(patterns, pattern_info, result, init_matrix != "zero", N);
+	set_patterns(patterns, pattern_info, result, init_matrix != "zero", N, threads_count);
 
 	Matrix_Statistics matrix_stats(hist_from, hist_to, N, hist_freq);
 	Performance_Statistics perf_stats(5, iter);

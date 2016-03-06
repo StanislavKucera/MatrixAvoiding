@@ -187,13 +187,11 @@ inline size_t bit_count(const size_t n)	// I have used a function from the inter
 	return ((uCount + (uCount >> 3)) & 030707070707) % 63;
 }
 
-namespace you_must_be_kidding_me {
-	inline size_t stoul(const std::string& s) {
-		std::istringstream str(s);
-		size_t ret;
-		str >> ret;
-		return ret;
-	}
+inline size_t my_stoul(const std::string& s) {
+	std::istringstream str(s);
+	size_t ret;
+	str >> ret;
+	return ret;
 }
 
 #endif

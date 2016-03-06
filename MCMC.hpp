@@ -31,6 +31,10 @@ inline void MCMCgenerator(const size_t iter, Patterns& patterns, Matrix<size_t>&
 	// coordinates of changed element
 	size_t r, c;
 
+	// initialize and run threads if parallel computation is requested
+	if (threads_count > 1)
+		patterns.construct_threads(big_matrix);
+
 	// this is gonna be here for now
 	std::vector<std::vector<Counter> > sizes;
 	std::chrono::system_clock::time_point start, end;
@@ -69,6 +73,8 @@ inline void MCMCgenerator(const size_t iter, Patterns& patterns, Matrix<size_t>&
 			else
 				patterns.parallel_revert(2, big_matrix, r, c);
 		}
+		else
+			end = std::chrono::system_clock::now();
 
 		end = std::chrono::system_clock::now();
 		
@@ -83,6 +89,10 @@ inline void MCMCgenerator(const size_t iter, Patterns& patterns, Matrix<size_t>&
 			std::cout << last_perc * 10 << " %\n";
 		}
 	}
+
+	// initialize and run threads if parallel computation is requested
+	if (threads_count > 1)
+		patterns.destruct_threads();
 }
 
 void parallel_avoid(Patterns& patterns, std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c, const size_t& forced_end,

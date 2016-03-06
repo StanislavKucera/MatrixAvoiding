@@ -147,4 +147,16 @@ bool Patterns::check_matrix(const Matrix<size_t>& mat)
 	return diff;
 }
 
+void Patterns::construct_threads(const Matrix<size_t>& big_matrix)
+{
+	for (auto& pattern : patterns_)
+		pattern->construct_threads(big_matrix);
+}
+
+void Patterns::destruct_threads()
+{
+	for (auto& pattern : patterns_)
+		pattern->destruct_threads();
+}
+
 #endif
