@@ -170,16 +170,16 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 	///////////////////////////
 	// for each thread there is an pair saying which calculations need to be reverted
 	// reverting[i] = a; means that in the i-th thread all calculations with id greater than or equal to a need to be reverted 
-	std::vector<size_t> reverting(threads_count);
+	std::vector<int> reverting(threads_count);
 	// everytime there is a successful avoid taken, all the threads need to get its own matrix into a valid state - this is the queue of all changes
-	std::vector<std::set<std::pair<size_t, Job> > > sync(threads_count);
+	std::vector<std::set<std::pair<int, Job> > > sync(threads_count);
 	// for each thread there is a list of tasks done. Deque is used because I want to pop_front and pop_back
 	// queue[thread][i] = <job, id, returned_val, reverted, synced>; means that the i-th not checked (by the main thread) calculation has id, changed the entry at position [job.r,job.c],
 	// the avoid (if it was not revert) ended up with returned_val and it has been reverted already (that is needed either when avoid returns false or when calculation with smaller id succeeds),
 	// if synced is true, the calculation was already checked by the main thread and all running avoid call know the result of this one, working with it
 	std::vector<std::deque<Task> > queue(threads_count);
 	// calculation ids - current means currently being checked (waited for) by the main thread, last is the lastly assigned id
-	size_t current_id = 1, last_id = 0;
+	int current_id = 1, last_id = 0;
 	// calculations ordered by id - use this to find the order in which I deal with the threads
 	//std::priority_queue<std::pair<size_t, size_t>, std::vector<std::pair<size_t, size_t> >, std::greater<std::pair<size_t, size_t> > > priority;
 	//std::set<std::pair<size_t, size_t> > priority;
@@ -280,7 +280,7 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 				// call of the avoid succeeded
 				if (queue[index].front().returned)
 				{
-					const size_t id = queue[index].front().id;
+					const int id = queue[index].front().id;
 
 					// if other workers haven't been notified that the computation succeded
 					if (!queue[index].front().synced)
@@ -292,7 +292,7 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 						for (size_t j = 0; j < threads_count; ++j)
 						{
 							// the worker calculated (or is calculating) something which it wouldn't have in serial case
-							if (queue[j].back().id > id)
+							if (queue[j].back().id > id || -queue[j].back().id > id)
 							{
 								// stop the calculation
 								force_end[j] = true;
@@ -306,7 +306,7 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 							if (j == index)
 								continue;
 
-							std::set<std::pair<size_t, Job> >::iterator it = sync[j].begin();
+							std::set<std::pair<int, Job> >::iterator it = sync[j].begin();
 
 							// go through the queue of things the worker needs to synchronize
 							for (; it != sync[j].end(); ++it)
@@ -393,7 +393,7 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 					queue[index].pop_back();
 
 				// I've reverted everything I had to
-				if (queue[index].empty() || queue[index].back().id <= reverting[index] && queue[index].back().id > 0 || -queue[index].back().id <= reverting[index] && queue[index].back().id < 0)
+				if (queue[index].empty() || (queue[index].back().id <= reverting[index] && queue[index].back().id > 0) || (-queue[index].back().id <= reverting[index] && queue[index].back().id < 0))
 				{
 					force_end[index] = false;
 					reverting[index] = 0;
@@ -424,27 +424,26 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 
 			// the last job was to synchronize and it is done
 			if (!queue[index].empty() && queue[index].front().id == 0)
-			{
-				// if the result isn't certain to be in the generated matrix I put the calculation to the end of the queue so it can be reverted if needed
-				if (queue[index].front().next_id > current_id)
-					queue[index].push_back(Task(queue[index].front().job, -queue[index].front().next_id, 0, true, false, false));
-
 				queue[index].pop_front();
-			}
 
 			// there are synchrozations to make
 			if (!sync[index].empty())
 			{
-				std::set<std::pair<size_t, Job> >::iterator it = sync[index].begin();
+				std::set<std::pair<int, Job> >::iterator it = sync[index].begin();
 
 				if (!ret_read[index])
 					assert(!"Somehow didn't notice the returned value of a previous avoid call.");
 
 				jobs[index].r = it->second.r;
-				jobs[index].c = it->second.r;
+				jobs[index].c = it->second.c;
 				// I call revert since this change was already proved to be successful by another thread
 				jobs[index].avoid = false;
 				queue[index].push_front(Task(jobs[index], 0, it->first, false, false, false));
+
+				// if the result isn't certain to be in the generated matrix I put the calculation to the end of the queue so it can be reverted if needed
+				if (queue[index].front().next_id > current_id)
+					queue[index].push_back(Task(jobs[index], -it->first, 0, true, false, false));
+
 				ar << index << ": sync [" << it->second.r << "," << it->second.c << "] - " << 0 << std::endl;
 
 				{

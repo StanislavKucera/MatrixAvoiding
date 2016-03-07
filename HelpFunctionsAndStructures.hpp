@@ -186,7 +186,7 @@ struct Job
 	bool avoid;
 };
 
-inline bool operator<(const Job& left, const Job& right) { return false; }
+inline bool operator<(const Job&, const Job&) { return false; }
 
 struct Task
 {
