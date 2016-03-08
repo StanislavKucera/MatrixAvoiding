@@ -172,18 +172,20 @@ void General_pattern<T>::parallel_map(const size_t index, const Matrix<size_t>& 
 			std::unique_lock<std::mutex> lck(mtxs_[index]);
 			// indicator that the thread sleeps
 			sleeps_[index] = true;
-			
-			// before waiting I notify the main thread - either to let it know something was mapped or that the last mapping is being computed
-			{
-				// to prevent the situation main threads fall asleep right after I notify it
-				std::unique_lock<std::mutex> lck2(mtx_);
-				something_is_mapped_or_done_ = true;
-				cv_.notify_one();
-			}
 
 			// the last mapping of current level is being computed or was computed and MCMCgenerator doesn't end 
 			while (done_ && !end_)
+			{
+				// before waiting I notify the main thread - to let it know that the last mapping is being computed
+				{
+					// to prevent the situation main threads fall asleep right after I notify it
+					std::unique_lock<std::mutex> lck2(mtx_);
+					something_is_mapped_or_done_ = true;
+					cv_.notify_one();
+				}
+
 				cvs_[index].wait(lck);
+			}
 
 			// the worker doesn't sleep, it computes another mapping
 			sleeps_[index] = false;
@@ -213,6 +215,14 @@ void General_pattern<T>::parallel_map(const size_t index, const Matrix<size_t>& 
 			mutexes_[index].lock();
 			qs_[index].push(std::move(extended));
 			mutexes_[index].unlock();
+
+			// before waiting I notify the main thread - to let it know something was mapped
+			{
+				// to prevent the situation main threads fall asleep right after I notify it
+				std::unique_lock<std::mutex> lck2(mtx_);
+				something_is_mapped_or_done_ = true;
+				cv_.notify_one();
+			}
 		}
 	}
 }
