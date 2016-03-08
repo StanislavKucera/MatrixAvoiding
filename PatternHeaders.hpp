@@ -3,8 +3,10 @@
 
 #include "HelpFunctionsAndStructures.hpp"
 
-#include <algorithm>
-#include <assert.h>
+#include <atomic>
+#include <queue>
+#include <condition_variable>
+#include <thread>
 
 /// For the purposes of complexity, let \theta(k) be the number of lines (rows and columns) of the pattern
 /// and \theta(n) be the number of lines of the big matrix.
@@ -12,9 +14,14 @@
 class Pattern
 {
 public:
-	virtual bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c) = 0;
-	virtual bool revert(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c) = 0;
+	virtual bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c, const size_t& force_end = 0) = 0;
+	virtual bool revert(const Matrix<size_t>& big_matrix, const size_t r, const size_t c) = 0;
+	virtual bool parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c, const size_t& force_end = 0) = 0;
+	virtual bool parallel_revert(const size_t threads_count, const Matrix<size_t>& big_matrix, const size_t r, const size_t c) = 0;
 	virtual std::vector<size_t> get_order() const = 0;
+	virtual Pattern* get_new_instance() const = 0;
+	virtual void construct_threads(const Matrix<size_t>& big_matrix) = 0;
+	virtual void destruct_threads() = 0;
 };
 
 class Slow_pattern
@@ -29,25 +36,30 @@ public:
 					one_entries_.push_back(std::make_pair(i, j));
 	}
 
-	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& /* sizes */, const size_t /* r */ = (size_t)-1, const size_t /* c */ = (size_t)-1)
+	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& /* sizes */, const size_t /* r */ = (size_t)-1, const size_t /* c */ = (size_t)-1, const size_t& force_end = 0)
 	{
 		done_ = false;
 		// goes through all subsets of rows and columns of the right cardinality and tests whether the pattern can be mapped to that subset
-		test_all_subsets(0ll, 0ll, rows_, cols_, (long long)big_matrix.getRow(), (long long)big_matrix.getCol(), big_matrix);
+		test_all_subsets(0ll, 0ll, rows_, cols_, (long long)big_matrix.getRow(), (long long)big_matrix.getCol(), big_matrix, force_end);
 
 		if (done_)
 			return false;
 
 		return true;
 	}
-	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, const size_t /* r */, const size_t /* c */) { return true; }
+	bool revert(const Matrix<size_t>& /* big_matrix */, const size_t /* r */, const size_t /* c */) { return true; }
+	bool parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c, const size_t& force_end = 0);
+	bool parallel_revert(const size_t /* threads_count */, const Matrix<size_t>& /* big_matrix */, const size_t /* r */, const size_t /* c */) { return true; }
 	std::vector<size_t> get_order() const { return std::vector<size_t>(); }
+	Pattern* get_new_instance() const { return new Slow_pattern(*this); }
+	void construct_threads(const Matrix<size_t>& /* big_matrix */) {}
+	void destruct_threads() {}
 private:
 	std::vector<std::pair<size_t, size_t> > one_entries_;	// list of all one entries of the pattern
 	const long long rows_, cols_;							// size of the pattern
 	bool done_;												// indicator whether the avoidance testing has failed (the matrix does not avoid the pattern)
 
-	void test_all_subsets(long long v_map, long long h_map, long long v_ones, long long h_ones, long long v_vals, long long h_vals, const Matrix<size_t>& big_matrix);
+	void test_all_subsets(long long v_map, long long h_map, long long v_ones, long long h_ones, long long v_vals, long long h_vals, const Matrix<size_t>& big_matrix, const size_t& force_end);
 };
 
 template<typename T>
@@ -63,7 +75,10 @@ public:
 	/// <param name="order">Enum determining which function will be used for line ordering.</param>
 	/// <param name="map">Enum determining what conditions will map function check.</param>
 	/// <param name="custom_order">Order of lines given by user in case order is set to CUSTOM.</param>
-	General_pattern(const Matrix<size_t>& pattern, const Order order = DESC, const Map map_approach = SUPERACTIVE, std::vector<size_t>&& custom_order = std::vector<size_t>());
+	General_pattern(const Matrix<size_t>& pattern, const size_t threads_count, const Order order = DESC, const Map map_approach = SUPERACTIVE,  std::vector<size_t>&& custom_order = std::vector<size_t>());
+	General_pattern(const General_pattern<T>& copy) : row_(copy.row_), col_(copy.col_), lines_(copy.lines_), order_(copy.order_), what_to_remember_(copy.what_to_remember_),
+		parallel_bound_indices_(copy.parallel_bound_indices_), extending_order_(copy.extending_order_), map_index_(copy.map_index_), building_tree_(2), steps_(copy.steps_),
+		empty_lines_(copy.empty_lines_), map_approach_(copy.map_approach_) {}
 
 	/// <summary>
 	/// Tests if the pattern avoids given matrix as a submatrix.
@@ -76,9 +91,31 @@ public:
 	/// <param name="r">Row of the big matrix that has been changed.</param>
 	/// <param name="c">Column of the big matrix that has been changed.</param>
 	/// <param name="sizes">Vector of numbers of found mappings on each level.</param>
-	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r = (size_t)-1, const size_t c = (size_t)-1);
-	bool revert(const Matrix<size_t>& /* big_matrix */, std::vector<Counter>& /* sizes */, const size_t /* r */, const size_t /* c */) { return true; }
+	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r = (size_t)-1, const size_t c = (size_t)-1, const size_t& force_end = 0);
+	bool revert(const Matrix<size_t>& /* big_matrix */, const size_t /* r */, const size_t /* c */) { return true; }
+	bool parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c, const size_t& force_end = 0);
+	bool parallel_revert(const size_t /* threads_count */, const Matrix<size_t>& /* big_matrix */, const size_t /* r */, const size_t /* c */) { return true; }
 	std::vector<size_t> get_order() const { return order_; }
+	Pattern* get_new_instance() const { return new General_pattern(*this); }
+	void construct_threads(const Matrix<size_t>& big_matrix)
+	{
+		for (size_t index = 0; index < threads_.size(); ++index)
+			threads_[index] = std::thread(&General_pattern::parallel_map, this, index, std::ref(big_matrix));
+	}
+	void destruct_threads()
+	{
+		end_ = true;
+
+		for (size_t index = 0; index < threads_.size(); ++index)
+		{
+			{
+				std::unique_lock<std::mutex> lck(mtxs_[index]);
+				cvs_[index].notify_one();
+			}
+
+			threads_[index].join();
+		}
+	}
 private:
 	const size_t	row_,								// number of rows of the pattern
 					col_;								// number of columns of the pattern
@@ -219,6 +256,52 @@ private:
 	/// <param name="big_line">Index of the line of the big matrix which I mapped the line to.</param>
 	/// <param name="mapping">The mapping I am extending.</param>
 	std::vector<size_t> extend(const size_t level, const size_t big_line, const std::vector<size_t>& mapping) const;
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////
+	// parallel avoid stuff //
+	//////////////////////////
+
+	// thread pool
+	std::vector<std::thread> threads_;
+	// queue of found mappings for each thread - stores all mapping found by its worker and those are then taken by the main thread and added to building_tree_ without duplicates
+	// accessed by exactly two threads - push by its worker; front, pop by the main thread - mutex needed
+	std::vector<std::queue<std::vector<size_t> > > qs_;
+	// mutex for each queue
+	std::vector<std::mutex> mutexes_;
+	// condition variable for each thread - if there is nothing to compute for a worker it waits for the condition variable
+	// accessed by exactly two threads - wait by its worker; notify_one by the main thread
+	std::vector<std::condition_variable> cvs_;
+	// mutex for each condition variable
+	std::vector<std::mutex> mtxs_;
+	// indicator whether a thread waits for its condition variable or is computing something
+	// accessed by exactly two threads - write by its worker; read by the main thread - mutex not needed because of atomicity
+	std::vector<std::atomic_bool> sleeps_;
+	// condition variable for the main thread - if workers calculate new mappings and none of them is done yet, the main threads waits
+	// accessed by all the threads - notify_one by all workers; wait by the main thread
+	std::condition_variable cv_;
+	// mutex for the condition variable
+	std::mutex mtx_;
+	// pointer to a mapping that is being extended
+	// accessed by all threads - read by all workers; write by the main thread - mutex not needed because it is writen only when workers sleep
+	typename T::const_pointer mapping_ptr_ = nullptr;
+	// index of a line which currently mapped line is being mapped to
+	// accessed by all threads - read and write by all workers; write by the main thread - mutex not needed because of atomicity
+	std::atomic_size_t big_line_;
+	// index of a line behind the last one that is possible to map the currently mapped line to. If big_line = big_line_to tests are done
+	// accessed by all threads - read by all workers; write by the main thread - mutex not needed because of atomicity (this really doesn't need to be atomic)
+	std::atomic_size_t big_line_to_;
+	// are all possible mappings of the current line tested? It is TRUE when there is no more work for a thread (big_line = big_line_to)
+	// accessed by all threads - read and write by all workers; read and write by the main thread - mutex not needed because of atomicity
+	std::atomic_bool done_;
+	// indicator that the MCMCgenerator ends - it need to destroy all workers
+	std::atomic_bool end_;
+	// indicator that there is some work for the main thread and it wasn't just woke up randomly
+	std::atomic_bool something_is_mapped_or_done_;
+	// the level of the computation - index of the line being mapped
+	// accessed by all threads - read by all workers; read and write by the main thread - mutex not needed because it is writen only when workers sleep
+	size_t level_;
+
+	void parallel_map(const size_t index, const Matrix<size_t>& big_matrix);
 };
 
 /// A matrix pattern in which exists a walk from left-upper corner to right-bottom corner, which contains all one-entries.
@@ -239,11 +322,20 @@ public:
 	/// <param name="r">Row of the big matrix that has been changed.</param>
 	/// <param name="c">Column of the big matrix that has been changed.</param>
 	/// <param name="sizes">Vector of numbers of found mappings on each level.</param>
-	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r = (size_t)-1, const size_t c = (size_t)-1);
+	bool avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r = (size_t)-1, const size_t c = (size_t)-1, const size_t& force_end = 0);
 	
 	// reverts changes in max_walk_part matrix after an unsuccessful change of the big matrix
-	bool revert(const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c) { return avoid(big_matrix, sizes, r, c); }
+	bool revert(const Matrix<size_t>& big_matrix, const size_t r, const size_t c) { std::vector<Counter> sizes; return avoid(big_matrix, sizes, r, c); }
+	bool parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<Counter>& sizes, const size_t r, const size_t c, const size_t& force_end = 0);
+	bool parallel_revert(const size_t threads_count, const Matrix<size_t>& big_matrix, const size_t r, const size_t c)
+	{ 
+		std::vector<Counter> sizes;
+		return parallel_avoid(threads_count, big_matrix, sizes, r, c);
+	}
 	std::vector<size_t> get_order() const { return std::vector<size_t>(); }
+	Pattern* get_new_instance() const { return new Walking_pattern(*this); }
+	virtual void construct_threads(const Matrix<size_t>& /* big_matrix */) {}
+	void destruct_threads() {}
 private:
 	Matrix<std::pair<size_t, size_t> > max_walk_part_;	// table of calculated [c_v,c_h] for all elements
 	
@@ -255,61 +347,32 @@ private:
 class Patterns
 {
 public:
-	Patterns() : patterns_(0), changed_(-1) {}
-
-	bool avoid(const Matrix<size_t>& big_matrix, std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c)
+	Patterns() : patterns_(), big_matrix_(), changed_(-1) {}
+	Patterns(const Patterns& copy) : big_matrix_(copy.big_matrix_), changed_(-1)
 	{
-		if (changed_ == patterns_.size() - 1)
-			changed_ = -1;
-
-		if (changed_ != -1)
-		{
-			assert(!"A pattern is not in a valid state!");
-			throw my_exception("A pattern is not in a valid state!");
-		}
-
-		sizes.resize(patterns_.size());
-
-		for (auto& pattern : patterns_)
-		{
-			++changed_;
-
-			if (!pattern->avoid(big_matrix, sizes[changed_], r, c))
-				return false;
-		}
-
-		return true;
-	}
-	bool revert(const Matrix<size_t>& big_matrix, std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c)
-	{
-		for (; changed_ != -1; --changed_)
-		{
-			if (!patterns_[changed_]->revert(big_matrix, sizes[changed_], r, c))
-			{
-				assert(!"Matrix after reverting contains the pattern!");
-				throw my_exception("Matrix after reverting contains the pattern!");
-			}
-		}
-
-		return true;
-	}
-	std::vector<std::vector<size_t> > get_order() const
-	{
-		std::vector<std::vector<size_t> > orders(patterns_.size());
-
-		for (size_t i = 0; i < patterns_.size(); ++i)
-			orders[i] = std::move(patterns_[i]->get_order());
-
-		return orders;
+		for (auto& pattern : copy.patterns_)
+			patterns_.push_back(pattern->get_new_instance());
 	}
 
-	void add(Pattern* pattern)
-	{
-		patterns_.push_back(pattern);
-	}
+	bool avoid(const Matrix<size_t>& big_matrix, std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c);
+	bool revert(const Matrix<size_t>& big_matrix, const size_t r, const size_t c);
+	bool parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c);
+	bool parallel_revert(const size_t threads_count, const Matrix<size_t>& big_matrix, const size_t r, const size_t c);
+	std::vector<std::vector<size_t> > get_order() const;
+
+	bool avoid(std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c, const size_t& forced_end);
+	bool revert(const size_t r, const size_t c);// , const Matrix<size_t>& mat);
+	bool check_matrix(const Matrix<size_t>& mat);
+
+	void add(Pattern* pattern) { patterns_.push_back(pattern); }
+	void set_matrix(const Matrix<size_t>& big_matrix) { big_matrix_ = big_matrix; }
+	void construct_threads(const Matrix<size_t>& big_matrix);
+	void destruct_threads();
 private:
 	std::vector<Pattern*> patterns_;
+	Matrix<size_t> big_matrix_;
 	long long changed_;
+	std::vector<std::pair<size_t, size_t> > changes;
 };
 
 #endif

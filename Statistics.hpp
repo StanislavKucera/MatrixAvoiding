@@ -54,6 +54,21 @@ public:
 
 		hist.WriteToFile(output);
 	}
+	void print_histogram(std::ostream& output) const
+	{
+		for (size_t i = 0; i < all_entries.getRow(); i++)
+		{
+			for (size_t j = 0; j < all_entries.getCol(); j++)
+			{
+				if (j != 0)
+					output << " ";
+
+				output << all_entries.at(i, j) / (double)hist_count;
+			}
+
+			output << "\n";
+		}
+	}
 	void print_max_ones(const char* output) const
 	{
 		BMP matrix;
@@ -72,6 +87,7 @@ public:
 
 		matrix.WriteToFile(output);
 	}
+	void print_max_ones(std::ostream& output) const { output << max_all_entries.Print(); }
 private:
 	Matrix<size_t> all_entries,
 		max_all_entries;
@@ -88,22 +104,18 @@ class Performance_Statistics
 {
 public:
 	Performance_Statistics(const size_t p, const size_t i) : success_sizes(0), fail_sizes(0), max_success_sizes(0), max_fail_sizes(0),
-		orders(0), success_counter(0), success_levels(0), success_time(0), fail_counter(0), fail_levels(0), fail_time(0), mod(i / p), iter(i) {}
+		orders(0), success_time(0), fail_time(0), success_counter(0), success_levels(0), fail_counter(0), fail_levels(0), mod(i / p), iter(i) {}
 
-	void add_data(const size_t iter, const bool success, const size_t time, const std::vector<std::vector<Counter> >& sizes)
+	void add_data(const size_t iter, const bool success, const double time, const std::vector<std::vector<Counter> >& sizes)
 	{
 		const size_t index = iter / mod;
 
         if (success_sizes.size() <= index)
         {
             success_sizes.push_back(std::vector<std::vector<Counter> >());
-			success_sizes[index].resize(sizes.size());
 			fail_sizes.push_back(std::vector<std::vector<Counter> >());
-			fail_sizes[index].resize(sizes.size());
 			max_success_sizes.push_back(std::vector<std::vector<Counter> >());
-			max_success_sizes[index].resize(sizes.size());
 			max_fail_sizes.push_back(std::vector<std::vector<Counter> >());
-			max_fail_sizes[index].resize(sizes.size());
 			success_counter.push_back(0);
 			success_levels.push_back(0);
 			success_time.push_back(0);
@@ -111,6 +123,14 @@ public:
 			fail_levels.push_back(0);
 			fail_time.push_back(0);
         }
+
+		if (success_sizes[index].size() < sizes.size())
+		{
+			success_sizes[index].resize(sizes.size());
+			fail_sizes[index].resize(sizes.size());
+			max_success_sizes[index].resize(sizes.size());
+			max_fail_sizes[index].resize(sizes.size());
+		}
 
 		if (success)
 		{
@@ -377,13 +397,13 @@ private:
 													 fail_sizes;
 	std::vector<std::vector<std::vector<Counter> > > max_success_sizes,	// for each mapped line, there is a sum of all mappings found during the whole MCMC generation process while mapping the line
 													 max_fail_sizes;
-	std::vector<std::vector<size_t> > orders;
-	std::vector<size_t> success_counter,					// count of the successful calls of avoid(), successful mean the matrix did avoid the pattern
-						success_levels,						// sum of the numbers of lines mapped until the end of avoid
-						success_time,						// total time (in processor cycles) spent in successful calls of avoid
+	std::vector<std::vector<size_t> > orders;							// order of the lines when using general pattern
+	std::vector<double> success_time,									// total time (in processor cycles) spent in successful calls of avoid
+						fail_time;
+	std::vector<size_t> success_counter,								// count of the successful calls of avoid(), successful mean the matrix did avoid the pattern
+						success_levels,									// sum of the numbers of lines mapped until the end of avoid
 						fail_counter,
-						fail_levels,
-						fail_time;							// order of the lines when using general pattern
+						fail_levels;
 	const size_t mod,
 				 iter;
 };
