@@ -299,7 +299,7 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 					if (!queue[index].front().synced && queue[index].front().id > 0)
 					{
 						queue[index].front().synced = true;
-						// since other workers didn't know this calculation will successed they have been computing wrong things
+						// since other workers didn't know this calculation will succeed they have been computing wrong things
 						queue[index].front().next_id = last_id + 1;
 
 						for (size_t j = 0; j < threads_count; ++j)
@@ -530,5 +530,250 @@ inline void parallelMCMCgenerator(const size_t iter, Patterns& patterns, Matrix<
 	// everything besides patterns are std containers or basic variables so they will destruct themselves
 	// since the patterns is sent by l-value reference (not sure yet whether it is a good thing), I'm not the only owner
 }
+/*
+inline void get_sync(std::deque<std::pair<int, Job> >& sync, std::queue<std::pair<int, Job> >& new_syncs, std::mutex& new_syncs_mutex, int revert)
+{
+	// first throw away synchronizations that has been reverted
+	while (!sync.empty() && sync.back().first > revert)
+		sync.pop_back();
+
+	std::pair<int, Job> job;
+
+	while (true)
+	{
+		{
+			std::unique_lock<std::mutex> lck(new_syncs_mutex);
+
+			if (new_syncs.empty())
+				break;
+
+			job = new_syncs.front();
+			new_syncs.pop();
+		}
+
+		// the change I was supposed to synchronize was reverted
+		if (revert != 0 && revert < job.first)
+			continue;
+
+		while (!sync.empty() && sync.back().first > job.first)
+			sync.pop_back();
+
+		sync.push_back(job);
+	}
+}
+
+void parallel_avoid2(const int my_index, Patterns patterns, Matrix<size_t>& big_matrix, std::vector<std::vector<Counter> >& sizes, std::vector<std::atomic_bool>& forced_ends,
+	std::atomic_bool& end, std::atomic_int& current_id, std::atomic_int& last_id, std::atomic_int& iterations, std::vector<int>& revertings,
+	std::vector<std::queue<std::pair<int, Job> > >& syncs, const size_t N, const size_t iter, std::atomic_size_t& ones, Matrix_Statistics& matrix_stats,
+	std::vector<std::mutex>& syncs_mutexes, std::vector<std::mutex>& revertings_mutexes, std::mutex& last_id_mutex)
+{
+	// everytime there is a successful avoid taken, all the threads need to get its own matrix into a valid state - this is the queue of all changes
+	std::deque<std::pair<int, Job> > sync;
+	// list of tasks done. Deque is used because I want to pop_front and pop_back
+	// queue[thread][i] = <job, id, returned_val, reverted, synced>; means that the i-th not checked (by the main thread) calculation has id, changed the entry at position [job.r,job.c],
+	// the avoid (if it was not revert) ended up with returned_val and it has been reverted already (that is needed either when avoid returns false or when calculation with smaller id succeeds),
+	// if synced is true, the calculation was already checked by the main thread and all running avoid call know the result of this one, working with it
+	std::deque<Task> queue; 
+	int revert;
+
+	// random generator from uniform distribution [0, n-1]
+	std::random_device rd;
+	std::mt19937 rng(1993);
+	std::uniform_int_distribution<size_t> uni(0, N - 1);
+
+	while (!end)
+	{
+		// check the first job result
+		if (!queue.empty() && queue.front().id == current_id)
+		{
+			// there is exactly one worker with a task having current_id - until current_id is changed the worker is the only one to access big_matrix, iterations and matrix_stats
+			++iterations;
+
+			// flip the bit in the generated matrix
+			if (big_matrix.flip(queue.front().job.r, queue.front().job.c))
+				++ones;
+			else
+				--ones;
+
+			matrix_stats.add_data(iterations, ones, big_matrix);
+
+			// this was the last iteration of the generator
+			if (iterations == iter)
+			{
+				end = true;
+
+				for (int i = 0; i != forced_ends.size(); ++i)
+					forced_ends[i] = true;
+
+				// breaking here means current_id won't get changed and this is the last worker to access matrix_stats as well as big_matrix
+				break;
+			}
+
+			// the next calculation I will wait for has its id equal to next_id
+			current_id = queue.front().next_id;
+			// the task was dealt with
+			queue.pop_front();
+		}
+
+		revert = 0;
+
+		while (!end && forced_ends[my_index])
+		{
+			{
+				std::unique_lock<std::mutex> lck(revertings_mutexes[my_index]);
+				revert = revertings[my_index];
+			}
+
+			// revert all tasks with higher id than revert
+			while (!end && !queue.empty() && (queue.back().id > revert || -queue.back().id > revert))
+			{
+				if (queue.back().returned)
+					patterns.revert(queue.back().job.r, queue.back().job.c);
+
+				queue.pop_back();
+			}
+
+	// get_sync(sync, syncs[my_index], , revert);
+
+			{
+				std::unique_lock<std::mutex> lck(revertings_mutexes[my_index]);
+
+				// revertings didn't change since the last time I accessed it
+				if (revert == revertings[my_index])
+				{
+					revertings[my_index] = 0;
+					forced_ends[my_index] = false;
+				}
+			}
+		}
+
+		while (!end && !forced_ends[my_index] && !sync.empty())
+		{
+			auto job = sync.front();
+			sync.pop_front();
+			patterns.revert(job.second.r, job.second.c);
+
+			if (job.first > current_id)
+				queue.push_back(Task(job.second, -job.first, 0, false, false, true));
+		}
+
+		if (end || forced_ends[my_index])
+			continue;
+
+		// create a new job and check the result
+		Job new_job(uni(rng), uni(rng), true);
+		// lock last
+		int my_id = ++last_id;
+		queue.push_back(Task(new_job, my_id, my_id + 1, false, false, false));
+		queue.back().returned = patterns.avoid(sizes, new_job.r, new_job.c, forced_ends[my_index]);
+
+		// call of the avoid succeeded
+		if (queue.back().returned)
+		{
+			if (forced_ends[my_index])
+			{ 
+				std::unique_lock<std::mutex> lck(revertings_mutex[my_index]);
+
+				if (revertings[my_index] < my_id)
+				{
+					queue.pop_back();
+					continue;
+				}
+			}
+
+			// since other workers didn't know this calculation will succeed they have been computing wrong things
+			queue.back().next_id = last_id + 1;
+
+			for (size_t j = 0; j < forced_ends.size(); ++j)
+			{
+				{
+					std::unique_lock<std::mutex> lck(revertings_mutexes[j]);
+
+	// somehow check if forced_end is needed
+					// and tell the worker to revert every computation with id greater than id
+					if (revertings[j] > my_id || revertings[j] == 0)
+					{
+						revertings[j] = my_id;
+
+						// stop the calculation
+						forced_ends[j] = true;
+					}
+				}
+
+				{
+					std::unique_lock<std::mutex> lck(syncs_mutexes[j]);
+					syncs[j].push(std::make_pair(my_id, new_job));
+				}
+			}
+		}
+	}
+}
+
+inline void parallelMCMCgenerator2(const size_t iter, Patterns& patterns, Matrix<size_t>& big_matrix, Performance_Statistics& perf_stats, Matrix_Statistics& matrix_stats, const size_t threads_count)
+{
+	// I wouldn't accomplish anothing using 0 workers
+	if (threads_count == 0)
+	{
+		MCMCgenerator(iter, patterns, big_matrix, perf_stats, matrix_stats, 1);
+		return;
+	}
+
+	/////////////////////////////////
+	// workers and their variables //
+	/////////////////////////////////
+	std::vector<std::thread> threads(threads_count - 1);
+	// when parallel, each patterns has its own copy of a big_matrix, the copies may differ during the calculations by a little bit
+	// accessed by its worker only - no need for a mutex
+	patterns.set_matrix(big_matrix);
+	// this forces the end of calculation if the main thread finds out there was a successful call of avoid in a calculation with lower id
+	// accesed by its worker and the main thread - read by the worker; read and write by the main thread - thread safety by atomicity
+	std::vector<std::atomic_bool> force_end(threads_count);
+	std::vector<std::queue<std::pair<int, Job> > > syncs(threads_count);
+	std::vector<std::mutex> syncs_mutexes(threads_count);
+
+	///////////////////////////
+	// main thread variables //
+	///////////////////////////
+	// for each thread there is a pair saying which calculations need to be reverted
+	// reverting[i] = a; means that in the i-th thread all calculations with id greater than or equal to a need to be reverted 
+	std::vector<int> reverting(threads_count);
+	std::vector<std::mutex> reverting_mutexes(threads_count);
+	// calculation ids - current means currently being checked (waited for) by the main thread, last is the lastly assigned id
+	std::atomic_int current_id = 1, last_id = 0;
+	std::mutex last_id_mutex;
+	std::atomic_int iterations = 0;
+	// calculations ordered by id - use this to find the order in which I deal with the threads
+	//std::priority_queue<std::pair<size_t, size_t>, std::vector<std::pair<size_t, size_t> >, std::greater<std::pair<size_t, size_t> > > priority;
+	//std::set<std::pair<size_t, size_t> > priority;
+	
+	// this is gonna be here for now
+	std::vector<std::vector<std::vector<Counter> > > sizes(threads_count);
+	int last_perc = -1;
+
+	std::ofstream oFile("changes.txt"), ar("avoidrevert.txt");
+
+	// to show used order in the statistics
+	//perf_stats.set_order(patterns.get_order());
+
+	// matrix statistics purposes
+	std::atomic_size_t ones = big_matrix.getOnes();
+
+	std::atomic_bool end(false);
+
+	const int size = big_matrix.getCol();
+
+	for (size_t i = 1; i != threads_count; ++i)
+	{
+		force_end[i] = false;
+		threads[i] = std::thread(parallel_avoid2, i, patterns, std::ref(big_matrix), std::ref(sizes[i]), std::ref(force_end), std::ref(end),
+			std::ref(current_id), std::ref(last_id), std::ref(iterations), std::ref(reverting), std::ref(syncs), size, iter, std::ref(ones), std::ref(matrix_stats),
+			std::ref(syncs_mutexes), std::ref(reverting_mutexes), std::ref(last_id_mutex));
+	}
+
+	parallel_avoid2(0, patterns, big_matrix, sizes[0], force_end, end, current_id, last_id, iterations, reverting, syncs, size, iter, ones, matrix_stats, syncs_mutexes, reverting_mutexes, last_id_mutex);
+
+	for (size_t i = 1; i != threads_count; ++i)
+		threads[i].join();
+}*/
 
 #endif
