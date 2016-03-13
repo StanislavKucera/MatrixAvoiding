@@ -65,6 +65,7 @@ int main()
 
 	if (parallel_mode == MCMC)
 		parallelMCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, threads_count - 1);
+		//parallelMCMCgenerator2(iter, patterns, result, perf_stats, matrix_stats, threads_count);
 	else //if (parallel_mode == MAP)
 		MCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, (parallel_mode == SERIAL ? 1 : threads_count));
 
