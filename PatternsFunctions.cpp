@@ -108,7 +108,7 @@ bool Patterns::avoid(std::vector<std::vector<Counter> >& sizes, const size_t r, 
 	}
 
 	//std::cout << "Avoid [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " (" << forced_end << ")success" << std::endl;
-	changes.push_back(std::make_pair(r, c));
+	//changes.push_back(std::make_pair(r, c));
 	return true;
 }
 
@@ -116,7 +116,7 @@ bool Patterns::revert(const size_t r, const size_t c)//, const Matrix<size_t>& m
 {
 	// flip the bit back
 	big_matrix_.flip(r, c);
-	changes.push_back(std::make_pair(r, c));
+	//changes.push_back(std::make_pair(r, c));
 	//std::cout << "Revert [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " ()success" << std::endl;
 
 	//std::vector<Counter> sizes;

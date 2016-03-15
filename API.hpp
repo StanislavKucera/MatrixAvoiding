@@ -97,6 +97,8 @@ inline Parallel_mode get_parallel_mode(const std::string& mode)
 		return SERIAL;
 	else if (mode == "mcmc")
 		return MCMC;
+	else if (mode == "mcmc2")
+		return MCMC2;
 	else if (mode == "map")
 		return MAP;
 	else {
