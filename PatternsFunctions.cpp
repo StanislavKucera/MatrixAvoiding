@@ -3,9 +3,9 @@
 
 #include "PatternHeaders.hpp"
 
-bool Patterns::avoid(const Matrix<size_t>& big_matrix, std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c)
+bool Patterns::avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<std::vector<Counter> >& sizes)
 {
-	if (changed_ == (long long)patterns_.size() - 1)
+	if (changed_ == (int)patterns_.size() - 1)
 		changed_ = -1;
 
 	if (changed_ != -1)
@@ -17,7 +17,7 @@ bool Patterns::avoid(const Matrix<size_t>& big_matrix, std::vector<std::vector<C
 	{
 		++changed_;
 
-		if (!pattern->avoid(big_matrix, sizes[changed_], r, c))
+		if (!pattern->avoid(big_matrix, r, c, sizes[changed_]))
 		{
 			sizes.resize(changed_ + 1);
 			return false;
@@ -27,7 +27,7 @@ bool Patterns::avoid(const Matrix<size_t>& big_matrix, std::vector<std::vector<C
 	return true;
 }
 
-bool Patterns::revert(const Matrix<size_t>& big_matrix, const size_t r, const size_t c)
+bool Patterns::revert(const Matrix<bool>& big_matrix, const int r, const int c)
 {
 	for (; changed_ != -1; --changed_)
 		if (!patterns_[changed_]->revert(big_matrix, r, c))
@@ -36,9 +36,9 @@ bool Patterns::revert(const Matrix<size_t>& big_matrix, const size_t r, const si
 	return true;
 }
 
-bool Patterns::parallel_avoid(const size_t threads_count, const Matrix<size_t>& big_matrix, std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c)
+bool Patterns::parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<std::vector<Counter> >& sizes, const int threads_count)
 {
-	if (changed_ == (long long)patterns_.size() - 1)
+	if (changed_ == (int)patterns_.size() - 1)
 		changed_ = -1;
 
 	if (changed_ != -1)
@@ -50,7 +50,7 @@ bool Patterns::parallel_avoid(const size_t threads_count, const Matrix<size_t>& 
 	{
 		++changed_;
 
-		if (!pattern->parallel_avoid(threads_count, big_matrix, sizes[changed_], r, c))
+		if (!pattern->parallel_avoid(big_matrix, r, c, sizes[changed_], threads_count))
 		{
 			sizes.resize(changed_ + 1);
 			return false;
@@ -60,18 +60,18 @@ bool Patterns::parallel_avoid(const size_t threads_count, const Matrix<size_t>& 
 	return true;
 }
 
-bool Patterns::parallel_revert(const size_t threads_count, const Matrix<size_t>& big_matrix, const size_t r, const size_t c)
+bool Patterns::parallel_revert(const Matrix<bool>& big_matrix, const int r, const int c, const int threads_count)
 {
 	for (; changed_ != -1; --changed_)
-		if (!patterns_[changed_]->parallel_revert(threads_count, big_matrix, r, c))
+		if (!patterns_[changed_]->parallel_revert(big_matrix, r, c, threads_count))
 			throw my_exception("Matrix after reverting contains the pattern!");
 
 	return true;
 }
 
-std::vector<std::vector<size_t> > Patterns::get_order() const
+std::vector<std::vector<int> > Patterns::get_order() const
 {
-	std::vector<std::vector<size_t> > orders(patterns_.size());
+	std::vector<std::vector<int> > orders(patterns_.size());
 
 	for (size_t i = 0; i < patterns_.size(); ++i)
 		orders[i] = std::move(patterns_[i]->get_order());
@@ -79,11 +79,12 @@ std::vector<std::vector<size_t> > Patterns::get_order() const
 	return orders;
 }
 
-bool Patterns::avoid(std::vector<std::vector<Counter> >& sizes, const size_t r, const size_t c, const size_t& forced_end)
+bool Patterns::avoid(const int r, const int c, std::vector<std::vector<Counter> >& sizes, const std::atomic_bool& forced_end)
 {
 	big_matrix_.flip(r, c);
 
-	long long changed = -1;
+	//////////////////////// why don't I use changed_?
+	int changed = -1;
 
 	sizes.resize(patterns_.size());
 
@@ -92,7 +93,7 @@ bool Patterns::avoid(std::vector<std::vector<Counter> >& sizes, const size_t r, 
 		++changed;
 
 		// forcing abort from outside or the matrix doesn't avoid the pattern
-		if (forced_end || !pattern->avoid(big_matrix_, sizes[changed], r, c, forced_end))
+		if (forced_end || !pattern->avoid(big_matrix_, r, c, sizes[changed], forced_end))
 		{
 			// flip the bit back
 			big_matrix_.flip(r, c);
@@ -108,15 +109,15 @@ bool Patterns::avoid(std::vector<std::vector<Counter> >& sizes, const size_t r, 
 	}
 
 	//std::cout << "Avoid [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " (" << forced_end << ")success" << std::endl;
-	changes.push_back(std::make_pair(r, c));
+	//changes.push_back(std::make_pair(r, c));
 	return true;
 }
 
-bool Patterns::revert(const size_t r, const size_t c)//, const Matrix<size_t>& mat)
+bool Patterns::revert(const int r, const int c)//, const Matrix<bool>& mat)
 {
 	// flip the bit back
 	big_matrix_.flip(r, c);
-	changes.push_back(std::make_pair(r, c));
+	//changes.push_back(std::make_pair(r, c));
 	//std::cout << "Revert [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " ()success" << std::endl;
 
 	//std::vector<Counter> sizes;
@@ -135,19 +136,19 @@ bool Patterns::revert(const size_t r, const size_t c)//, const Matrix<size_t>& m
 	return true;
 }
 
-bool Patterns::check_matrix(const Matrix<size_t>& mat)
+bool Patterns::check_matrix(const Matrix<bool>& mat)
 {
 	bool diff = false;
 
-	for (size_t i = 0; i != big_matrix_.getRow(); ++i)
-		for (size_t j = 0; j != big_matrix_.getCol(); ++j)
+	for (int i = 0; i != big_matrix_.getRow(); ++i)
+		for (int j = 0; j != big_matrix_.getCol(); ++j)
 			if (mat.at(i, j) != big_matrix_.at(i, j))
 				diff = true;
 
 	return diff;
 }
 
-void Patterns::construct_threads(const Matrix<size_t>& big_matrix)
+void Patterns::construct_threads(const Matrix<bool>& big_matrix)
 {
 	for (auto& pattern : patterns_)
 		pattern->construct_threads(big_matrix);

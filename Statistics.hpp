@@ -5,16 +5,15 @@
 #include "EasyBMP/EasyBMP.h"
 
 #include <ostream>
-#include <time.h>
 
 // matrix statistics
 class Matrix_Statistics
 {
 public:
-	Matrix_Statistics(const size_t from, const size_t to, const size_t n, const size_t freq) : all_entries(n, n), max_all_entries(n, n),
+	Matrix_Statistics(const int from, const int to, const int n, const int freq) : all_entries(n, n), max_all_entries(n, n),
 		ones_count(0), max_ones_count(0), hist_count(0), iter_from(from), iter_to(to), frequency(freq) {}
 
-	void add_data(const size_t iter, const size_t ones, const Matrix<size_t>& big_matrix)
+	void add_data(const int iter, const int ones, const Matrix<bool>& big_matrix)
 	{
 		if (iter < iter_from || iter > iter_to)
 			return;
@@ -29,9 +28,10 @@ public:
 
 		if (iter % frequency == 0)
 		{
-			for (size_t i = 0; i < big_matrix.getRow(); ++i)
-				for (size_t j = 0; j < big_matrix.getCol(); ++j)
-					all_entries.at(i, j) += big_matrix.at(i, j);
+			for (int i = 0; i < big_matrix.getRow(); ++i)
+				for (int j = 0; j < big_matrix.getCol(); ++j)
+					if (big_matrix.at(i, j))
+						++all_entries.at(i, j);
 
 			++hist_count;
 		}
@@ -43,8 +43,8 @@ public:
 		hist.SetBitDepth(8);
 		CreateGrayscaleColorTable(hist);
 
-		for (size_t i = 0; i < all_entries.getRow(); ++i)
-			for (size_t j = 0; j < all_entries.getCol(); ++j)
+		for (int i = 0; i < all_entries.getRow(); ++i)
+			for (int j = 0; j < all_entries.getCol(); ++j)
 			{
 				const ebmpBYTE color = (ebmpBYTE)((1 - (all_entries.at(i, j) / (double)hist_count)) * 255);
 				hist(i, j)->Red = color;
@@ -56,9 +56,9 @@ public:
 	}
 	void print_histogram(std::ostream& output) const
 	{
-		for (size_t i = 0; i < all_entries.getRow(); i++)
+		for (int i = 0; i < all_entries.getRow(); i++)
 		{
-			for (size_t j = 0; j < all_entries.getCol(); j++)
+			for (int j = 0; j < all_entries.getCol(); j++)
 			{
 				if (j != 0)
 					output << " ";
@@ -76,8 +76,8 @@ public:
 		matrix.SetBitDepth(1);
 		CreateGrayscaleColorTable(matrix);
 
-		for (size_t i = 0; i < max_all_entries.getRow(); ++i)
-			for (size_t j = 0; j < max_all_entries.getCol(); ++j)
+		for (int i = 0; i < max_all_entries.getRow(); ++i)
+			for (int j = 0; j < max_all_entries.getCol(); ++j)
 			{
 				const ebmpBYTE color = (ebmpBYTE)((1 - max_all_entries.at(i, j)) * 255);
 				matrix(i, j)->Red = color;
@@ -89,12 +89,12 @@ public:
 	}
 	void print_max_ones(std::ostream& output) const { output << max_all_entries.Print(); }
 private:
-	Matrix<size_t> all_entries,
-		max_all_entries;
-	size_t ones_count,
+	Matrix<long long> all_entries;
+	Matrix<bool> max_all_entries;
+	long long ones_count,
 		max_ones_count,
 		hist_count;
-	const size_t iter_from,
+	const int iter_from,
 		iter_to,
 		frequency;
 };
@@ -103,10 +103,10 @@ private:
 class Performance_Statistics
 {
 public:
-	Performance_Statistics(const size_t p, const size_t i) : success_sizes(0), fail_sizes(0), max_success_sizes(0), max_fail_sizes(0),
+	Performance_Statistics(const int p, const int i) : success_sizes(0), fail_sizes(0), max_success_sizes(0), max_fail_sizes(0),
 		orders(0), success_time(0), fail_time(0), success_counter(0), success_levels(0), fail_counter(0), fail_levels(0), mod(i / p), iter(i) {}
 
-	void add_data(const size_t iter, const bool success, const double time, const std::vector<std::vector<Counter> >& sizes)
+	void add_data(const int iter, const bool success, const double time, const std::vector<std::vector<Counter> >& sizes)
 	{
 		const size_t index = iter / mod;
 
@@ -191,7 +191,7 @@ public:
 			}
 		}
 	}
-	void set_order(std::vector<std::vector<size_t> >&& o) { orders = std::move(o); }
+	void set_order(std::vector<std::vector<int> >&& o) { orders = std::move(o); }
 	void print_data(std::ostream& output) const
 	{
 		output << "Used orders:\n";
@@ -213,7 +213,7 @@ public:
 		{
 			output << "Pattern " << ind + 1 << ":\n";
 
-			for (size_t m = 0; m < iter / mod; ++m)
+			for (int m = 0; m < iter / mod; ++m)
 			{
 				const double s_counter = (double)success_counter[m];
 
@@ -253,7 +253,7 @@ public:
 		{
 			output << "Pattern " << ind + 1 << ":\n";
 
-			for (size_t m = 0; m < iter / mod; ++m)
+			for (int m = 0; m < iter / mod; ++m)
 			{
 				const double f_counter = (double)fail_counter[m];
 
@@ -310,7 +310,7 @@ public:
 		{
 			output << "Pattern " << ind + 1 << ";";
 
-			for (size_t m = 0; m < iter / mod; ++m)
+			for (int m = 0; m < iter / mod; ++m)
 			{
 				const double s_counter = (double)success_counter[m];
 
@@ -355,7 +355,7 @@ public:
 		{
 			output << "Pattern " << ind + 1 << ";";
 
-			for (size_t m = 0; m < iter / mod; ++m)
+			for (int m = 0; m < iter / mod; ++m)
 			{
 				const double f_counter = (double)fail_counter[m];
 
@@ -397,15 +397,15 @@ private:
 													 fail_sizes;
 	std::vector<std::vector<std::vector<Counter> > > max_success_sizes,	// for each mapped line, there is a sum of all mappings found during the whole MCMC generation process while mapping the line
 													 max_fail_sizes;
-	std::vector<std::vector<size_t> > orders;							// order of the lines when using general pattern
+	std::vector<std::vector<int> > orders;								// order of the lines when using general pattern
 	std::vector<double> success_time,									// total time (in processor cycles) spent in successful calls of avoid
 						fail_time;
-	std::vector<size_t> success_counter,								// count of the successful calls of avoid(), successful mean the matrix did avoid the pattern
+	std::vector<int>	success_counter,								// count of the successful calls of avoid(), successful mean the matrix did avoid the pattern
 						success_levels,									// sum of the numbers of lines mapped until the end of avoid
 						fail_counter,
 						fail_levels;
-	const size_t mod,
-				 iter;
+	const int	mod,
+				iter;
 };
 
 #endif
