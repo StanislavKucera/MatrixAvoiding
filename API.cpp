@@ -11,10 +11,10 @@
 
 int main()
 {
-	size_t N(100),
+	int N(100),
 		iter(1000),
 		threads_count(1);
-	size_t hist_from(0),
+	int hist_from(0),
 		hist_to(1000),
 		hist_freq(100);							// matrix statistics settings
 	std::string bmp_file("notset"),
@@ -39,15 +39,15 @@ int main()
 
 	std::chrono::system_clock::time_point start, end;
 	Patterns patterns;
-	Matrix<size_t> result;
+	Matrix<bool> result;
 
 	if (init_matrix == "zero")
-		result = Matrix<size_t>(N, N);
+		result = Matrix<bool>(N, N);
 	else
 	{
 		try
 		{
-			result = Matrix<size_t>(N, N, init_matrix);
+			result = Matrix<bool>(N, N, init_matrix);
 		}
 		catch (...)
 		{
@@ -80,8 +80,8 @@ int main()
 		matrix.SetBitDepth(1);
 		CreateGrayscaleColorTable(matrix);
 
-		for (size_t i = 0; i < N; ++i)
-			for (size_t j = 0; j < N; ++j)
+		for (int i = 0; i != N; ++i)
+			for (int j = 0; j != N; ++j)
 			{
 				matrix(i, j)->Red = (ebmpBYTE)((1 - result.at(i, j)) * 255);
 				matrix(i, j)->Green = (ebmpBYTE)((1 - result.at(i, j)) * 255);
@@ -123,13 +123,13 @@ int main()
 
 		for (const auto& pat : pattern_info)
 		{
-			size_t row, col, val;
+			int row, col, val;
 			std::ifstream iFile(pat.pattern_file);
 			iFile >> row >> col;
 
-			for (size_t i = 0; i < row; ++i)
+			for (int i = 0; i < row; ++i)
 			{
-				for (size_t j = 0; j < col; ++j)
+				for (int j = 0; j < col; ++j)
 				{
 					iFile >> val;
 

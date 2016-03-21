@@ -3,15 +3,15 @@
 
 #include "PatternHeaders.hpp"
 
-bool Slow_pattern::parallel_avoid(const size_t /* threads_count */, const Matrix<size_t>& big_matrix, std::vector<Counter>& /* sizes */, const size_t /* r */, const size_t /* c */, const size_t& force_end)
+bool Slow_pattern::parallel_avoid(const Matrix<bool>& big_matrix, const int /* r */, const int /* c */, std::vector<Counter>& /* sizes */, const int /* threads_count */, const std::atomic_bool& force_end)
 {
-	/////////////////////////
-	// not parallel for now//
-	/////////////////////////
+	//////////////////////////
+	// not parallel for now //
+	//////////////////////////
 
 	done_ = false;
 	// goes through all subsets of rows and columns of the right cardinality and tests whether the pattern can be mapped to that subset
-	test_all_subsets(0ll, 0ll, rows_, cols_, (long long)big_matrix.getRow(), (long long)big_matrix.getCol(), big_matrix, force_end);
+	test_all_subsets(0ll, 0ll, rows_, cols_, (int)big_matrix.getRow(), (int)big_matrix.getCol(), big_matrix, force_end);
 
 	if (done_)
 		return false;
@@ -19,10 +19,10 @@ bool Slow_pattern::parallel_avoid(const size_t /* threads_count */, const Matrix
 	return true;
 }
 
-void Slow_pattern::test_all_subsets(long long v_map, long long h_map, long long v_ones, long long h_ones, long long v_vals, long long h_vals, const Matrix<size_t>& big_matrix, const size_t& force_end)
+void Slow_pattern::test_all_subsets(int v_map, int h_map, int v_ones, int h_ones, int v_vals, int h_vals, const Matrix<bool>& big_matrix, const std::atomic_bool& force_end)
 {
 	// the function is forced to end from outside
-	if (force_end == 1)
+	if (force_end)
 		done_ = true;
 
 	// I have already found a mapping
@@ -42,7 +42,7 @@ void Slow_pattern::test_all_subsets(long long v_map, long long h_map, long long 
 	// There is exactly as many one-entries missing as how many entries I still need to add
 	else if (v_ones == v_vals && v_ones != 0)
 	{
-		for (long long i = 0; i < v_vals; ++i)
+		for (int i = 0; i < v_vals; ++i)
 		{
 			v_map *= 2;
 			v_map += 1;
@@ -61,7 +61,7 @@ void Slow_pattern::test_all_subsets(long long v_map, long long h_map, long long 
 	// There is exactly as many one-entries missing as how many entries I still need to add
 	else if (h_ones == h_vals && h_ones != 0)
 	{
-		for (long long i = 0; i < h_vals; ++i)
+		for (int i = 0; i < h_vals; ++i)
 		{
 			h_map *= 2;
 			h_map += 1;
@@ -76,14 +76,14 @@ void Slow_pattern::test_all_subsets(long long v_map, long long h_map, long long 
 	{
 		std::vector<size_t> rows, cols;
 
-		for (size_t i = 0; i < big_matrix.getRow(); ++i)
+		for (int i = 0; i < big_matrix.getRow(); ++i)
 		{
 			if (v_map & 1)
 				rows.push_back(i);
 			v_map /= 2;
 		}
 
-		for (size_t i = 0; i < big_matrix.getCol(); ++i)
+		for (int i = 0; i < big_matrix.getCol(); ++i)
 		{
 			if (h_map & 1)
 				cols.push_back(i);
@@ -92,7 +92,7 @@ void Slow_pattern::test_all_subsets(long long v_map, long long h_map, long long 
 
 		for (auto& one : one_entries_)
 		{
-			if (big_matrix.at(rows[one.first], cols[one.second]) == 0)
+			if (!big_matrix.at(rows[one.first], cols[one.second]))
 				return;
 		}
 

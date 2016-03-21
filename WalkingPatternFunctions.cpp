@@ -8,21 +8,21 @@
 #include <assert.h>
 
 /* Walking pattern */
-Walking_pattern::Walking_pattern(const Matrix<size_t>& pattern, const size_t n)
-	: max_walk_part_(n, n, std::pair<size_t, size_t>(0, 0))
+Walking_pattern::Walking_pattern(const Matrix<bool>& pattern, const int n)
+	: max_walk_part_(n, n, std::pair<int, int>(0, 0))
 {
 	// the diagonal walk starts in the top left corner
 	top_left = true;
 	bool not_left = false;
 
 	// coords of the last visited one-entry, index of the column
-	size_t last_i = 0, last_j = 0, j;
+	int last_i = 0, last_j = 0, j;
 
 	// all elements on the same diagonal have the same sum of their coordinates, go through diagonals
-	for (size_t sum = 0; sum < pattern.getRow() + pattern.getCol() - 1; ++sum)
+	for (int sum = 0; sum < pattern.getRow() + pattern.getCol() - 1; ++sum)
 	{
 		// go through indices of rows
-		for (size_t i = 0; i <= sum; ++i)	
+		for (int i = 0; i <= sum; ++i)	
 		{
 			j = sum - i;
 
@@ -51,19 +51,19 @@ Walking_pattern::Walking_pattern(const Matrix<size_t>& pattern, const size_t n)
 
 				// need to find, which elements will be a part of the walk
 				// from the previously found one-entry go as far to the bottom as you can
-				for (size_t i2 = last_i; i2 < i; ++i2)
+				for (int i2 = last_i; i2 < i; ++i2)
 				{
 					value_.push_back(pattern.at(i2, last_j));
 					// vertical
-					direction_.push_back(0);					
+					direction_.push_back(false);
 				}
 
 				// then go to the right and stop right before [i,j]
-				for (size_t j2 = last_j; j2 < j; ++j2)
+				for (int j2 = last_j; j2 < j; ++j2)
 				{
 					value_.push_back(pattern.at(i, j2));
 					// horizontal
-					direction_.push_back(1);					
+					direction_.push_back(true);					
 				}
 
 				// last element of the walk
@@ -88,13 +88,13 @@ top_right:
 		value_.clear();
 
 		// coords of the last visited one-entry, index of the column
-		long long last_i = 0, last_j = (long long)pattern.getCol() - 1, j;
+		int last_i = 0, last_j = pattern.getCol() - 1, j;
 
 		// all elements on the same diagonal have the same difference of their coordinates, go through diagonals
-		for (long long diff = 1 - (long long)pattern.getCol(); diff < (long long)pattern.getRow(); ++diff)
+		for (int diff = 1 - pattern.getCol(); diff < pattern.getRow(); ++diff)
 		{
 			// go through indices of rows
-			for (long long i = 0; i < (long long)pattern.getRow(); ++i)
+			for (int i = 0; i < pattern.getRow(); ++i)
 			{
 				j = i - diff;
 
@@ -103,14 +103,14 @@ top_right:
 					continue;
 
 				// I look to the right of the pattern
-				if (j >= (long long)pattern.getCol())
+				if (j >= pattern.getCol())
 					break;
 
 				// when I find one-entry or find myself on the last diagonal
-				if (pattern.at(i, j) || diff == (long long)pattern.getRow() - 1)
+				if (pattern.at(i, j) || diff == pattern.getRow() - 1)
 				{
 					// last visited element is 0 and I did not find any 1 entries
-					if (!pattern.at(i, j) && last_i == 0 && last_j == (long long)pattern.getCol() - 1 && !pattern.at(last_i, last_j)) {
+					if (!pattern.at(i, j) && last_i == 0 && last_j == pattern.getCol() - 1 && !pattern.at(last_i, last_j)) {
 						assert(!"Pattern has no one entries.");
 						throw std::invalid_argument("Pattern has no one entries.");
 					}
@@ -123,19 +123,19 @@ top_right:
 
 					// need to find, which elements will be a part of the walk
 					// from the previously found one-entry go as far to the bottom as you can
-					for (long long i2 = last_i; i2 < i; ++i2)
+					for (int i2 = last_i; i2 < i; ++i2)
 					{
 						value_.push_back(pattern.at(i2, last_j));
 						// vertical
-						direction_.push_back(0);
+						direction_.push_back(false);
 					}
 
 					// then go to the left and stop right before [i,j]
-					for (long long j2 = last_j; j2 > j; --j2)
+					for (int j2 = last_j; j2 > j; --j2)
 					{
 						value_.push_back(pattern.at(i, j2));
 						// horizontal
-						direction_.push_back(1);
+						direction_.push_back(true);
 					}
 
 					// last element of the walk
@@ -147,20 +147,23 @@ top_right:
 		// add the last element of the walk
 		value_.push_back(pattern.at(last_i, last_j));
 	}
+
+	size_ = (int)value_.size();
 }
 
-bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counter>& /* sizes */, const size_t r, const size_t c, const size_t& force_end)
-{
-	typedef std::pair<size_t, size_t> pair;
+
+//bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const std::atomic_bool& force_end)
+/*{
+	typedef std::pair<int, int> pair;
 	std::queue<pair> q;						// queue for elements of the matrix that are supposed to be updated
 	pair current;							// [x,y] of the currently updated element
-	size_t old_c_v, old_c_h, c_v_v, c_h_h;	// c_v and c_h before an update, c_v of element to the top of current, c_h of element to the left
+	int old_c_v, old_c_h, c_v_v, c_h_h;	// c_v and c_h before an update, c_v of element to the top of current, c_h of element to the left
 
 	q.push(pair(r, c));
 	while (!q.empty())
 	{
 		// the function is forced to end from outside
-		if (force_end == 1)
+		if (force_end)
 			return false;
 
 		current = q.front();
@@ -201,7 +204,7 @@ bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counte
 		if (big_matrix.at(current) || !value_[c_v_v])
 		{
 			// I found the last element of the walk
-			if (c_v_v + 1 == value_.size()) 
+			if (c_v_v + 1 == size_)
 				return false;
 
 			// walk continues to the right/left
@@ -221,8 +224,9 @@ bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counte
 		// N[i,j] == 1
 		if (big_matrix.at(current) || !value_[c_h_h]) 
 		{
-			if (c_h_h + 1 == value_.size())
+			if (c_h_h + 1 == size_)
 				return false;
+
 			if (direction_[c_h_h])
 			{
 				if (max_walk_part_.at(current).second < c_h_h + 1)
@@ -257,25 +261,211 @@ bool Walking_pattern::avoid(const Matrix<size_t>& big_matrix, std::vector<Counte
 
 	// I haven't mapped the last element of the walk - matrix avoids the pattern
 	return true;
-}
+}*/
 
-bool Walking_pattern::parallel_avoid(const size_t /* threads_count */, const Matrix<size_t>& big_matrix, std::vector<Counter>& /* sizes */, const size_t r, const size_t c, const size_t& force_end)
+bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const std::atomic_bool& force_end)
 {
+	int min_sum = r + c;
+	int min_diff = r - c;
+
+	for (const auto& change : changes_)
+	{
+		if (min_sum > change.first + change.second)
+			min_sum = change.first + change.second;
+		if (min_diff > change.first - change.second)
+			min_diff = change.first - change.second;
+	}
+
+	changes_.clear();
+
 	if (top_left)
 	{
 		// all elements on the same diagonal have the same sum of their coordinates, go through diagonals
-		for (size_t sum = r + c; sum < max_walk_part_.getRow() + max_walk_part_.getCol() - 1; ++sum)
+		for (int sum = min_sum; sum < max_walk_part_.getRow() + max_walk_part_.getCol() - 1; ++sum)
 		{
 			// the function is forced to end from outside
-			if (force_end == 1)
+			if (force_end)
 				return false;
+
+			//#pragma omp parallel for //num_threads(threads_count)
+			// go through indices of rows
+			for (int i = r; i <= sum; ++i)
+			{
+				int j = sum - i;
+				int c_v_v, c_h_h;	// c_v and c_h before an update, c_v of element to the top of i, j, c_h of element to the left
+
+									// I look under the pattern
+				if (i >= max_walk_part_.getRow())
+					break;
+
+				// I look to the right of the pattern
+				if (j >= max_walk_part_.getCol() || j < c)
+					continue;
+
+				// element on the first row
+				if (i == 0)
+					c_v_v = 0;
+				else
+					c_v_v = max_walk_part_.at(i - 1, j).first;
+
+				// element on the first column
+				if (j == 0)
+					c_h_h = 0;
+				else
+					c_h_h = max_walk_part_.at(i, j - 1).second;
+
+				// Initialization - copying those already found walks
+				max_walk_part_.at(i, j).first = c_v_v;
+				max_walk_part_.at(i, j).second = c_h_h;
+
+				// Search for longer part of the walk
+				// b == 1 or v_{c_v_v + 1} == 0
+				if (big_matrix.at(i, j) || !value_[c_v_v])
+				{
+					// I found the last element of the walk
+					if (c_v_v + 1 == size_)
+						return false;
+
+					// walk continues to the right/left
+					if (direction_[c_v_v])
+					{
+						if (max_walk_part_.at(i, j).second < c_v_v + 1)
+							max_walk_part_.at(i, j).second = c_v_v + 1;
+					}
+					// walk continues to the bottom
+					else
+					{
+						if (max_walk_part_.at(i, j).first < c_v_v + 1)
+							max_walk_part_.at(i, j).first = c_v_v + 1;
+					}
+				}
+
+				// N[i,j] == 1
+				if (big_matrix.at(i, j) || !value_[c_h_h])
+				{
+					if (c_h_h + 1 == size_)
+						return false;
+
+					if (direction_[c_h_h])
+					{
+						if (max_walk_part_.at(i, j).second < c_h_h + 1)
+							max_walk_part_.at(i, j).second = c_h_h + 1;
+					}
+					else
+					{
+						if (max_walk_part_.at(i, j).first < c_h_h + 1)
+							max_walk_part_.at(i, j).first = c_h_h + 1;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		// all elements on the same diagonal have the same difference of their coordinates, go through diagonals
+		for (int diff = min_diff; diff < max_walk_part_.getRow(); ++diff)
+		{
+			// the function is forced to end from outside
+			if (force_end)
+				return false;
+
+			//#pragma omp parallel for //num_threads(threads_count)
+			// go through indices of rows
+			for (int i = 0; i < max_walk_part_.getRow(); ++i)
+			{
+				int j = i - diff;
+				int c_v_v, c_h_h;	// c_v and c_h before an update, c_v of element to the top of i, j, c_h of element to the left
+
+									// I look to the left of the pattern
+				if (i < diff)
+					continue;
+
+				// I look to the right of the pattern
+				if (j >= max_walk_part_.getCol())
+					break;
+
+				// element on the first row
+				if (i == 0)
+					c_v_v = 0;
+				else
+					c_v_v = max_walk_part_.at(i - 1, j).first;
+
+
+				// element on the last column
+				if (j == max_walk_part_.getCol() - 1)
+					c_h_h = 0;
+				else
+					c_h_h = max_walk_part_.at(i, j + 1).second;
+
+				// Initialization - copying those already found walks
+				max_walk_part_.at(i, j).first = c_v_v;
+				max_walk_part_.at(i, j).second = c_h_h;
+
+				// Search for longer part of the walk
+				// b == 1 or v_{c_v_v + 1} == 0
+				if (big_matrix.at(i, j) || !value_[c_v_v])
+				{
+					// I found the last element of the walk
+					if (c_v_v + 1 == size_)
+						return false;
+
+					// walk continues to the right/left
+					if (direction_[c_v_v])
+					{
+						if (max_walk_part_.at(i, j).second < c_v_v + 1)
+							max_walk_part_.at(i, j).second = c_v_v + 1;
+					}
+					// walk continues to the bottom
+					else
+					{
+						if (max_walk_part_.at(i, j).first < c_v_v + 1)
+							max_walk_part_.at(i, j).first = c_v_v + 1;
+					}
+				}
+
+				// N[i,j] == 1
+				if (big_matrix.at(i, j) || !value_[c_h_h])
+				{
+					if (c_h_h + 1 == size_)
+						return false;
+
+					if (direction_[c_h_h])
+					{
+						if (max_walk_part_.at(i, j).second < c_h_h + 1)
+							max_walk_part_.at(i, j).second = c_h_h + 1;
+					}
+					else
+					{
+						if (max_walk_part_.at(i, j).first < c_h_h + 1)
+							max_walk_part_.at(i, j).first = c_h_h + 1;
+					}
+				}
+			}
+		}
+	}
+	// I haven't mapped the last element of the walk - matrix avoids the pattern
+	return true;
+}
+
+bool Walking_pattern::parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const int /* threads_count */, const std::atomic_bool& force_end)
+{
+	// r and c are always valid in parallel_avoid
+
+	if (top_left)
+	{
+		// all elements on the same diagonal have the same sum of their coordinates, go through diagonals
+		for (int sum = r + c; sum < max_walk_part_.getRow() + max_walk_part_.getCol() - 1; ++sum)
+		{
+			// the function is forced to end from outside
+			if (force_end)
+				return false;
+
 //#pragma omp parallel for //num_threads(threads_count)
 			// go through indices of rows
-			for (long long temp = r; temp <= (long long)sum; ++temp)
+			for (int i = r; i <= sum; ++i)
 			{
-				size_t i = (size_t)temp;
-				size_t j = sum - i;
-				size_t c_v_v, c_h_h;	// c_v and c_h before an update, c_v of element to the top of i, j, c_h of element to the left
+				int j = sum - i;
+				int c_v_v, c_h_h;	// c_v and c_h before an update, c_v of element to the top of i, j, c_h of element to the left
 
 				// I look under the pattern
 				if (i >= max_walk_part_.getRow())
@@ -306,7 +496,7 @@ bool Walking_pattern::parallel_avoid(const size_t /* threads_count */, const Mat
 				if (big_matrix.at(i, j) || !value_[c_v_v])
 				{
 					// I found the last element of the walk
-					if (c_v_v + 1 == value_.size())
+					if (c_v_v + 1 == size_)
 						return false;
 
 					// walk continues to the right/left
@@ -326,8 +516,9 @@ bool Walking_pattern::parallel_avoid(const size_t /* threads_count */, const Mat
 				// N[i,j] == 1
 				if (big_matrix.at(i, j) || !value_[c_h_h])
 				{
-					if (c_h_h + 1 == value_.size())
+					if (c_h_h + 1 == size_)
 						return false;
+
 					if (direction_[c_h_h])
 					{
 						if (max_walk_part_.at(i, j).second < c_h_h + 1)
@@ -345,79 +536,81 @@ bool Walking_pattern::parallel_avoid(const size_t /* threads_count */, const Mat
 	else
 	{
 		// all elements on the same diagonal have the same difference of their coordinates, go through diagonals
-		for (long long diff = 1 - (long long)max_walk_part_.getCol(); diff < (long long)max_walk_part_.getRow(); ++diff)
+		for (int diff = r - c; diff < max_walk_part_.getRow(); ++diff)
 		{
 			// the function is forced to end from outside
-			if (force_end == 1)
+			if (force_end)
 				return false;
+
 //#pragma omp parallel for //num_threads(threads_count)
 			// go through indices of rows
-			for (long long i = 0; i < (long long)max_walk_part_.getRow(); ++i)
+			for (int i = 0; i < max_walk_part_.getRow(); ++i)
 			{
-				long long j = i - diff;
-				long long c_v_v, c_h_h;	// c_v and c_h before an update, c_v of element to the top of i, j, c_h of element to the left
+				int j = i - diff;
+				int c_v_v, c_h_h;	// c_v and c_h before an update, c_v of element to the top of i, j, c_h of element to the left
 
 				// I look to the left of the pattern
 				if (i < diff)
 					continue;
 
 				// I look to the right of the pattern
-				if (j >= (long long)max_walk_part_.getCol())
+				if (j >= max_walk_part_.getCol())
 					break;
 
 				// element on the first row
 				if (i == 0)
 					c_v_v = 0;
 				else
-					c_v_v = (long long)max_walk_part_.at(i - 1, j).first;
+					c_v_v = max_walk_part_.at(i - 1, j).first;
 
 
 				// element on the last column
-				if (j == (long long)max_walk_part_.getCol() - 1)
+				if (j == max_walk_part_.getCol() - 1)
 					c_h_h = 0;
 				else
-					c_h_h = (long long)max_walk_part_.at(i, j + 1).second;
+					c_h_h = max_walk_part_.at(i, j + 1).second;
 
 				// Initialization - copying those already found walks
-				max_walk_part_.at(i, j).first = (size_t)c_v_v;
-				max_walk_part_.at(i, j).second = (size_t)c_h_h;
+				max_walk_part_.at(i, j).first = c_v_v;
+				max_walk_part_.at(i, j).second = c_h_h;
 
 				// Search for longer part of the walk
 				// b == 1 or v_{c_v_v + 1} == 0
 				if (big_matrix.at(i, j) || !value_[c_v_v])
 				{
 					// I found the last element of the walk
-					if (c_v_v + 1 == (long long)value_.size())
+					if (c_v_v + 1 == size_)
 						return false;
 
 					// walk continues to the right/left
 					if (direction_[c_v_v])
 					{
-						if ((long long)max_walk_part_.at(i, j).second < c_v_v + 1)
-							max_walk_part_.at(i, j).second = (size_t)c_v_v + 1;
+						if (max_walk_part_.at(i, j).second < c_v_v + 1)
+							max_walk_part_.at(i, j).second = c_v_v + 1;
 					}
 					// walk continues to the bottom
 					else
 					{
-						if ((long long)max_walk_part_.at(i, j).first < c_v_v + 1)
-							max_walk_part_.at(i, j).first = (size_t)c_v_v + 1;
+						if (max_walk_part_.at(i, j).first < c_v_v + 1)
+							max_walk_part_.at(i, j).first = c_v_v + 1;
 					}
 				}
 
 				// N[i,j] == 1
 				if (big_matrix.at(i, j) || !value_[c_h_h])
 				{
-					if (c_h_h + 1 == (long long)value_.size())
+					if (c_h_h + 1 == size_)
 						return false;
+
 					if (direction_[c_h_h])
 					{
-						if ((long long)max_walk_part_.at(i, j).second < c_h_h + 1)
-							max_walk_part_.at(i, j).second = (size_t)c_h_h + 1;
+						if (max_walk_part_.at(i, j).second < c_h_h + 1)
+							max_walk_part_.at(i, j).second = c_h_h + 1;
 					}
 					else
 					{
-						if ((long long)max_walk_part_.at(i, j).first < c_h_h + 1)
-							max_walk_part_.at(i, j).first = (size_t)c_h_h + 1;
+						if (max_walk_part_.at(i, j).first < c_h_h + 1)
+							max_walk_part_.at(i, j).first = c_h_h + 1;
 					}
 				}
 			}

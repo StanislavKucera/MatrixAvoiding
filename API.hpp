@@ -109,9 +109,9 @@ inline Parallel_mode get_parallel_mode(const std::string& mode)
 
 inline bool get_bool(const std::string& write)
 {
-	if (write == "yes" || write == "YES" || write == "Y" || write == "y")
+	if (write == "yes" || write == "YES" || write == "Y" || write == "y" || write == "1")
 		return true;
-	else if (write == "no" || write == "NO" || write == "N" || write == "n")
+	else if (write == "no" || write == "NO" || write == "N" || write == "n" || write == "0")
 		return false;
 	else
 		throw my_exception("Not sure what to write into the console. Choose yes or no in config.txt.");
@@ -119,7 +119,7 @@ inline bool get_bool(const std::string& write)
 
 inline void set_file_or_bool(const std::string& input, std::string& filename, bool& console)
 {
-	if (input != "no" && input != "n")				// no output file
+	if (input != "no" && input != "n" && input != "0")				// no output file
 	{
 		if (input == "console" || input == "c")
 		{
@@ -139,7 +139,7 @@ inline void set_file_or_bool(const std::string& input, std::string& filename, bo
 
 inline void set_matrix_file(const std::string& input, std::string& filename)
 {
-	if (input != "no" && input != "n")				// no output file
+	if (input != "no" && input != "n" && input != "0")				// no output file
 	{
 		if (input == "zero")
 		{
@@ -159,11 +159,11 @@ inline void set_matrix_file(const std::string& input, std::string& filename)
 		filename = "default";
 }
 
-inline std::vector<size_t> read_order(const std::string& custom_order)
+inline std::vector<int> read_order(const std::string& custom_order)
 {
-	std::vector<size_t> ret;
+	std::vector<int> ret;
 	std::ifstream iFile(custom_order);
-	size_t val;
+	int val;
 
 	while (!iFile.eof())
 	{
@@ -174,12 +174,12 @@ inline std::vector<size_t> read_order(const std::string& custom_order)
 	return ret;
 }
 
-Pattern* create_new_pattern(Matrix<size_t>&& pattern, const Type type, const Map map, const Map_container map_container, Order order, std::vector<size_t> custom_order,
-	const size_t N, const bool initialized, const Matrix<size_t>& result, const size_t threads_count)
+Pattern* create_new_pattern(Matrix<bool>&& pattern, const Type type, const Map map, const Map_container map_container, Order order, std::vector<int> custom_order,
+	const int N, const bool initialized, const Matrix<bool>& result, const int threads_count)
 {
 	std::chrono::system_clock::time_point start, end;
 	std::vector<Counter> sizes;
-	Matrix<size_t> init;
+	Matrix<bool> init;
 
 	if (type == WALKING)
 		return new Walking_pattern(pattern, N);
@@ -191,31 +191,31 @@ Pattern* create_new_pattern(Matrix<size_t>&& pattern, const Type type, const Map
 		{
 			if (!initialized)
 			{
-				init = Matrix<size_t>(N, N);
+				init = Matrix<bool>(N, N);
 				Patterns patterns;
-				patterns.add(new General_pattern<std::vector<std::vector<size_t> > >(pattern, threads_count - 1, MAX, map));
-				Matrix_Statistics matrix_stats((size_t)-1, 0, N, (size_t)-1);
-				Performance_Statistics perf_stats(1, (size_t)-1);
+				patterns.add(new General_pattern<std::vector<std::vector<int> > >(pattern, threads_count - 1, MAX, map));
+				Matrix_Statistics matrix_stats(-1, 0, N, -1);
+				Performance_Statistics perf_stats(1, -1);
 				MCMCgenerator(N*N, patterns, init, perf_stats, matrix_stats, 1);
 			}
 
-			General_pattern<std::vector<std::vector<size_t> > > gpSUM(pattern, threads_count - 1, SUM, map);
+			General_pattern<std::vector<std::vector<int> > > gpSUM(pattern, threads_count - 1, SUM, map);
 			start = std::chrono::system_clock::now();
-			if (!gpSUM.avoid((initialized ? result : init), sizes))
+			if (!gpSUM.avoid((initialized ? result : init), -1, -1, sizes))
 				throw my_exception("Initial big matrix does not avoid the pattern");
 			end = std::chrono::system_clock::now();
 			auto sum_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
-			General_pattern<std::vector<std::vector<size_t> > > gpMAX(pattern, threads_count - 1, MAX, map);
+			General_pattern<std::vector<std::vector<int> > > gpMAX(pattern, threads_count - 1, MAX, map);
 			start = std::chrono::system_clock::now();
-			if (!gpMAX.avoid((initialized ? result : init), sizes))
+			if (!gpMAX.avoid((initialized ? result : init), -1, -1, sizes))
 				throw my_exception("Initial big matrix does not avoid the pattern");
 			end = std::chrono::system_clock::now();
 			auto max_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
-			General_pattern<std::vector<std::vector<size_t> > > gpDESC(pattern, threads_count - 1, DESC, map);
+			General_pattern<std::vector<std::vector<int> > > gpDESC(pattern, threads_count - 1, DESC, map);
 			start = std::chrono::system_clock::now();
-			if (!gpDESC.avoid((initialized ? result : init), sizes))
+			if (!gpDESC.avoid((initialized ? result : init), -1, -1, sizes))
 				throw my_exception("Initial big matrix does not avoid the pattern");
 			end = std::chrono::system_clock::now();
 			auto desc_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
@@ -228,7 +228,7 @@ Pattern* create_new_pattern(Matrix<size_t>&& pattern, const Type type, const Map
 				order = SUM;
 		}
 
-		return new General_pattern<std::vector<std::vector<size_t> > >(pattern, threads_count - 1, order, map, std::move(custom_order));
+		return new General_pattern<std::vector<std::vector<int> > >(pattern, threads_count - 1, order, map, std::move(custom_order));
 	}
 	else if (type == GENERAL && map_container == SET)
 	{
@@ -236,31 +236,31 @@ Pattern* create_new_pattern(Matrix<size_t>&& pattern, const Type type, const Map
 		{
 			if (!initialized)
 			{
-				init = Matrix<size_t>(N, N);
+				init = Matrix<bool>(N, N);
 				Patterns patterns;
-				patterns.add(new General_pattern<std::vector<std::vector<size_t> > >(pattern, threads_count - 1, MAX, map));
-				Matrix_Statistics matrix_stats((size_t)-1, 0, N, (size_t)-1);
-				Performance_Statistics perf_stats(1, (size_t)-1);
+				patterns.add(new General_pattern<std::set<std::vector<int> > >(pattern, threads_count - 1, MAX, map));
+				Matrix_Statistics matrix_stats(-1, 0, N, -1);
+				Performance_Statistics perf_stats(1, -1);
 				MCMCgenerator(N*N, patterns, init, perf_stats, matrix_stats, 1);
 			}
 
-			General_pattern<std::set<std::vector<size_t> > > gpSUM(pattern, threads_count - 1, SUM, map);
+			General_pattern<std::set<std::vector<int> > > gpSUM(pattern, threads_count - 1, SUM, map);
 			start = std::chrono::system_clock::now();
-			if (!gpSUM.avoid((initialized ? result : init), sizes))
+			if (!gpSUM.avoid((initialized ? result : init), -1, -1, sizes))
 				throw my_exception("Initial big matrix does not avoid the pattern");
 			end = std::chrono::system_clock::now();
 			auto sum_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
-			General_pattern<std::set<std::vector<size_t> > > gpMAX(pattern, threads_count - 1, MAX, map);
+			General_pattern<std::set<std::vector<int> > > gpMAX(pattern, threads_count - 1, MAX, map);
 			start = std::chrono::system_clock::now();
-			if (!gpMAX.avoid((initialized ? result : init), sizes))
+			if (!gpMAX.avoid((initialized ? result : init), -1, -1, sizes))
 				throw my_exception("Initial big matrix does not avoid the pattern");
 			end = std::chrono::system_clock::now();
 			auto max_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
-			General_pattern<std::set<std::vector<size_t> > > gpDESC(pattern, threads_count - 1, DESC, map);
+			General_pattern<std::set<std::vector<int> > > gpDESC(pattern, threads_count - 1, DESC, map);
 			start = std::chrono::system_clock::now();
-			if (!gpDESC.avoid((initialized ? result : init), sizes))
+			if (!gpDESC.avoid((initialized ? result : init), -1, -1, sizes))
 				throw my_exception("Initial big matrix does not avoid the pattern");
 			end = std::chrono::system_clock::now();
 			auto desc_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
@@ -273,7 +273,7 @@ Pattern* create_new_pattern(Matrix<size_t>&& pattern, const Type type, const Map
 				order = SUM;
 		}
 
-		return new General_pattern<std::set<std::vector<size_t> > >(pattern, threads_count - 1, order, map, std::move(custom_order));
+		return new General_pattern<std::set<std::vector<int> > >(pattern, threads_count - 1, order, map, std::move(custom_order));
 	}
 	else if (type == GENERAL && map_container == HASH)
 	{
@@ -281,31 +281,31 @@ Pattern* create_new_pattern(Matrix<size_t>&& pattern, const Type type, const Map
 		{
 			if (!initialized)
 			{
-				init = Matrix<size_t>(N, N);
+				init = Matrix<bool>(N, N);
 				Patterns patterns;
-				patterns.add(new General_pattern<std::vector<std::vector<size_t> > >(pattern, threads_count - 1, MAX, map));
-				Matrix_Statistics matrix_stats((size_t)-1, 0, N, (size_t)-1);
-				Performance_Statistics perf_stats(1, (size_t)-1);
+				patterns.add(new General_pattern<std::unordered_set<std::vector<int>, int_vector_hasher> >(pattern, threads_count - 1, MAX, map));
+				Matrix_Statistics matrix_stats(-1, 0, N, -1);
+				Performance_Statistics perf_stats(1, -1);
 				MCMCgenerator(N*N, patterns, init, perf_stats, matrix_stats, 1);
 			}
 
-			General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpSUM(pattern, threads_count - 1, SUM, map);
+			General_pattern<std::unordered_set<std::vector<int>, int_vector_hasher> > gpSUM(pattern, threads_count - 1, SUM, map);
 			start = std::chrono::system_clock::now();
-			if (!gpSUM.avoid((initialized ? result : init), sizes))
+			if (!gpSUM.avoid((initialized ? result : init), -1, -1, sizes))
 				throw my_exception("Initial big matrix does not avoid the pattern");
 			end = std::chrono::system_clock::now();
 			auto sum_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
-			General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpMAX(pattern, threads_count - 1, MAX, map);
+			General_pattern<std::unordered_set<std::vector<int>, int_vector_hasher> > gpMAX(pattern, threads_count - 1, MAX, map);
 			start = std::chrono::system_clock::now();
-			if (!gpMAX.avoid((initialized ? result : init), sizes))
+			if (!gpMAX.avoid((initialized ? result : init), -1, -1, sizes))
 				throw my_exception("Initial big matrix does not avoid the pattern");
 			end = std::chrono::system_clock::now();
 			auto max_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
-			General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> > gpDESC(pattern, threads_count - 1, DESC, map);
+			General_pattern<std::unordered_set<std::vector<int>, int_vector_hasher> > gpDESC(pattern, threads_count - 1, DESC, map);
 			start = std::chrono::system_clock::now();
-			if (!gpDESC.avoid((initialized ? result : init), sizes))
+			if (!gpDESC.avoid((initialized ? result : init), -1, -1, sizes))
 				throw my_exception("Initial big matrix does not avoid the pattern");
 			end = std::chrono::system_clock::now();
 			auto desc_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
@@ -318,18 +318,18 @@ Pattern* create_new_pattern(Matrix<size_t>&& pattern, const Type type, const Map
 				order = SUM;
 		}
 
-		return new General_pattern<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >(pattern, threads_count - 1, order, map, std::move(custom_order));
+		return new General_pattern<std::unordered_set<std::vector<int>, int_vector_hasher> >(pattern, threads_count - 1, order, map, std::move(custom_order));
 	}
 	else
 		throw my_exception("This shouldn't have happened. Please send a message to the developer team with your config file.");
 
-	return new General_pattern<std::vector<std::vector<size_t> > >(pattern, threads_count - 1, order, map, std::move(custom_order));
+	return new General_pattern<std::vector<std::vector<int> > >(pattern, threads_count - 1, order, map, std::move(custom_order));
 }
 
-std::vector<Pattern_info> parse_config(std::istream& config, size_t& N, size_t& iter, size_t& hist_from, size_t& hist_to, size_t& hist_freq,
+std::vector<Pattern_info> parse_config(std::istream& config, int& N, int& iter, int& hist_from, int& hist_to, int& hist_freq,
 	std::string& bmp_file, std::string& hist_file, std::string& max_ones_file, std::string& csv_file, std::string& perf_file, std::string& init_matrix,
 	bool& console_time, bool& console_pattern, bool& console_matrix, bool& console_perf, bool& console_csv, bool& console_hist, bool& console_max_ones,
-	size_t& threads_count, Parallel_mode& parallel_mode)
+	int& threads_count, Parallel_mode& parallel_mode)
 {
 	std::string input, var, value;
 	bool new_pattern = false;
@@ -380,11 +380,11 @@ std::vector<Pattern_info> parse_config(std::istream& config, size_t& N, size_t& 
 
 		// input
 		if (var == "size" || var == "n")
-			N = my_stoul(value);
+			N = my_stoi(value);
 		else if (var == "iter" || var == "iterations")
-			iter = my_stoul(value);
+			iter = my_stoi(value);
 		else if (var == "threads" || var == "threads_count")
-			threads_count = my_stoul(value);
+			threads_count = my_stoi(value);
 		else if (var == "parallel_mode" || var == "parallelism")
 			parallel_mode = get_parallel_mode(value);
 		else if (var == "initial_matrix_file" || var == "init_matrix")
@@ -447,15 +447,15 @@ std::vector<Pattern_info> parse_config(std::istream& config, size_t& N, size_t& 
 		else if (var == "max_ones_file" || var == "max_ones" || var == "max_ones_matrix_file")
 			set_file_or_bool(value, max_ones_file, console_max_ones);
 		else if (var == "histogram_frequency" || var == "frequency")
-			hist_freq = my_stoul(value);
+			hist_freq = my_stoi(value);
 		else if (var == "histogram_initial" || var == "initial")
-			hist_from = my_stoul(value);
+			hist_from = my_stoi(value);
 		else if (var == "histogram_final" || var == "final")
 		{
-			hist_to = my_stoul(value);
+			hist_to = my_stoi(value);
 
 			if (hist_to == 0)
-				hist_to = (size_t)-1;
+				hist_to = -1;
 		}
 		else
 			std::cerr << "Couldn't parse the line \"" << var << " = " << value << "\" from config file. Make sure there are no spelling errors." << std::endl;
@@ -468,20 +468,20 @@ std::vector<Pattern_info> parse_config(std::istream& config, size_t& N, size_t& 
 	return patterns;
 }
 
-void set_patterns(Patterns& patterns, const std::vector<Pattern_info>& pattern_info, const Matrix<size_t>& init_matrix, const bool initialized, const size_t N, const size_t threads_count)
+void set_patterns(Patterns& patterns, const std::vector<Pattern_info>& pattern_info, const Matrix<bool>& init_matrix, const bool initialized, const int N, const int threads_count)
 {
 	for (const auto& pattern : pattern_info)
 	{
-		std::vector<size_t> custom_order;
+		std::vector<int> custom_order;
 
 		if (pattern.custom_order_file != "")
 			custom_order = read_order(pattern.custom_order_file);
 
-		Matrix<size_t> pat;
+		Matrix<bool> pat;
 
 		try
 		{
-			pat = Matrix<size_t>(pattern.pattern_file);
+			pat = Matrix<bool>(pattern.pattern_file);
 		}
 		catch (...)
 		{
@@ -493,15 +493,15 @@ void set_patterns(Patterns& patterns, const std::vector<Pattern_info>& pattern_i
 			patterns.add(create_new_pattern(std::move(pat), pattern.type, pattern.map, pattern.map_container, pattern.order, custom_order, N, initialized, init_matrix, threads_count));
 		else
 		{
-			Matrix<size_t> init;
+			Matrix<bool> init;
 
 			if (pattern.init_matrix_file == "zero")
-				Matrix<size_t>(N, N);
+				Matrix<bool>(N, N);
 			else
 			{
 				try
 				{
-					Matrix<size_t>(N, N, pattern.init_matrix_file);
+					Matrix<bool>(N, N, pattern.init_matrix_file);
 				}
 				catch (...)
 				{

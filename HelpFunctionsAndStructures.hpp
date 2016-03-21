@@ -22,10 +22,10 @@ enum Map_container { VECTOR, SET, HASH };
 enum Parallel_mode { SERIAL, MCMC, MCMC2, MAP };
 
 // hash function for a vector of size_t
-class size_t_vector_hasher {
+class int_vector_hasher {
 public:
-	size_t operator()(const std::vector<size_t>& vec) const {
-		size_t seed = 0;
+	int operator()(const std::vector<int>& vec) const {
+		int seed = 0;
 
 		for (auto& i : vec)
 			seed ^= i + 0x9e3779b9 + (seed << 6) + (seed >> 2);
@@ -63,12 +63,12 @@ public:
 	/// Inserts a new mapping into a container only if it is not in the container yet.
 	/// Takes time depending on the container T.
 	/// </summary>
-	void insert_without_duplicates(std::vector<size_t>&& mapping);
+	void insert_without_duplicates(std::vector<int>&& mapping);
 
-	void parallel_insert_without_duplicates(std::vector<size_t>&& mapping);
+	void parallel_insert_without_duplicates(std::vector<int>&& mapping);
 
 	void clear()					{ container_.clear(); }
-	size_t size() const				{ return container_.size(); }
+	int size() const				{ return (int)container_.size(); }
 	bool empty() const				{ return container_.empty(); }
 
 	iterator begin()				{ return container_.begin(); }
@@ -81,28 +81,28 @@ private:
 };
 
 template<>
-inline void Container<std::vector<std::vector<size_t> > >::init()
+inline void Container<std::vector<std::vector<int> > >::init()
 {
 	container_.clear();
-	container_.push_back(std::vector<size_t>(0));
+	container_.push_back(std::vector<int>(0));
 }
 
 template<>
-inline void Container<std::set<std::vector<size_t> > >::init()
+inline void Container<std::set<std::vector<int> > >::init()
 {
 	container_.clear();
-	container_.emplace(std::vector<size_t>(0));
+	container_.emplace(std::vector<int>(0));
 }
 
 template<>
-inline void Container<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >::init()
+inline void Container<std::unordered_set<std::vector<int>, int_vector_hasher> >::init()
 {
 	container_.clear();
-	container_.emplace(std::vector<size_t>(0));
+	container_.emplace(std::vector<int>(0));
 }
 
 template<>
-inline void Container<std::vector<std::vector<size_t> > >::insert_without_duplicates(std::vector<size_t>&& mapping)
+inline void Container<std::vector<std::vector<int> > >::insert_without_duplicates(std::vector<int>&& mapping)
 {
 	// go through all already found mappings in (i+1)-th step and check if extended is not already in there
 	for (auto& mapping2 : container_)
@@ -117,21 +117,21 @@ inline void Container<std::vector<std::vector<size_t> > >::insert_without_duplic
 }
 
 template<>
-inline void Container<std::set<std::vector<size_t> > >::insert_without_duplicates(std::vector<size_t>&& mapping)
+inline void Container<std::set<std::vector<int> > >::insert_without_duplicates(std::vector<int>&& mapping)
 {
 	// duplicates are dealt with automagically
 	container_.emplace(mapping);
 }
 
 template<>
-inline void Container<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >::insert_without_duplicates(std::vector<size_t>&& mapping)
+inline void Container<std::unordered_set<std::vector<int>, int_vector_hasher> >::insert_without_duplicates(std::vector<int>&& mapping)
 {
 	// duplicates are dealt with automagically
 	container_.emplace(mapping);
 }
 
 template<>
-inline void Container<std::vector<std::vector<size_t> > >::parallel_insert_without_duplicates(std::vector<size_t>&& mapping)
+inline void Container<std::vector<std::vector<int> > >::parallel_insert_without_duplicates(std::vector<int>&& mapping)
 {
 	// I will play with this later
 	write_.lock();
@@ -150,7 +150,7 @@ inline void Container<std::vector<std::vector<size_t> > >::parallel_insert_witho
 }
 
 template<>
-inline void Container<std::set<std::vector<size_t> > >::parallel_insert_without_duplicates(std::vector<size_t>&& mapping)
+inline void Container<std::set<std::vector<int> > >::parallel_insert_without_duplicates(std::vector<int>&& mapping)
 {
 	write_.lock();
 	// duplicates are dealt with automagically
@@ -159,7 +159,7 @@ inline void Container<std::set<std::vector<size_t> > >::parallel_insert_without_
 }
 
 template<>
-inline void Container<std::unordered_set<std::vector<size_t>, size_t_vector_hasher> >::parallel_insert_without_duplicates(std::vector<size_t>&& mapping)
+inline void Container<std::unordered_set<std::vector<int>, int_vector_hasher> >::parallel_insert_without_duplicates(std::vector<int>&& mapping)
 {
 	write_.lock();
 	// duplicates are dealt with automagically
@@ -171,18 +171,18 @@ struct Counter
 {
 	Counter() : tries(0), maps(0), uniques(0) {}
 
-	size_t tries,	// number of attempts to map a line
+	int tries,		// number of attempts to map a line
 		maps,		// number of successful attempts to map a line
 		uniques;	// number of unique mappings (two mapping are the same if the important mapped lines are the same)
 };
 
 struct Job
 {
-	Job() : r((size_t)-1), c((size_t)-1), avoid(true) {}
-	Job(size_t row, size_t col, bool a) : r(row), c(col), avoid(a) {}
+	Job() : r(-1), c(-1), avoid(true) {}
+	Job(const int row, const int col, bool a) : r(row), c(col), avoid(a) {}
 	Job(const Job& j) : r(j.r), c(j.c), avoid(j.avoid) {}
 	
-	size_t r, c;
+	int r, c;
 	bool avoid;
 };
 
@@ -190,14 +190,13 @@ inline bool operator<(const Job&, const Job&) { return false; }
 
 struct Task
 {
-	Task() : job(), id(-1), next_id(-1), returned(false), reverted(false), synced(false) {}
-	Task(const Job& j, const int i, const int ni, const bool r, const bool rev, const bool s) : job(j), id(i), next_id(ni), returned(r), reverted(rev), synced(s) {}
+	Task() : job(), id(-1), next_id(-1), returned(false), synced(false) {}
+	Task(const Job& j, const int i, const int ni, const bool r, const bool s) : job(j), id(i), next_id(ni), returned(r), synced(s) {}
 
 	Job job;
 	int id,
 		next_id;
 	bool returned,
-		reverted,
 		synced;
 };
 
@@ -206,15 +205,15 @@ struct Task
 /// Takes constant time and space.
 /// </summary>
 /// <param name="n">A binary number for which number of bits is computed.</param>
-inline size_t bit_count(const size_t n)	// I have used a function from the internet: -http://blogs.msdn.com/b/jeuge/archive/2005/06/08/hakmem-bit-count.aspx
+inline int bit_count(const int n)	// I have used a function from the internet: -http://blogs.msdn.com/b/jeuge/archive/2005/06/08/hakmem-bit-count.aspx
 {
-	const size_t uCount = n - ((n >> 1) & 033333333333) - ((n >> 2) & 011111111111);
+	const int uCount = n - ((n >> 1) & 033333333333) - ((n >> 2) & 011111111111);
 	return ((uCount + (uCount >> 3)) & 030707070707) % 63;
 }
 
-inline size_t my_stoul(const std::string& s) {
+inline int my_stoi(const std::string& s) {
 	std::istringstream str(s);
-	size_t ret;
+	int ret;
 	str >> ret;
 	return ret;
 }
