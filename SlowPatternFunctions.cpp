@@ -3,7 +3,7 @@
 
 #include "PatternHeaders.hpp"
 
-bool Slow_pattern::parallel_avoid(const Matrix<bool>& big_matrix, const int /* r */, const int /* c */, std::vector<Counter>& /* sizes */, const int /* threads_count */, const std::atomic_bool& force_end)
+bool Slow_pattern::parallel_avoid(const Matrix<bool>& big_matrix, const int /* r */, const int /* c */, std::vector<Counter>& /* sizes */, const int /* threads_count */, const std::atomic<bool>& force_end)
 {
 	//////////////////////////
 	// not parallel for now //
@@ -19,7 +19,7 @@ bool Slow_pattern::parallel_avoid(const Matrix<bool>& big_matrix, const int /* r
 	return true;
 }
 
-void Slow_pattern::test_all_subsets(int v_map, int h_map, int v_ones, int h_ones, int v_vals, int h_vals, const Matrix<bool>& big_matrix, const std::atomic_bool& force_end)
+void Slow_pattern::test_all_subsets(int v_map, int h_map, int v_ones, int h_ones, int v_vals, int h_vals, const Matrix<bool>& big_matrix, const std::atomic<bool>& force_end)
 {
 	// the function is forced to end from outside
 	if (force_end)

@@ -79,7 +79,7 @@ std::vector<std::vector<int> > Patterns::get_order() const
 	return orders;
 }
 
-bool Patterns::avoid(const int r, const int c, std::vector<std::vector<Counter> >& sizes, const std::atomic_bool& forced_end)
+bool Patterns::avoid(const int r, const int c, std::vector<std::vector<Counter> >& sizes, const std::atomic<bool>& forced_end)
 {
 	big_matrix_.flip(r, c);
 

@@ -151,7 +151,7 @@ top_right:
 	size_ = (int)value_.size();
 }
 
-//bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const std::atomic_bool& force_end)
+//bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const std::atomic<bool>& force_end)
 /*{
 	typedef std::pair<int, int> pair;
 	std::queue<pair> q;						// queue for elements of the matrix that are supposed to be updated
@@ -262,7 +262,7 @@ top_right:
 	return true;
 }*/
 
-//bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const std::atomic_bool& force_end)
+//bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const std::atomic<bool>& force_end)
 /*{
 	typedef std::pair<int, int> pair;
 	pair current, last = std::make_pair(-1, -1);							// [x,y] of the currently updated element
@@ -375,7 +375,7 @@ top_right:
 	return true;
 }*/
 
-bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const std::atomic_bool& force_end)
+bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const std::atomic<bool>& force_end)
 {
 	int min_sum = r + c;
 	int min_diff = r - c;
@@ -565,7 +565,7 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 	return true;
 }
 
-bool Walking_pattern::parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const int /* threads_count */, const std::atomic_bool& force_end)
+bool Walking_pattern::parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const int /* threads_count */, const std::atomic<bool>& force_end)
 {
 	// r and c are always valid in parallel_avoid
 

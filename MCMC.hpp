@@ -111,23 +111,23 @@ struct worker_state
 	Job jobs;
 	// this forces the end of calculation if the main thread finds out there was a successful call of avoid in a calculation with lower id
 	// accesed by its worker and the main thread - read by the worker; read and write by the main thread - thread safety by atomicity
-	std::atomic_bool force_end;
+	std::atomic<bool> force_end;
 	// returned value of avoid function for each thread
 	// accesed by its worker and the main thread - read by the worker; read by the main thread - thread safety by atomicity
-	std::atomic_bool ret;
+	std::atomic<bool> ret;
 	// indicator whether the calculation is done
 	// accesed by its worker and the main thread - read and write by the worker; read and write by the main thread - thread safety by atomicity
-	std::atomic_bool done;
+	std::atomic<bool> done;
 	// indicator whether the returned value was already read
 	// accesed by its worker and the main thread - write by the worker; read and write by the main thread - thread safety by atomicity
-	std::atomic_bool ret_read;
+	std::atomic<bool> ret_read;
 	// condition variable allowing the worker to wait passively when there is nothing to do
 	std::condition_variable cvs;
 	// mutex for the condition variable to prevent the situation when the worker is being woken up while it goes to sleep
 	std::mutex mtxs;
 };
 
-void parallel_avoid(worker_state& worker_state, const std::atomic_bool& end, std::atomic_bool& main_job, std::condition_variable& cv, std::mutex& mtx)
+void parallel_avoid(worker_state& worker_state, const std::atomic<bool>& end, std::atomic<bool>& main_job, std::condition_variable& cv, std::mutex& mtx)
 {
 	while (!end)
 	{
@@ -171,8 +171,8 @@ inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<boo
 	std::vector<worker_state> worker_states(threads_count, worker_state(patterns));
 	std::condition_variable cv;
 	std::mutex mtx;
-	std::atomic_bool end;
-	std::atomic_bool main_job(false);
+	std::atomic<bool> end;
+	std::atomic<bool> main_job(false);
 
 	///////////////////////////
 	// main thread variables //
@@ -489,7 +489,7 @@ inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<boo
 	// since the patterns is sent by l-value reference (not sure yet whether it is a good thing), I'm not the only owner
 }
 
-inline void get_sync(std::deque<std::pair<int, Job> >& sync, std::queue<std::pair<int, Job> >& new_syncs, std::mutex& new_syncs_mutex, std::atomic_bool& synchronize, int revert = 0)
+inline void get_sync(std::deque<std::pair<int, Job> >& sync, std::queue<std::pair<int, Job> >& new_syncs, std::mutex& new_syncs_mutex, std::atomic<bool>& synchronize, int revert = 0)
 {
 	// first throw away synchronizations that has been reverted
 	while (!sync.empty() && sync.back().first > revert && revert != 0)
@@ -523,8 +523,8 @@ inline void get_sync(std::deque<std::pair<int, Job> >& sync, std::queue<std::pai
 	}
 }
 
-inline void make_iteration(const int my_index, std::deque<Task>& queue, Matrix<bool>& big_matrix, std::vector<std::atomic_bool>& forced_ends, std::atomic_bool& end,
-	std::atomic_int& current_id, std::atomic_int& iterations, const int iter, std::atomic_int& ones, Matrix_Statistics& matrix_stats, std::ostream& oFile, int& last_perc)
+inline void make_iteration(const int my_index, std::deque<Task>& queue, Matrix<bool>& big_matrix, std::vector<std::atomic<bool>>& forced_ends, std::atomic<bool>& end,
+	std::atomic<int>& current_id, std::atomic<int>& iterations, const int iter, std::atomic<int>& ones, Matrix_Statistics& matrix_stats, std::ostream& oFile, int& last_perc)
 {
 	while (!queue.empty() && queue.front().id == current_id)
 	{
@@ -576,11 +576,11 @@ inline void make_iteration(const int my_index, std::deque<Task>& queue, Matrix<b
 	}
 }
 
-void parallel_avoid2(const int my_index, Patterns patterns, Matrix<bool>& big_matrix, std::vector<std::vector<Counter> >& sizes, std::vector<std::atomic_bool>& forced_ends,
-	std::vector<std::atomic_bool>& synchronize, std::atomic_bool& end, std::atomic_int& current_id, std::atomic_int& last_id, std::atomic_int& iterations, std::vector<int>& revertings,
-	std::vector<std::queue<std::pair<int, Job> > >& syncs, const int N, const int iter, std::atomic_int& ones, Matrix_Statistics& matrix_stats,
-	std::vector<std::mutex>& syncs_mutexes, std::vector<std::mutex>& revertings_mutexes, std::mutex& last_id_mutex, int& last_perc, std::vector<std::atomic_int>& last_job_id,
-	std::ostream& oFile, std::ostream& ar, std::vector<std::atomic_bool>& last_change_noted)
+void parallel_avoid2(const int my_index, Patterns patterns, Matrix<bool>& big_matrix, std::vector<std::vector<Counter> >& sizes, std::vector<std::atomic<bool>>& forced_ends,
+	std::vector<std::atomic<bool>>& synchronize, std::atomic<bool>& end, std::atomic<int>& current_id, std::atomic<int>& last_id, std::atomic<int>& iterations, std::vector<int>& revertings,
+	std::vector<std::queue<std::pair<int, Job> > >& syncs, const int N, const int iter, std::atomic<int>& ones, Matrix_Statistics& matrix_stats,
+	std::vector<std::mutex>& syncs_mutexes, std::vector<std::mutex>& revertings_mutexes, std::mutex& last_id_mutex, int& last_perc, std::vector<std::atomic<int>>& last_job_id,
+	std::ostream& oFile, std::ostream& ar, std::vector<std::atomic<bool>>& last_change_noted)
 {
 	// everytime there is a successful avoid taken, all the threads need to get its own matrix into a valid state - this is the queue of all changes
 	std::deque<std::pair<int, Job> > sync;
@@ -818,12 +818,12 @@ inline void parallelMCMCgenerator2(const int iter, Patterns& patterns, Matrix<bo
 	patterns.set_matrix(big_matrix);
 	// this forces the end of calculation if the main thread finds out there was a successful call of avoid in a calculation with lower id
 	// accesed by its worker and the main thread - read by the worker; read and write by the main thread - thread safety by atomicity
-	std::vector<std::atomic_bool> force_end(threads_count);
+	std::vector<std::atomic<bool>> force_end(threads_count);
 	std::vector<std::queue<std::pair<int, Job> > > syncs(threads_count);
-	std::vector<std::atomic_int> last_job_id(threads_count);
-	std::vector<std::atomic_bool> synchronize(threads_count);
+	std::vector<std::atomic<int>> last_job_id(threads_count);
+	std::vector<std::atomic<bool>> synchronize(threads_count);
 	std::vector<std::mutex> syncs_mutexes(threads_count);
-	std::vector<std::atomic_bool> last_change_noted(threads_count);
+	std::vector<std::atomic<bool>> last_change_noted(threads_count);
 
 	///////////////////////////
 	// main thread variables //
@@ -833,9 +833,9 @@ inline void parallelMCMCgenerator2(const int iter, Patterns& patterns, Matrix<bo
 	std::vector<int> reverting(threads_count);
 	std::vector<std::mutex> reverting_mutexes(threads_count);
 	// calculation ids - current means currently being checked (waited for) by the main thread, last is the lastly assigned id
-	std::atomic_int current_id(1), last_id(0);
+	std::atomic<int> current_id(1), last_id(0);
 	std::mutex last_id_mutex;
-	std::atomic_int iterations(0);
+	std::atomic<int> iterations(0);
 	// calculations ordered by id - use this to find the order in which I deal with the threads
 	//std::priority_queue<std::pair<size_t, size_t>, std::vector<std::pair<size_t, size_t> >, std::greater<std::pair<size_t, size_t> > > priority;
 	//std::set<std::pair<size_t, size_t> > priority;
@@ -850,9 +850,9 @@ inline void parallelMCMCgenerator2(const int iter, Patterns& patterns, Matrix<bo
 	//perf_stats.set_order(patterns.get_order());
 
 	// matrix statistics purposes
-	std::atomic_int ones(big_matrix.getOnes());
+	std::atomic<int> ones(big_matrix.getOnes());
 
-	std::atomic_bool end(false);
+	std::atomic<bool> end(false);
 
 	const int size = big_matrix.getCol();
 

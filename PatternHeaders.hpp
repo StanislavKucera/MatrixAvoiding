@@ -14,9 +14,10 @@
 class Pattern
 {
 public:
-	virtual bool avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic_bool& force_end = false) = 0;
+	virtual ~Pattern() {}
+	virtual bool avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false) = 0;
 	virtual bool revert(const Matrix<bool>& big_matrix, const int r, const int c) = 0;
-	virtual bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic_bool& force_end = false) = 0;
+	virtual bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic<bool>& force_end = false) = 0;
 	virtual bool parallel_revert(const Matrix<bool>& big_matrix, const int r, const int c, const int threads_count) = 0;
 	virtual std::vector<int> get_order() const = 0;
 	virtual Pattern* get_new_instance() const = 0;
@@ -36,7 +37,7 @@ public:
 					one_entries_.push_back(std::make_pair(i, j));
 	}
 
-	bool avoid(const Matrix<bool>& big_matrix, const int /* r */, const int /* c */, std::vector<Counter>& /* sizes */, const std::atomic_bool& force_end = 0)
+	bool avoid(const Matrix<bool>& big_matrix, const int /* r */, const int /* c */, std::vector<Counter>& /* sizes */, const std::atomic<bool>& force_end = 0)
 	{
 		done_ = false;
 		// goes through all subsets of rows and columns of the right cardinality and tests whether the pattern can be mapped to that subset
@@ -48,7 +49,7 @@ public:
 		return true;
 	}
 	bool revert(const Matrix<bool>& /* big_matrix */, const int /* r */, const int /* c */) { return true; }
-	bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic_bool& force_end = 0);
+	bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic<bool>& force_end = 0);
 	bool parallel_revert(const Matrix<bool>& /* big_matrix */, const int /* r */, const int /* c */, const int /* threads_count */) { return true; }
 	std::vector<int> get_order() const { return std::vector<int>(); }
 	Pattern* get_new_instance() const { return new Slow_pattern(*this); }
@@ -59,7 +60,7 @@ private:
 	const int rows_, cols_;									// size of the pattern
 	bool done_;												// indicator whether the avoidance testing has failed (the matrix does not avoid the pattern)
 
-	void test_all_subsets(int v_map, int h_map, int v_ones, int h_ones, int v_vals, int h_vals, const Matrix<bool>& big_matrix, const std::atomic_bool& force_end);
+	void test_all_subsets(int v_map, int h_map, int v_ones, int h_ones, int v_vals, int h_vals, const Matrix<bool>& big_matrix, const std::atomic<bool>& force_end);
 };
 
 template<typename T>
@@ -91,15 +92,15 @@ public:
 	/// <param name="r">Row of the big matrix that has been changed.</param>
 	/// <param name="c">Column of the big matrix that has been changed.</param>
 	/// <param name="sizes">Vector of numbers of found mappings on each level.</param>
-	bool avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic_bool& force_end = false);
+	bool avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false);
 	bool revert(const Matrix<bool>& /* big_matrix */, const int /* r */, const int /* c */) { return true; }
-	bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic_bool& force_end = false);
+	bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic<bool>& force_end = false);
 	bool parallel_revert(const Matrix<bool>& /* big_matrix */, const int /* r */, const int /* c */, const int /* threads_count */) { return true; }
 	std::vector<int> get_order() const { return order_; }
 	Pattern* get_new_instance() const { return new General_pattern(*this); }
 	void construct_threads(const Matrix<bool>& big_matrix)
 	{
-		for (int index = 0; index != (int)threads_.size(); ++index)
+		for (int index = 0; index < (int)threads_.size(); ++index)
 			threads_[index] = std::thread(&General_pattern::worker, this, index, std::ref(big_matrix));
 	}
 	void destruct_threads()
@@ -271,7 +272,7 @@ private:
 	std::vector<std::mutex> mtxs_;
 	// indicator whether a thread waits for its condition variable or is computing something
 	// accessed by exactly two threads - write by its worker; read by the main thread - mutex not needed because of atomicity
-	std::vector<std::atomic_bool> sleeps_;
+	std::vector<std::atomic<bool>> sleeps_;
 	// condition variable for the main thread - if workers calculate new mappings and none of them is done yet, the main threads waits
 	// accessed by all the threads - notify_one by all workers; wait by the main thread
 	std::condition_variable cv_;
@@ -282,17 +283,17 @@ private:
 	typename T::const_pointer mapping_ptr_ = nullptr;
 	// index of a line which currently mapped line is being mapped to
 	// accessed by all threads - read and write by all workers; write by the main thread - mutex not needed because of atomicity
-	std::atomic_int big_line_;
+	std::atomic<int> big_line_;
 	// index of a line behind the last one that is possible to map the currently mapped line to. If big_line = big_line_to tests are done
 	// accessed by all threads - read by all workers; write by the main thread - mutex not needed because of atomicity (this really doesn't need to be atomic)
-	std::atomic_int big_line_to_;
+	std::atomic<int> big_line_to_;
 	// are all possible mappings of the current line tested? It is TRUE when there is no more work for a thread (big_line = big_line_to)
 	// accessed by all threads - read and write by all workers; read and write by the main thread - mutex not needed because of atomicity
-	std::atomic_bool done_;
+	std::atomic<bool> done_;
 	// indicator that the MCMCgenerator ends - it need to destroy all workers
-	std::atomic_bool end_;
+	std::atomic<bool> end_;
 	// indicator that there is some work for the main thread and it wasn't just woke up randomly
-	std::atomic_bool something_is_mapped_or_done_;
+	std::atomic<bool> something_is_mapped_or_done_;
 
 	void worker(const int index, const Matrix<bool>& big_matrix);
 };
@@ -315,10 +316,10 @@ public:
 	/// <param name="r">Row of the big matrix that has been changed.</param>
 	/// <param name="c">Column of the big matrix that has been changed.</param>
 	/// <param name="sizes">Vector of numbers of found mappings on each level.</param>
-	bool avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic_bool& force_end = false);	
+	bool avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false);	
 	// reverts changes in max_walk_part matrix after an unsuccessful change of the big matrix
 	bool revert(const Matrix<bool>& /* big_matrix */, const int r, const int c) { changes_.emplace_back(std::make_pair(r, c)); return true; }
-	bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic_bool& force_end = false);
+	bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic<bool>& force_end = false);
 	bool parallel_revert(const Matrix<bool>& big_matrix, const int r, const int c, const int threads_count)
 	{ 
 		std::vector<Counter> sizes;
@@ -349,6 +350,11 @@ public:
 		for (auto& pattern : copy.patterns_)
 			patterns_.push_back(pattern->get_new_instance());
 	}
+	~Patterns()
+	{
+		for (auto& pattern : patterns_)
+			delete pattern;
+	}
 
 	bool avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<std::vector<Counter> >& sizes);
 	bool revert(const Matrix<bool>& big_matrix, const int r, const int c);
@@ -356,7 +362,7 @@ public:
 	bool parallel_revert(const Matrix<bool>& big_matrix, const int r, const int c, const int threads_count);
 	std::vector<std::vector<int> > get_order() const;
 
-	bool avoid(const int r, const int c, std::vector<std::vector<Counter> >& sizes, const std::atomic_bool& forced_end);
+	bool avoid(const int r, const int c, std::vector<std::vector<Counter> >& sizes, const std::atomic<bool>& forced_end);
 	bool revert(const int r, const int c);// , const Matrix<bool>& mat);
 	bool check_matrix(const Matrix<bool>& mat);
 

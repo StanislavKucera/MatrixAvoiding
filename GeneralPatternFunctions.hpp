@@ -92,7 +92,7 @@ General_pattern<T>::General_pattern(const Matrix<bool>& pattern, const int threa
 }
 
 template<typename T>
-bool General_pattern<T>::avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic_bool& force_end)
+bool General_pattern<T>::avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end)
 {
 	// There was a change from one-entry to zero-entry
 	if (r != -1 && c != -1 && !big_matrix.at(r, c))
@@ -229,7 +229,7 @@ void General_pattern<T>::worker(const int index, const Matrix<bool>& big_matrix)
 }
 
 template<typename T>
-bool General_pattern<T>::parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic_bool& force_end)
+bool General_pattern<T>::parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic<bool>& force_end)
 {
 	// There was a change from one-entry to zero-entry
 	if (r != -1 && c != -1 && !big_matrix.at(r, c))
@@ -723,11 +723,11 @@ void General_pattern<T>::find_parralel_bound_indices()
 template<typename T>
 void General_pattern<T>::find_bound_indices(const int line, const int level)
 {
-	int	index = -1,		// index into map m
-		bot = -1,		// index to the lower bound for currently added line in map vector
-		top = -1,		// index to the upper bound for currently added line in map vector
-		i_top = 0,		// index of the line of the pattern which is a upper bound of currently added line 
-		i_bot = -1;		// index of the line of the pattern which is a lower bound of currently added line
+	int	index = -1;	// index into map m
+	size_t	bot = (size_t)-1,	// index to the lower bound for currently added line in map vector
+		top = (size_t)-1,	// index to the upper bound for currently added line in map vector
+		i_top = 0,			// index of the line of the pattern which is a upper bound of currently added line 
+		i_bot = (size_t)-1;	// index of the line of the pattern which is a lower bound of currently added line
 
 	// go through all lines and find the lower and upper bound for "line", which I remember in i-th step of the algorithm
 	for (i_top = 0; i_top < row_ + col_; ++i_top)
@@ -761,7 +761,7 @@ void General_pattern<T>::find_bound_indices(const int line, const int level)
 		else if ((line < row_ && i_top + 1 == row_) ||
 			(line >= row_ && i_top + 1 == row_ + col_))
 		{
-			i_top = -1;
+			i_top = (size_t)-1;
 			break;
 		}
 	}
@@ -771,16 +771,17 @@ void General_pattern<T>::find_bound_indices(const int line, const int level)
 }
 
 template<typename T>
-void General_pattern<T>::find_parallel_bounds(const int line, const std::vector<int>& mapping, const int rows, const int columns, int& from, int& to, const int r, const int c) const
+void General_pattern<T>::find_parallel_bounds(const int line, const std::vector<int>& mapping, const int rows, const int columns,
+	int& from, int& to, const int r, const int c) const
 {
-	const int	bot = parallel_bound_indices_[level_][line].first.first,		// index to the lower bound for currently added line in map vector
-				top = parallel_bound_indices_[level_][line].first.second,		// index to the upper bound for currently added line in map vector
-				i_bot = parallel_bound_indices_[level_][line].second.first,		// index of the line of the pattern which is a upper bound of currently added line 
-				i_top = parallel_bound_indices_[level_][line].second.second;	// index of the line of the pattern which is a lower bound of currently added line
+	const size_t	bot = parallel_bound_indices_[level_][line].first.first,		// index to the lower bound for currently added line in map vector
+					top = parallel_bound_indices_[level_][line].first.second,		// index to the upper bound for currently added line in map vector
+					i_bot = parallel_bound_indices_[level_][line].second.first,		// index of the line of the pattern which is a upper bound of currently added line
+					i_top = parallel_bound_indices_[level_][line].second.second;	// index of the line of the pattern which is a lower bound of currently added line
 
 	// i have parallel boundaries of (size_t)-1 if there are not any, return correct bounds in both cases:
 	// if there is no lower bound
-	if (bot == -1)
+	if (bot == (size_t)-1)
 	{
 		// and "line" is a row
 		if (line < row_) {
@@ -804,7 +805,7 @@ void General_pattern<T>::find_parallel_bounds(const int line, const std::vector<
 		from = mapping[bot] - i_bot + line;
 
 	// if there is no upper bound
-	if (top == -1)
+	if (top == (size_t)-1)
 	{
 		// and "line" is a row
 		if (line < row_) {
@@ -827,7 +828,7 @@ void General_pattern<T>::find_parallel_bounds(const int line, const std::vector<
 	else
 		to = mapping[top] - i_top + line + 1;
 
-	if (top != -1) {
+	if (top != (size_t)-1) {
 		// If I remember the next row, it has to be mapped to "top" and that line is mapped after "r" then I cannot map previous row before r-th one
 		if (line < row_ && line != row_ - 1 && r != -1 && ((what_to_remember_[level_] >> (line + 1)) & 1) && mapping[top] > r && r + 1 > from)
 			// if r > to the for cycle in map() will iterate through an empty set, which is ok
@@ -838,7 +839,7 @@ void General_pattern<T>::find_parallel_bounds(const int line, const std::vector<
 			from = rows + c;
 	}
 
-	if (bot != -1) {
+	if (bot != (size_t)-1) {
 		// If I remember the previous row, it has to be mapped to "bot" and that line is mapped before "r" then I cannot map then next row after r-th one
 		if (line < row_ && line != 0 && r != -1 && ((what_to_remember_[level_] >> (line - 1)) & 1) && mapping[bot] < r && r < to)
 			// if r < from the for cycle in map() will iterate through an empty set, which is ok
@@ -851,18 +852,19 @@ void General_pattern<T>::find_parallel_bounds(const int line, const std::vector<
 }
 
 template<typename T>
-bool General_pattern<T>::check_orthogonal_bounds(const int line, const int big_line, const std::vector<int>& mapping, const int orthogonal_line, const int big_orthogonal_line, const Matrix<bool>& big_matrix) const
+bool General_pattern<T>::check_orthogonal_bounds(const int line, const int big_line, const std::vector<int>& mapping,
+	const int orthogonal_line, const int big_orthogonal_line, const Matrix<bool>& big_matrix) const
 {
-	const int	bot = parallel_bound_indices_[level_][line].first.first,		// index to the lower bound for currently added line in map vector
-				top = parallel_bound_indices_[level_][line].first.second,		// index to the upper bound for currently added line in map vector
-				i_bot = parallel_bound_indices_[level_][line].second.first,		// index of the line of the pattern which is a upper bound of currently added line 
-				i_top = parallel_bound_indices_[level_][line].second.second;	// index of the line of the pattern which is a lower bound of currently added line
+	const size_t bot = parallel_bound_indices_[level_][line].first.first,	// index to the lower bound for currently added line in map vector
+				top = parallel_bound_indices_[level_][line].first.second,			// index to the upper bound for currently added line in map vector
+				i_bot = parallel_bound_indices_[level_][line].second.first,			// index of the line of the pattern which is a upper bound of currently added line 
+				i_top = parallel_bound_indices_[level_][line].second.second;			// index of the line of the pattern which is a lower bound of currently added line
 
 	int from, to, current;
 
 	// i have parallel boundaries of (size_t)-1 if there are not any, return correct bounds in both cases:
 	// if there is no lower bound
-	if (bot == -1)
+	if (bot == (size_t)-1)
 	{
 		// and "line" is a row
 		if (line < row_)
@@ -892,7 +894,8 @@ bool General_pattern<T>::check_orthogonal_bounds(const int line, const int big_l
 
 		if ((orthogonal_line >> current) & 1)
 		{
-			if ((line < row_ && big_matrix.at(from, big_orthogonal_line)) || (line >= row_ && big_matrix.at(big_orthogonal_line, from - big_matrix.getRow())))
+			if ((line < row_ && big_matrix.at(from, big_orthogonal_line)) ||
+				(line >= row_ && big_matrix.at(big_orthogonal_line, from - big_matrix.getRow())))
 				++current;
 		}
 		else
@@ -902,7 +905,7 @@ bool General_pattern<T>::check_orthogonal_bounds(const int line, const int big_l
 	}
 
 	// if there is no upper bound
-	if (top == -1)
+	if (top == (size_t)-1)
 	{
 		// and "line" is a row
 		if (line < row_) {
