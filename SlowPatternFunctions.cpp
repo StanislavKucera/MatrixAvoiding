@@ -79,14 +79,14 @@ void Slow_pattern::test_all_subsets(int v_map, int h_map, int v_ones, int h_ones
 		for (int i = 0; i < big_matrix.getRow(); ++i)
 		{
 			if (v_map & 1)
-				rows.push_back(i);
+				rows.emplace_back(i);
 			v_map /= 2;
 		}
 
 		for (int i = 0; i < big_matrix.getCol(); ++i)
 		{
 			if (h_map & 1)
-				cols.push_back(i);
+				cols.emplace_back(i);
 			h_map /= 2;
 		}
 

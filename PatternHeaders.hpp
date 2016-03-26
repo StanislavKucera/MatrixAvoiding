@@ -17,6 +17,7 @@ public:
 	virtual ~Pattern() {}
 	virtual bool avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false) = 0;
 	virtual bool revert(const Matrix<bool>& big_matrix, const int r, const int c) = 0;
+	virtual bool lazy_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false) = 0;
 	virtual bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic<bool>& force_end = false) = 0;
 	virtual bool parallel_revert(const Matrix<bool>& big_matrix, const int r, const int c, const int threads_count) = 0;
 	virtual std::vector<int> get_order() const = 0;
@@ -34,7 +35,7 @@ public:
 		for (int i = 0; i < pattern.getRow(); ++i)
 			for (int j = 0; j < pattern.getCol(); ++j)
 				if (pattern.at(i, j) == 1)
-					one_entries_.push_back(std::make_pair(i, j));
+					one_entries_.emplace_back(i, j);
 	}
 
 	bool avoid(const Matrix<bool>& big_matrix, const int /* r */, const int /* c */, std::vector<Counter>& /* sizes */, const std::atomic<bool>& force_end = 0)
@@ -49,6 +50,7 @@ public:
 		return true;
 	}
 	bool revert(const Matrix<bool>& /* big_matrix */, const int /* r */, const int /* c */) { return true; }
+	bool lazy_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false) { return avoid(big_matrix, r, c, sizes, force_end); }
 	bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic<bool>& force_end = 0);
 	bool parallel_revert(const Matrix<bool>& /* big_matrix */, const int /* r */, const int /* c */, const int /* threads_count */) { return true; }
 	std::vector<int> get_order() const { return std::vector<int>(); }
@@ -94,6 +96,7 @@ public:
 	/// <param name="sizes">Vector of numbers of found mappings on each level.</param>
 	bool avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false);
 	bool revert(const Matrix<bool>& /* big_matrix */, const int /* r */, const int /* c */) { return true; }
+	bool lazy_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false) { return avoid(big_matrix, r, c, sizes, force_end); }
 	bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic<bool>& force_end = false);
 	bool parallel_revert(const Matrix<bool>& /* big_matrix */, const int /* r */, const int /* c */, const int /* threads_count */) { return true; }
 	std::vector<int> get_order() const { return order_; }
@@ -318,7 +321,8 @@ public:
 	/// <param name="sizes">Vector of numbers of found mappings on each level.</param>
 	bool avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false);	
 	// reverts changes in max_walk_part matrix after an unsuccessful change of the big matrix
-	bool revert(const Matrix<bool>& /* big_matrix */, const int r, const int c) { changes_.emplace_back(std::make_pair(r, c)); return true; }
+	bool revert(const Matrix<bool>& big_matrix, const int r, const int c) { std::vector<Counter> sizes; return avoid(big_matrix, r, c, sizes); }
+	bool lazy_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false);
 	bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic<bool>& force_end = false);
 	bool parallel_revert(const Matrix<bool>& big_matrix, const int r, const int c, const int threads_count)
 	{ 
@@ -333,10 +337,9 @@ private:
 	Matrix<std::pair<int, int> > max_walk_part_;	// table of calculated [c_v,c_h] for all elements
 	
 	// indexed by index of v_i, the element of the walk, gives the direction of the next element (0 for vertical)
-	std::vector<bool> direction_;
+	std::vector<char> direction_;
 	// indexed by index of v_i, the element of the walk, gives the value of v_i.
 	std::vector<int> value_;
-	std::vector<std::pair<int, int> > changes_;
 	bool top_left;
 	int size_;
 };
@@ -348,7 +351,7 @@ public:
 	Patterns(const Patterns& copy) : big_matrix_(copy.big_matrix_), changed_(-1)
 	{
 		for (auto& pattern : copy.patterns_)
-			patterns_.push_back(pattern->get_new_instance());
+			patterns_.emplace_back(pattern->get_new_instance());
 	}
 	~Patterns()
 	{
@@ -364,9 +367,11 @@ public:
 
 	bool avoid(const int r, const int c, std::vector<std::vector<Counter> >& sizes, const std::atomic<bool>& forced_end);
 	bool revert(const int r, const int c);// , const Matrix<bool>& mat);
+	bool lazy_avoid(const int r, const int c, std::vector<std::vector<Counter> >& sizes, const std::atomic<bool>& forced_end);
+	bool lazy_revert(const int r, const int c) { big_matrix_.flip(r, c); return true; }
 	bool check_matrix(const Matrix<bool>& mat);
 
-	void add(Pattern* pattern) { patterns_.push_back(pattern); }
+	void add(Pattern* pattern) { patterns_.emplace_back(pattern); }
 	void set_matrix(const Matrix<bool>& big_matrix) { big_matrix_ = big_matrix; }
 	void construct_threads(const Matrix<bool>& big_matrix);
 	void destruct_threads();

@@ -24,7 +24,8 @@ enum Parallel_mode { SERIAL, MCMC, MCMC2, MAP };
 // hash function for a vector of size_t
 class int_vector_hasher {
 public:
-	int operator()(const std::vector<int>& vec) const {
+	int operator()(const std::vector<int>& vec) const
+	{
 		int seed = 0;
 
 		for (auto& i : vec)
@@ -84,21 +85,21 @@ template<>
 inline void Container<std::vector<std::vector<int> > >::init()
 {
 	container_.clear();
-	container_.push_back(std::vector<int>(0));
+	container_.emplace_back(0);
 }
 
 template<>
 inline void Container<std::set<std::vector<int> > >::init()
 {
 	container_.clear();
-	container_.emplace(std::vector<int>(0));
+	container_.emplace(0);
 }
 
 template<>
 inline void Container<std::unordered_set<std::vector<int>, int_vector_hasher> >::init()
 {
 	container_.clear();
-	container_.emplace(std::vector<int>(0));
+	container_.emplace(0);
 }
 
 template<>
@@ -113,7 +114,7 @@ inline void Container<std::vector<std::vector<int> > >::insert_without_duplicate
 	}
 
 	// if extended is not yet an element, add it to the tree
-	container_.push_back(std::move(mapping));
+	container_.emplace_back(std::move(mapping));
 }
 
 template<>
@@ -144,7 +145,7 @@ inline void Container<std::vector<std::vector<int> > >::parallel_insert_without_
 	}
 
 	// if extended is not yet an element, add it to the tree
-	container_.push_back(std::move(mapping));
+	container_.emplace_back(std::move(mapping));
 
 	write_.unlock();
 }

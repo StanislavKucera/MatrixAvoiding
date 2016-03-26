@@ -112,16 +112,16 @@ public:
 
         if (success_sizes.size() <= index)
         {
-            success_sizes.push_back(std::vector<std::vector<Counter> >());
-			fail_sizes.push_back(std::vector<std::vector<Counter> >());
-			max_success_sizes.push_back(std::vector<std::vector<Counter> >());
-			max_fail_sizes.push_back(std::vector<std::vector<Counter> >());
-			success_counter.push_back(0);
-			success_levels.push_back(0);
-			success_time.push_back(0);
-			fail_counter.push_back(0);
-			fail_levels.push_back(0);
-			fail_time.push_back(0);
+            success_sizes.emplace_back();
+			fail_sizes.emplace_back();
+			max_success_sizes.emplace_back();
+			max_fail_sizes.emplace_back();
+			success_counter.emplace_back(0);
+			success_levels.emplace_back(0);
+			success_time.emplace_back(0);
+			fail_counter.emplace_back(0);
+			fail_levels.emplace_back(0);
+			fail_time.emplace_back(0);
         }
 
 		if (success_sizes[index].size() < sizes.size())
@@ -191,7 +191,7 @@ public:
 			}
 		}
 	}
-	void set_order(std::vector<std::vector<int> >&& o) { orders = std::move(o); }
+	void set_order(std::vector<std::vector<int> >&& o, bool parallel = false) { orders = std::move(o); parallel_ = parallel; }
 	void print_data(std::ostream& output) const
 	{
 		output << "Used orders:\n";
@@ -206,6 +206,9 @@ public:
 
 			output << "\n";
 		}
+
+		if (parallel_)
+			return;
 
 		output << "\nSuccessful calls of avoid (matrix avoids the pattern):\n";
 
@@ -301,6 +304,9 @@ public:
 
 			output << "\n";
 		}
+
+		if (parallel_)
+			return;
 
 		output << "Success\n";
 		output << "from;to;time;count;ratio;average call time;average lines mapped;line number;average map calls;average maps found;average unique maps;max map calls;max maps found;max unique maps";
@@ -406,6 +412,7 @@ private:
 						fail_levels;
 	const int	mod,
 				iter;
+	bool parallel_;
 };
 
 #endif

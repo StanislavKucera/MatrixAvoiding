@@ -109,7 +109,7 @@ bool Patterns::avoid(const int r, const int c, std::vector<std::vector<Counter> 
 	}
 
 	//std::cout << "Avoid [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " (" << forced_end << ")success" << std::endl;
-	//changes.push_back(std::make_pair(r, c));
+	//changes.emplace_back(r, c);
 	return true;
 }
 
@@ -117,7 +117,7 @@ bool Patterns::revert(const int r, const int c)//, const Matrix<bool>& mat)
 {
 	// flip the bit back
 	big_matrix_.flip(r, c);
-	//changes.push_back(std::make_pair(r, c));
+	//changes.emplace_back(r, c);
 	//std::cout << "Revert [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " ()success" << std::endl;
 
 	//std::vector<Counter> sizes;
@@ -133,6 +133,29 @@ bool Patterns::revert(const int r, const int c)//, const Matrix<bool>& mat)
 		}
 	}
 
+	return true;
+}
+
+bool Patterns::lazy_avoid(const int r, const int c, std::vector<std::vector<Counter> >& sizes, const std::atomic<bool>& forced_end)
+{
+	big_matrix_.flip(r, c);
+	sizes.resize(patterns_.size());
+
+	for (size_t index = 0; index < patterns_.size(); ++index)
+	{
+		// forcing abort from outside or the matrix doesn't avoid the pattern
+		if (forced_end || !patterns_[index]->lazy_avoid(big_matrix_, r, c, sizes[index], forced_end))
+		{
+			// flip the bit back (= do lazy_revert)
+			big_matrix_.flip(r, c);
+			//std::cout << "Avoid [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " (" << forced_end << ")fail" << std::endl;
+			
+			return false;
+		}
+	}
+
+	//std::cout << "Avoid [" << r << "," << c << "] = " << big_matrix_.at(r, c) << " (" << forced_end << ")success" << std::endl;
+	//changes.emplace_back(r, c);
 	return true;
 }
 

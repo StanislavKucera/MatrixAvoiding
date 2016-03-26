@@ -85,6 +85,8 @@ General_pattern<T>::General_pattern(const Matrix<bool>& pattern, const int threa
 		break;
 	}
 
+	order_.resize(steps_);
+
 	// finding mapped lines I need to remember after each line mapping
 	find_what_to_remember();
 	find_parralel_bound_indices();
@@ -144,7 +146,7 @@ bool General_pattern<T>::avoid(const Matrix<bool>& big_matrix, const int r, cons
 					// I have mapped the last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
 					if (level_ == steps_ - 1) {
 						counter.uniques = building_tree_[(level_ + 1) % 2].size();
-						sizes.push_back(counter);
+						sizes.emplace_back(counter);
 						return false;
 					}
 
@@ -155,7 +157,7 @@ bool General_pattern<T>::avoid(const Matrix<bool>& big_matrix, const int r, cons
 		}
 
 		counter.uniques = building_tree_[(level_ + 1) % 2].size();
-		sizes.push_back(counter);
+		sizes.emplace_back(counter);
 	}
 
 	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
@@ -214,7 +216,7 @@ void General_pattern<T>::worker(const int index, const Matrix<bool>& big_matrix)
 
 			// and add it to the queue
 			mutexes_[index].lock();
-			qs_[index].push(std::move(extended));
+			qs_[index].emplace(std::move(extended));
 			mutexes_[index].unlock();
 
 			// before waiting I notify the main thread - to let it know something was mapped
@@ -358,7 +360,7 @@ bool General_pattern<T>::parallel_avoid(const Matrix<bool>& big_matrix, const in
 			// I found atleast one mapping of the last line -> the matrix contains the pattern
 			if (level_ == steps_ - 1 && extended) {
 				counter.uniques = 1;
-				sizes.push_back(counter);
+				sizes.emplace_back(counter);
 
 				return false;
 			}
@@ -372,7 +374,7 @@ bool General_pattern<T>::parallel_avoid(const Matrix<bool>& big_matrix, const in
 					// I found a mapping of the last line
 					if (level_ == steps_ - 1) {
 						counter.uniques = 1;
-						sizes.push_back(counter);
+						sizes.emplace_back(counter);
 
 						return false;
 					}
@@ -387,7 +389,7 @@ bool General_pattern<T>::parallel_avoid(const Matrix<bool>& big_matrix, const in
 		}
 
 		counter.uniques = building_tree_[(level_ + 1) % 2].size();
-		sizes.push_back(counter);
+		sizes.emplace_back(counter);
 	}
 
 	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
@@ -427,7 +429,7 @@ void General_pattern<T>::find_SUM_order()
 {
 	// queue for subsets of lines
 	std::queue<int> q;
-	q.push(0);
+	q.emplace(0);
 
 	// vector of distances for each subset of all lines indices - distance is a number of mapped lines I need to remember throughout the whole algorithm
 	std::vector<int> distances(1 << (row_ + col_), INT_MAX);
@@ -460,7 +462,7 @@ void General_pattern<T>::find_SUM_order()
 			{
 				// I haven't seen this subset yet, if I did there is not reason to add it to queue, since algorithm goes through layers of the same number of lines
 				if (back_trace[supset] == -1 && supset != position)
-					q.push(supset);
+					q.emplace(supset);
 
 				// update improved distance
 				distances[supset] = count;
@@ -482,7 +484,7 @@ void General_pattern<T>::find_MAX_order()
 {
 	// queue for subsets of lines
 	std::queue<int> q;
-	q.push(0);
+	q.emplace(0);
 
 	// vector of distances for each subset of all lines indices - distance is a number of mapped lines I need to remember throughout the whole algorithm
 	std::vector<std::pair<int, int> > distances(1 << (row_ + col_), std::make_pair(INT_MAX, 0));
@@ -523,7 +525,7 @@ void General_pattern<T>::find_MAX_order()
 			{
 				// I haven't seen this subset yet, if I did there is not reason to add it to queue, since algorithm goes through layers of the same number of lines
 				if (back_trace[supset] == -1 && supset != position)
-					q.push(supset);
+					q.emplace(supset);
 
 				// update improved distance
 				distances[supset] = count;
@@ -689,13 +691,13 @@ void General_pattern<T>::find_extending_order()
 				// and I want to remember it now as well
 				if ((what_to_remember_[i + 1] >> l) & 1)
 					// then add it to the extended vector
-					extended.push_back(index);
+					extended.emplace_back(index);
 				// if I don't need to remember it now, just increase the index to the previous mapping
 				++index;
 			}
 			// this only happens when I need to remember currenly adding line
 			else if ((what_to_remember_[i + 1] >> l) & 1)
-				extended.push_back(-1);
+				extended.emplace_back(-1);
 		}
 
 		extending_order_[i] = extended;
@@ -859,10 +861,10 @@ bool General_pattern<T>::check_orthogonal_bounds(const int line, const int big_l
 				top = parallel_bound_indices_[level_][line].first.second,	// index to the upper bound for currently added line in map vector
 				i_bot = parallel_bound_indices_[level_][line].second.first,	// index of the line of the pattern which is a upper bound of currently added line 
 				i_top = parallel_bound_indices_[level_][line].second.second;// index of the line of the pattern which is a lower bound of currently added line
-
+	return true;
 	int from, to, current;
 
-	// i have parallel boundaries of (size_t)-1 if there are not any, return correct bounds in both cases:
+	// i have parallel boundaries of -1 if there are not any, return correct bounds in both cases:
 	// if there is no lower bound
 	if (bot == -1)
 	{

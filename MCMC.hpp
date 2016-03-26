@@ -118,9 +118,6 @@ struct worker_state
 	// indicator whether the calculation is done
 	// accesed by its worker and the main thread - read and write by the worker; read and write by the main thread - thread safety by atomicity
 	std::atomic<bool> done;
-	// indicator whether the returned value was already read
-	// accesed by its worker and the main thread - write by the worker; read and write by the main thread - thread safety by atomicity
-	std::atomic<bool> ret_read;
 	// condition variable allowing the worker to wait passively when there is nothing to do
 	std::condition_variable cvs;
 	// mutex for the condition variable to prevent the situation when the worker is being woken up while it goes to sleep
@@ -138,8 +135,7 @@ void parallel_avoid(worker_state& worker_state, const std::atomic<bool>& end, st
 				worker_state.cvs.wait(lck);
 		}
 
-		worker_state.ret = worker_state.patterns.avoid(worker_state.jobs.r, worker_state.jobs.c, worker_state.sizes, worker_state.force_end);
-		worker_state.ret_read = false;
+		worker_state.ret = worker_state.patterns.lazy_avoid(worker_state.jobs.r, worker_state.jobs.c, worker_state.sizes, worker_state.force_end);
 		worker_state.done = true;
 
 		{
@@ -203,7 +199,7 @@ inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<boo
 	//std::ofstream oFile("changes.txt"), ar("avoidrevert.txt");
 
 	// to show used order in the statistics
-	//perf_stats.set_order(patterns.get_order());
+	perf_stats.set_order(patterns.get_order(), true);
 
 	// matrix statistics purposes
 	int ones = big_matrix.getOnes();
@@ -218,9 +214,8 @@ inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<boo
 
 		worker_states[i].force_end = false;
 		worker_states[i].done = false;
-		worker_states[i].ret_read = true;
 		++last_id;
-		queue[i].push_back(Task(worker_states[i].jobs, last_id, last_id + 1, false, false));
+		queue[i].emplace_back(worker_states[i].jobs, last_id, last_id + 1, false, false);
 		//ar << i << ": avoid [" << worker_states[i].jobs.r << "," << worker_states[i].jobs.c << "]" << std::endl;
 		threads[i] = std::thread(parallel_avoid, std::ref(worker_states[i]), std::ref(end), std::ref(main_job), std::ref(cv), std::ref(mtx));
 	}
@@ -231,10 +226,7 @@ inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<boo
 		//priority.clear();
 
 		//for (size_t i = 0; i < threads_count; ++i)
-		//{
-		//	priority.push(std::make_pair(std::get<0>(queue[i].front()), i));
-		//	priority.insert(std::make_pair(std::get<0>(queue[i].front()), i));
-		//}
+		//	priority.emplace(queue[i].front().id, i);
 
 		{
 			std::unique_lock<std::mutex> lck(mtx);
@@ -252,16 +244,11 @@ inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<boo
 		{
 			// there is always atleast one task in the worker queue - if not there is a bug in the implementation
 			// exception can happen right before new avoid is called, but that is not at the beginning of the main loop
-			if (queue[index].empty())
-				assert(!"Queue is empty at the beginning of a cycle");
+			assert(!queue[index].empty() || !"Queue is empty at the beginning of a cycle");
 
 			//const size_t index = prior.second;
 			//const size_t index = priority.top().second;
 			//priority.pop();
-
-			// there is only one job and it is still running
-			if (queue[index].size() == 1 && !worker_states[index].done)
-				continue;
 
 			// if this is the calculation the process is waiting for or there is nothing to revert and there wasn't synchronization running
 			if ((queue[index].front().id == current_id || !worker_states[index].force_end) && queue[index].front().id != 0)
@@ -279,12 +266,8 @@ inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<boo
 					continue;
 
 				// if there is a result of avoid call that hasn't been read yet
-				if (!worker_states[index].ret_read)
-				{
-					// ret_read is only set false after an avoid call and after the returned value is set - it always contains the right value
+				if (worker_states[index].done)
 					queue[index].back().returned = worker_states[index].ret;
-					worker_states[index].ret_read = true;
-				}
 
 				// call of the avoid succeeded
 				if (queue[index].front().returned)
@@ -325,7 +308,7 @@ inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<boo
 							// don't have to synchronize myself
 							if (j != index)
 								// and add the most recently changed position to the list
-								sync[j].emplace_back(std::make_pair(id, queue[index].front().job));
+								sync[j].emplace_back(id, queue[index].front().job);
 						}
 					}
 
@@ -378,31 +361,20 @@ inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<boo
 				continue;
 
 			// if there is a result of avoid call that hasn't been read yet
-			if (!worker_states[index].ret_read)
-			{
-				if (queue[index].empty())
-					assert("!Queue is empty while the last result wasn't read.");
-
-				// ret_read is only set false after an avoid call and after the returned value is set - it always contains the right value
+			if (!queue[index].empty())
 				queue[index].back().returned = worker_states[index].ret;
-				worker_states[index].ret_read = true;
-			}
 
 			// reverting changes of the matrix that wouldn't happen in the serial case
 			if (worker_states[index].force_end)
 			{
 				// no job needs to be reverted (I shouldn't be in a force_end state)
-				if ((queue[index].back().id > 0 && queue[index].back().id <= reverting[index]) || (queue[index].back().id < 0 && -queue[index].back().id <= reverting[index]) || reverting[index] == 0)
-					assert(!"The thread is in a forced_end state while having no incorrect calculations.");
-
-				// even if this happens I won't influence the calculation but it still shouldn't happen
-				if (!worker_states[index].ret_read)
-					assert(!"Somehow didn't notice the returned value of a previous avoid call.");
+				assert((((queue[index].back().id > 0 && queue[index].back().id > reverting[index]) || (queue[index].back().id < 0 && -queue[index].back().id > reverting[index])) && reverting[index] != 0) ||
+					!"The thread is in a forced_end state while having no incorrect calculations.");
 
 				while (!queue[index].empty() && (queue[index].back().id > reverting[index] || -queue[index].back().id > reverting[index]))
 				{
 					if (queue[index].back().returned)
-						worker_states[index].patterns.revert(queue[index].back().job.r, queue[index].back().job.c);
+						worker_states[index].patterns.lazy_revert(queue[index].back().job.r, queue[index].back().job.c);
 
 					queue[index].pop_back();
 				}
@@ -415,36 +387,27 @@ inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<boo
 
 			if (!sync[index].empty())
 			{
-				// even if this happens I won't influence the calculation but it still shouldn't happen
-				if (!worker_states[index].ret_read)
-					assert(!"Somehow didn't notice the returned value of a previous avoid call.");
-
 				for (const auto& s : sync[index])
 				{
-					worker_states[index].patterns.revert(s.second.r, s.second.c);
+					worker_states[index].patterns.lazy_revert(s.second.r, s.second.c);
 
 					// if the result isn't certain to be in the generated matrix I put the calculation (with negative id) to the end of the queue so it can still be reverted if needed
 					if (s.first > current_id)
-						queue[index].push_back(Task(worker_states[index].jobs, -s.first, 0, true, true));
+						queue[index].emplace_back(s.second, -s.first, 0, true, true);
 				}
 
 				sync[index].clear();
 			}
 
 			// I somehow skipped reverting and I am going to create a completely new avoid task
-			if (worker_states[index].force_end || reverting[index] != 0)
-				assert(!"The thread is in a forced_end state while calling a new avoid.");
-
-			// the result of the last avoid call wasn't read and I'm going to call another one
-			if (!worker_states[index].ret_read)
-				assert(!"Somehow didn't notice the returned value of a previous avoid call.");
+			assert((!worker_states[index].force_end && reverting[index] == 0) || !"The thread is in a forced_end state while calling a new avoid.");
 
 			worker_states[index].jobs.r = uni(rng);
 			worker_states[index].jobs.c = uni(rng);
 			worker_states[index].jobs.avoid = true;
 			++last_id;
-			queue[index].push_back(Task(worker_states[index].jobs, last_id, last_id + 1, false, false));
-			//ar << index << ": avoid [" << jobs[index].r << "," << jobs[index].c << "] - " << last_id << std::endl;
+			queue[index].emplace_back(worker_states[index].jobs, last_id, last_id + 1, false, false);
+			//ar << index << ": avoid [" << worker_states[index].jobs.r << "," << worker_states[index].jobs.c << "] - " << last_id << " (" << current_id << ")" << std::endl;
 
 			{
 				std::unique_lock<std::mutex> lck(worker_states[index].mtxs);
@@ -519,7 +482,7 @@ inline void get_sync(std::deque<std::pair<int, Job> >& sync, std::queue<std::pai
 		while (!sync.empty() && sync.back().first > job.first)
 			sync.pop_back();
 
-		sync.push_back(job);
+		sync.emplace_back(job);
 	}
 }
 
@@ -699,7 +662,7 @@ void parallel_avoid2(const int my_index, Patterns patterns, Matrix<bool>& big_ma
 
 			// the synchronization is not certain to be taken to the big matrix - I add it to tasks done so it can be reverted later if needed
 			if (job.first > current_id)
-				queue.push_back(Task(job.second, -job.first, 0, true, true));
+				queue.emplace_back(job.second, -job.first, 0, true, true);
 		}
 		
 		// check the first job result if its the one the process is waiting for
@@ -731,7 +694,7 @@ void parallel_avoid2(const int my_index, Patterns patterns, Matrix<bool>& big_ma
 		}
 
 		// add the new task to the list
-		queue.push_back(Task(new_job, my_id, my_id + 1, false, false));
+		queue.emplace_back(new_job, my_id, my_id + 1, false, false);
 		last_job_id[my_index] = my_id;
 		queue.back().returned = patterns.avoid(new_job.r, new_job.c, sizes, forced_ends[my_index]);
 		ar << my_index << ": avoid [" << new_job.r << "," << new_job.c << "] : " << queue.back().returned << " - " << my_id << " - " << current_id << std::endl;
@@ -770,7 +733,7 @@ void parallel_avoid2(const int my_index, Patterns patterns, Matrix<bool>& big_ma
 					std::unique_lock<std::mutex> lck(syncs_mutexes[j]);
 					// synchronize the worker
 					synchronize[j] = true;
-					syncs[j].push(std::make_pair(my_id, new_job));
+					syncs[j].emplace(my_id, new_job);
 				}
 
 				{
