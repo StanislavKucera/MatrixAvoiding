@@ -20,7 +20,7 @@
 
 struct Pattern_info
 {
-	Pattern_info() : pattern_file(""), init_matrix_file("default"), custom_order_file(""), type(GENERAL), map(SUPERACTIVE), map_container(HASH), order(AUTO) {}
+	Pattern_info() : pattern_file(""), init_matrix_file("default"), custom_order_file(""), type(GENERAL), map(5), map_container(HASH), order(AUTO) {}
 
 	std::string pattern_file, init_matrix_file, custom_order_file;
 	Type type;
@@ -46,20 +46,20 @@ inline Type get_type(const std::string& type)
 inline Map get_map(const std::string& map)
 {
 	if (map == "5" || map == "super active" || map == "super_active" || map == "superactive")
-		return SUPERACTIVE;
+		return Map(5);
 	else if(map == "4" || map == "active")
-		return ACTIVE;
+		return Map(4);
 	else if (map == "3" || map == "semi active" || map == "semi_active" || map == "semiactive")
-		return SEMIACTIVE;
+		return Map(3);
 	else if (map == "2" || map == "semi lazy" || map == "semi_lazy" || map == "semilazy")
-		return SEMILAZY;
+		return Map(2);
 	else if (map == "1" || map == "lazy")
-		return ACTIVE;
+		return Map(1);
 	else if (map == "0" || map == "super lazy" || map == "super_lazy" || map == "superlazy")
-		return SEMIACTIVE;
+		return Map(0);
 	else {
 		std::cerr << "Mapping approach \"" << map << "\" not supported. Choose SUPERACTIVE, ACTIVE, SEMIACTIVE, SEMILAZY, LAZY or SUPERLAZY." << std::endl;
-		return SUPERACTIVE;
+		return Map(5);
 	}
 }
 
@@ -401,6 +401,12 @@ std::vector<Pattern_info> parse_config(std::istream& config, int& N, int& iter, 
 			pattern.type = get_type(value);
 		else if (var == "map_approach" || var == "approach")
 			pattern.map = get_map(value);
+		else if (var == "one_entries" || var == "map_one_entries")
+			pattern.map.enough_entries = get_bool(value);
+		else if (var == "recursion" || var == "map_recursion")
+			pattern.map.recursion = get_bool(value);
+		else if (var == "orthogonal_bounds" || var == "map_orthogonal_bounds")
+			pattern.map.orthogonal_bounds = get_bool(value);
 		else if (var == "map_container" || var == "container")
 			pattern.map_container = get_map_container(value);
 		else if (var == "line_order" || var == "order")

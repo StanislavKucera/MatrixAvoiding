@@ -12,7 +12,9 @@ pattern_type = walking
 [pattern]
 pattern_file = pattern/input.txt
 pattern_type = general
-map_approach = super active
+map_one_entries = yes
+map_recursion = yes
+map_orthogonal_bounds = no
 map_container = hash
 line_order = max
 

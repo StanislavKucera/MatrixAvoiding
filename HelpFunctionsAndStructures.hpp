@@ -15,7 +15,45 @@ enum Type { GENERAL, WALKING, SLOW };
 // Enum for the line ordering functions
 enum Order { DESC, SUM, MAX, AUTO, CUSTOM };
 
-enum Map { SUPERLAZY, LAZY, SEMILAZY, SEMIACTIVE, ACTIVE, SUPERACTIVE };
+struct Map 
+{ 
+	Map() : enough_entries(true), recursion(true), orthogonal_bounds(true) {}
+	Map(const int map)
+	{
+		switch (map)
+		{
+		case 0:
+			enough_entries = recursion = orthogonal_bounds = false;
+			break;
+		case 1:
+			enough_entries = true;
+			recursion = orthogonal_bounds = false;
+			break;
+		case 2:
+			orthogonal_bounds = true;
+			enough_entries = recursion = false;
+			break;
+		case 3:
+			enough_entries = orthogonal_bounds = true;
+			recursion = false;
+			break;
+		case 4:
+			enough_entries = recursion = true;
+			orthogonal_bounds = false;
+			break;
+		case 5:
+			enough_entries = recursion = orthogonal_bounds = true;
+			break;
+		default:
+			enough_entries = recursion = orthogonal_bounds = true;
+			break;
+		}
+	}
+
+	bool enough_entries,
+		recursion,
+		orthogonal_bounds;
+};
 
 enum Map_container { VECTOR, SET, HASH };
 
@@ -65,6 +103,8 @@ public:
 	/// Takes time depending on the container T.
 	/// </summary>
 	void insert_without_duplicates(std::vector<int>&& mapping);
+	void insert_without_duplicates(const std::vector<int>& mapping);
+	void insert_without_duplicates(const Container<T>& mappings);
 
 	void parallel_insert_without_duplicates(std::vector<int>&& mapping);
 
@@ -73,8 +113,10 @@ public:
 	bool empty() const				{ return container_.empty(); }
 
 	iterator begin()				{ return container_.begin(); }
+	const_iterator begin() const	{ return container_.cbegin(); }
 	const_iterator cbegin() const	{ return container_.cbegin(); }
 	iterator end()					{ return container_.end(); }
+	const_iterator end() const		{ return container_.cend(); }
 	const_iterator cend() const		{ return container_.cend(); }
 private:
 	T container_;
@@ -118,6 +160,39 @@ inline void Container<std::vector<std::vector<int> > >::insert_without_duplicate
 }
 
 template<>
+inline void Container<std::vector<std::vector<int> > >::insert_without_duplicates(const std::vector<int>& mapping)
+{
+	// go through all already found mappings in (i+1)-th step and check if extended is not already in there
+	for (auto& mapping2 : container_)
+	{
+		// extended has already been added (atleast its different class) - I won't add it for the second time
+		if (mapping == mapping2)
+			return;
+	}
+
+	// if extended is not yet an element, add it to the tree
+	container_.emplace_back(mapping);
+}
+
+template<>
+inline void Container<std::vector<std::vector<int> > >::insert_without_duplicates(const Container<std::vector<std::vector<int> > >& mappings)
+{
+	for (const std::vector<int>& mapping : mappings)
+	{
+		// go through all already found mappings in (i+1)-th step and check if extended is not already in there
+		for (const auto& mapping2 : container_)
+		{
+			// extended has already been added (atleast its different class) - I won't add it for the second time
+			if (mapping == mapping2)
+				return;
+		}
+
+		// if extended is not yet an element, add it to the tree
+		container_.emplace_back(mapping);
+	}
+}
+
+template<>
 inline void Container<std::set<std::vector<int> > >::insert_without_duplicates(std::vector<int>&& mapping)
 {
 	// duplicates are dealt with automagically
@@ -125,10 +200,38 @@ inline void Container<std::set<std::vector<int> > >::insert_without_duplicates(s
 }
 
 template<>
+inline void Container<std::set<std::vector<int> > >::insert_without_duplicates(const std::vector<int>& mapping)
+{
+	// duplicates are dealt with automagically
+	container_.emplace(mapping);
+}
+
+template<>
+inline void Container<std::set<std::vector<int> > >::insert_without_duplicates(const Container<std::set<std::vector<int> > >& mappings)
+{
+	// duplicates are dealt with automagically
+	container_.insert(mappings.cbegin(), mappings.cend());
+}
+
+template<>
 inline void Container<std::unordered_set<std::vector<int>, int_vector_hasher> >::insert_without_duplicates(std::vector<int>&& mapping)
 {
 	// duplicates are dealt with automagically
 	container_.emplace(mapping);
+}
+
+template<>
+inline void Container<std::unordered_set<std::vector<int>, int_vector_hasher> >::insert_without_duplicates(const std::vector<int>& mapping)
+{
+	// duplicates are dealt with automagically
+	container_.emplace(mapping);
+}
+
+template<>
+inline void Container<std::unordered_set<std::vector<int>, int_vector_hasher> >::insert_without_duplicates(const Container<std::unordered_set<std::vector<int>, int_vector_hasher> >& mappings)
+{
+	// duplicates are dealt with automagically
+	container_.insert(mappings.cbegin(), mappings.cend());
 }
 
 template<>
@@ -153,19 +256,15 @@ inline void Container<std::vector<std::vector<int> > >::parallel_insert_without_
 template<>
 inline void Container<std::set<std::vector<int> > >::parallel_insert_without_duplicates(std::vector<int>&& mapping)
 {
-	write_.lock();
-	// duplicates are dealt with automagically
+	std::unique_lock<std::mutex> lck(write_);
 	container_.emplace(mapping);
-	write_.unlock();
 }
 
 template<>
 inline void Container<std::unordered_set<std::vector<int>, int_vector_hasher> >::parallel_insert_without_duplicates(std::vector<int>&& mapping)
 {
-	write_.lock();
-	// duplicates are dealt with automagically
+	std::unique_lock<std::mutex> lck(write_);
 	container_.emplace(mapping);
-	write_.unlock();
 }
 
 struct Counter

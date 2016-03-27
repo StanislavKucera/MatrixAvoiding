@@ -78,7 +78,7 @@ public:
 	/// <param name="order">Enum determining which function will be used for line ordering.</param>
 	/// <param name="map">Enum determining what conditions will map function check.</param>
 	/// <param name="custom_order">Order of lines given by user in case order is set to CUSTOM.</param>
-	General_pattern(const Matrix<bool>& pattern, const int threads_count, const Order order = DESC, const Map map_approach = SUPERACTIVE,  std::vector<int>&& custom_order = std::vector<int>());
+	General_pattern(const Matrix<bool>& pattern, const int threads_count, const Order order, const Map map_approach,  std::vector<int>&& custom_order = std::vector<int>());
 	General_pattern(const General_pattern<T>& copy) : row_(copy.row_), col_(copy.col_), lines_(copy.lines_), order_(copy.order_), what_to_remember_(copy.what_to_remember_),
 		parallel_bound_indices_(copy.parallel_bound_indices_), extending_order_(copy.extending_order_), map_index_(copy.map_index_), building_tree_(2), steps_(copy.steps_),
 		empty_lines_(copy.empty_lines_), map_approach_(copy.map_approach_) {}
@@ -104,7 +104,10 @@ public:
 	void construct_threads(const Matrix<bool>& big_matrix)
 	{
 		for (int index = 0; index < (int)threads_.size(); ++index)
+		{
+			sleeps_[index] = true;
 			threads_[index] = std::thread(&General_pattern::worker, this, index, std::ref(big_matrix));
+		}
 	}
 	void destruct_threads()
 	{
@@ -275,7 +278,7 @@ private:
 	std::vector<std::mutex> mtxs_;
 	// indicator whether a thread waits for its condition variable or is computing something
 	// accessed by exactly two threads - write by its worker; read by the main thread - mutex not needed because of atomicity
-	std::vector<std::atomic<bool>> sleeps_;
+	std::vector<std::atomic<bool> > sleeps_;
 	// condition variable for the main thread - if workers calculate new mappings and none of them is done yet, the main threads waits
 	// accessed by all the threads - notify_one by all workers; wait by the main thread
 	std::condition_variable cv_;
@@ -297,6 +300,11 @@ private:
 	std::atomic<bool> end_;
 	// indicator that there is some work for the main thread and it wasn't just woke up randomly
 	std::atomic<bool> something_is_mapped_or_done_;
+	std::vector<typename T::const_pointer> mapping_ptrs_;
+	std::vector<std::atomic<bool> > force_ends_;
+	std::vector<Container<T> > mapping_containers_;
+	int r_,
+		c_;
 
 	void worker(const int index, const Matrix<bool>& big_matrix);
 };

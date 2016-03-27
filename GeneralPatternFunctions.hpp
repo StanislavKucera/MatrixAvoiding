@@ -27,7 +27,10 @@ General_pattern<T>::General_pattern(const Matrix<bool>& pattern, const int threa
 	mtxs_(threads_count),
 	sleeps_(threads_count),
 	done_(true),
-	end_(false)
+	end_(false),
+	mapping_ptrs_(threads_count),
+	force_ends_(threads_count),
+	mapping_containers_(threads_count)
 {
 	for (int i = 0; i < row_; ++i)
 	{
@@ -139,7 +142,7 @@ bool General_pattern<T>::avoid(const Matrix<bool>& big_matrix, const int r, cons
 				++counter.tries;
 
 				// if currenly added line can be mapped to big_line in mapping map
-				if (map(map_approach_ > LAZY, order_[level_], big_line, mapping, big_matrix))
+				if (map(map_approach_.enough_entries, order_[level_], big_line, mapping, big_matrix))
 				{
 					++counter.maps;
 
@@ -160,13 +163,13 @@ bool General_pattern<T>::avoid(const Matrix<bool>& big_matrix, const int r, cons
 		sizes.emplace_back(counter);
 	}
 
-	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
-	return true;
+	// after the last important line is mapped, I find a mapping of the whole pattern - matrix doesn't avoids the pattern
+	return false;
 }
 
-template<typename T>
-void General_pattern<T>::worker(const int index, const Matrix<bool>& big_matrix)
-{
+//template<typename T>
+//void General_pattern<T>::worker(const int index, const Matrix<bool>& big_matrix)
+/*{
 	// the loop end (and the thread dies) at the end of MCMCgenerator
 	while (!end_)
 	{
@@ -205,7 +208,7 @@ void General_pattern<T>::worker(const int index, const Matrix<bool>& big_matrix)
 		}
 
 		// compute whether the currenly mapped line can be mapped to big_line and extend the mapping (mapping_ptr)
-		if (map(map_approach_ > LAZY, order_[level_], big_line, *mapping_ptr_, big_matrix))
+		if (map(map_approach_.enough_entries, order_[level_], big_line, *mapping_ptr_, big_matrix))
 		{
 			// I have mapped last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
 			if (level_ == steps_ - 1)
@@ -228,11 +231,80 @@ void General_pattern<T>::worker(const int index, const Matrix<bool>& big_matrix)
 			}
 		}
 	}
-}
+}*/
 
 template<typename T>
-bool General_pattern<T>::parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic<bool>& force_end)
+void General_pattern<T>::worker(const int index, const Matrix<bool>& big_matrix)
 {
+	int from, to;
+	const int big_matrix_rows = big_matrix.getRow(),
+		big_matrix_cols = big_matrix.getCol();
+	std::vector<int> extended;
+
+	// the loop end (and the thread dies) at the end of MCMCgenerator
+	while (!end_)
+	{
+		{
+			// the mutex to not allow waiting when the condition variable is being notified. This situation won't happen but this syntax is "best practice"
+			std::unique_lock<std::mutex> lck(mtxs_[index]);
+
+			// the last mapping of current level is being computed or was computed and MCMCgenerator doesn't end 
+			while (sleeps_[index] && !end_)
+				cvs_[index].wait(lck);
+		}
+
+		// the function is forced to end from outside
+		if (!force_ends_[index] && !end_)
+		{
+			// find boundaries of added line:
+			find_parallel_bounds(order_[level_], *mapping_ptrs_[index], big_matrix_rows, big_matrix_cols, from, to, r_, c_);
+
+			// map orders_[level_] to j-th line of N if possible
+			for (int big_line = from; big_line < to; ++big_line)
+			{
+				// the function is forced to end from outside
+				if (force_ends_[index] || end_)
+					break;
+
+				// if currenly added line can be mapped to big_line in mapping map
+				if (map(map_approach_.enough_entries, order_[level_], big_line, *mapping_ptrs_[index], big_matrix))
+				{/*
+					if (index == 0)
+						building_tree_[(level_ + 1) % 2].insert_without_duplicates(extend(big_line, *mapping_ptrs_[index]));
+					else
+						// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line, and add it to the building_tree_
+						mapping_containers_[index].insert_without_duplicates(extend(big_line, *mapping_ptrs_[index]));
+					*/
+					extended = extend(big_line, *mapping_ptrs_[index]);
+					building_tree_[(level_ + 1) % 2].parallel_insert_without_duplicates(std::move(extended));
+
+					// I have mapped the last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
+					if (level_ == steps_ - 1)
+					{
+						for (size_t i = 0; i < force_ends_.size(); ++i)
+							force_ends_[i] = true;
+
+						break;
+					}
+				}
+			}
+		}		
+
+		// indicator that the thread sleeps
+		sleeps_[index] = true;
+
+		{
+			// to prevent the situation main thread falls asleep right after I notify it
+			std::unique_lock<std::mutex> lck2(mtx_);
+			something_is_mapped_or_done_ = true;
+			cv_.notify_one();
+		}
+	}
+}
+
+//template<typename T>
+//bool General_pattern<T>::parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic<bool>& force_end)
+/*{
 	// There was a change from one-entry to zero-entry
 	if (r != -1 && c != -1 && !big_matrix.at(r, c))
 		return true;
@@ -394,6 +466,122 @@ bool General_pattern<T>::parallel_avoid(const Matrix<bool>& big_matrix, const in
 
 	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
 	return true;
+}
+*/
+template<typename T>
+bool General_pattern<T>::parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const int threads_count, const std::atomic<bool>& force_end)
+{
+	// There was a change from one-entry to zero-entry
+	if (r != -1 && c != -1 && !big_matrix.at(r, c))
+		return true;
+
+	r_ = r;
+	c_ = c;
+
+	// I start with empty mapping - no lines are mapped
+	building_tree_[0].init();
+	int index;
+	//bool mapped = false;
+	bool done = false;
+
+	// main loop through added lines (loops 2*k times)
+	for (level_ = 0; level_ < steps_; ++level_)
+	{
+		// the function is forced to end from outside
+		if (force_end)
+			return false;
+
+		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
+		if (building_tree_[level_ % 2].size() == 0)
+			return true;
+
+		building_tree_[(level_ + 1) % 2].clear();
+		something_is_mapped_or_done_ = false;
+		done = false;
+		index = 0;
+
+		// loop through the mappings found in the last iteration
+		for (const std::vector<int>& mapping : building_tree_[level_ % 2])
+		{
+			if (index < threads_count - 1)
+			{
+				mapping_ptrs_[index] = &mapping;
+				sleeps_[index] = false;
+				force_ends_[index] = false;
+				{
+					std::unique_lock<std::mutex> lck(mtxs_[index]);
+					cvs_[index].notify_one();
+				}
+				++index;
+				continue;
+			}
+
+			{
+				// this mutex is here to prevent the case when the process starts waiting without noticing it was just notified
+				std::unique_lock<std::mutex> lck(mtx_);
+
+				// nothing new mapped and something is still running
+				while (!something_is_mapped_or_done_)
+					cv_.wait(lck);
+
+				something_is_mapped_or_done_ = false;
+			}
+
+			for (int i = 0; i < threads_count - 1 && index < building_tree_[level_ % 2].size(); ++i)
+				if (sleeps_[i])
+				{
+					mapping_ptrs_[i] = &mapping;
+					sleeps_[i] = false;
+					force_ends_[i] = false;
+					{
+						std::unique_lock<std::mutex> lck(mtxs_[i]);
+						cvs_[i].notify_one();
+					}
+
+					++index;
+					break; // need to get the next mapping
+				}
+		}
+
+		while (!done)
+		{
+			{
+				// this mutex is here to prevent the case when the process starts waiting without noticing it was just notified
+				std::unique_lock<std::mutex> lck(mtx_);
+
+				// nothing new mapped and something is still running
+				while (!something_is_mapped_or_done_) // || !sleeps_[0])
+					cv_.wait(lck);
+
+				something_is_mapped_or_done_ = false;
+			}
+
+			done = true;
+
+			for (int index = 0; index < threads_count - 1; ++index)
+			{
+				if (!sleeps_[index])
+				{
+					done = false;
+					break;
+				}
+				/*
+				if (mapping_containers_[index].empty())
+					continue;
+
+				if (level_ == steps_ - 1 && !mapping_containers_[index].empty())
+					mapped = true;
+
+				if (!mapped)
+					building_tree_[(level_ + 1) % 2].insert_without_duplicates(mapping_containers_[index]);
+
+				mapping_containers_[index].clear();*/
+			}
+		}
+	}
+
+	// after the last important line is mapped, I find out that there is no mapping of the whole pattern - matrix avoids the pattern
+	return false;
 }
 
 template<typename T>
@@ -1017,7 +1205,7 @@ bool General_pattern<T>::map(const bool backtrack, const int line, const int big
 					return false;
 
 				// or there is not enough one-entries on the intersected line
-				if ((map_approach_ == LAZY || map_approach_ > SEMILAZY) && !check_orthogonal_bounds(line, big_line, mapping, lines_[l],
+				if (map_approach_.orthogonal_bounds && !check_orthogonal_bounds(line, big_line, mapping, lines_[l],
 					(line_is_row ? mapping[index] - big_matrix.getRow() : mapping[index]), big_matrix))
 					return false;
 			}
@@ -1039,7 +1227,7 @@ bool General_pattern<T>::map(const bool backtrack, const int line, const int big
 						(line_is_col && big_matrix.at(last_one, big_line - big_matrix.getRow())))
 					{
 						// can l-th line be mapped to last_one?
-						if (map_approach_ == SUPERACTIVE || map(false, l_index, last_one, mapping, big_matrix))
+						if (!map_approach_.recursion || map(false, l_index, last_one, mapping, big_matrix))
 						{
 							// yes, it can
 							atleast1 = true;
@@ -1068,7 +1256,7 @@ bool General_pattern<T>::map(const bool backtrack, const int line, const int big
 						(line_is_col && big_matrix.at(last_one, big_line - big_matrix.getRow())))
 					{
 						// can l-th line be mapped to last_one?
-						if (map_approach_ == SUPERACTIVE || map(false, l_index, last_one, mapping, big_matrix))
+						if (!map_approach_.recursion || map(false, l_index, last_one, mapping, big_matrix))
 						{
 							// yes, it can
 							atleast1 = true;
