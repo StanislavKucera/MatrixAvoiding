@@ -18,6 +18,7 @@ public:
 	virtual bool avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false) = 0;
 	virtual bool revert(const Matrix<bool>& big_matrix, const int r, const int c) = 0;
 	virtual bool lazy_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false) = 0;
+	virtual bool lazy_revert(const int r, const int c) = 0;
 	virtual bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic<bool>& force_end = false) = 0;
 	virtual bool parallel_revert(const Matrix<bool>& big_matrix, const int r, const int c, const int threads_count) = 0;
 	virtual std::vector<int> get_order() const = 0;
@@ -51,6 +52,7 @@ public:
 	}
 	bool revert(const Matrix<bool>& /* big_matrix */, const int /* r */, const int /* c */) { return true; }
 	bool lazy_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false) { return avoid(big_matrix, r, c, sizes, force_end); }
+	bool lazy_revert(const int /* r */, const int /* c */) { return true; }
 	bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic<bool>& force_end = 0);
 	bool parallel_revert(const Matrix<bool>& /* big_matrix */, const int /* r */, const int /* c */, const int /* threads_count */) { return true; }
 	std::vector<int> get_order() const { return std::vector<int>(); }
@@ -97,6 +99,7 @@ public:
 	bool avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false);
 	bool revert(const Matrix<bool>& /* big_matrix */, const int /* r */, const int /* c */) { return true; }
 	bool lazy_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false) { return avoid(big_matrix, r, c, sizes, force_end); }
+	bool lazy_revert(const int /* r */, const int /* c */) { return true; }
 	bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic<bool>& force_end = false);
 	bool parallel_revert(const Matrix<bool>& /* big_matrix */, const int /* r */, const int /* c */, const int /* threads_count */) { return true; }
 	std::vector<int> get_order() const { return order_; }
@@ -302,6 +305,7 @@ private:
 	std::atomic<bool> something_is_mapped_or_done_;
 	std::vector<typename T::const_pointer> mapping_ptrs_;
 	std::vector<std::atomic<bool> > force_ends_;
+	std::vector<std::atomic<bool> > reverts_;
 	std::vector<Container<T> > mapping_containers_;
 	int r_,
 		c_;
@@ -331,9 +335,18 @@ public:
 	// reverts changes in max_walk_part matrix after an unsuccessful change of the big matrix
 	bool revert(const Matrix<bool>& big_matrix, const int r, const int c) { std::vector<Counter> sizes; return avoid(big_matrix, r, c, sizes); }
 	bool lazy_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false);
+	bool lazy_revert(const int r, const int c)
+	{
+		if (top_left)
+			ql_.emplace(r, c);
+		else
+			qr_.emplace(r, c);
+
+		return true;
+	}
 	bool parallel_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const int threads_count, const std::atomic<bool>& force_end = false);
 	bool parallel_revert(const Matrix<bool>& big_matrix, const int r, const int c, const int threads_count)
-	{ 
+	{
 		std::vector<Counter> sizes;
 		return parallel_avoid(big_matrix, r, c, sizes, threads_count);
 	}
@@ -348,6 +361,8 @@ private:
 	std::vector<char> direction_;
 	// indexed by index of v_i, the element of the walk, gives the value of v_i.
 	std::vector<int> value_;
+	std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int> >, int_pair_order_top_left> ql_;
+	std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int> >, int_pair_order_top_right> qr_;
 	bool top_left;
 	int size_;
 };
@@ -376,7 +391,7 @@ public:
 	bool avoid(const int r, const int c, std::vector<std::vector<Counter> >& sizes, const std::atomic<bool>& forced_end);
 	bool revert(const int r, const int c);// , const Matrix<bool>& mat);
 	bool lazy_avoid(const int r, const int c, std::vector<std::vector<Counter> >& sizes, const std::atomic<bool>& forced_end);
-	bool lazy_revert(const int r, const int c) { big_matrix_.flip(r, c); return true; }
+	bool lazy_revert(const int r, const int c);
 	bool check_matrix(const Matrix<bool>& mat);
 
 	void add(Pattern* pattern) { patterns_.emplace_back(pattern); }

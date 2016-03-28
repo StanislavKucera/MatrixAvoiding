@@ -261,8 +261,8 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 	return true;
 }
 
-bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int /* r */, const int /* c */, std::vector<Counter>& /* sizes */, const std::atomic<bool>& force_end)
-{
+//bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int /* r */, const int /* c */, std::vector<Counter>& /* sizes */, const std::atomic<bool>& force_end)
+/*{
 	if (top_left)
 	{
 		// all elements on the same diagonal have the same sum of their coordinates, go through diagonals
@@ -423,6 +423,147 @@ bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int /* r 
 					}
 				}
 			}
+		}
+	}
+
+	// I haven't mapped the last element of the walk - matrix avoids the pattern
+	return true;
+}*/
+
+bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const std::atomic<bool>& force_end)
+{
+	typedef std::pair<int, int> pair;
+	pair current, last = std::make_pair(-1, -1);							// [x,y] of the currently updated element
+	int old_c_v, old_c_h, c_v_v, c_h_h;	// c_v and c_h before an update, c_v of element to the top of current, c_h of element to the left
+
+	if (r == 6 && c == 8)
+	{
+		bool ahoj = big_matrix.at(6, 8);
+		bool hell = big_matrix.at(6, 9);
+		current = last;
+	}
+
+	if (top_left)
+		ql_.emplace(r, c);
+	else
+		qr_.emplace(r, c);
+
+	while (!ql_.empty() || !qr_.empty())
+	{
+		// the function is forced to end from outside
+		if (force_end)
+			return false;
+
+		if (top_left)
+		{
+			current = ql_.top();
+			ql_.pop();
+		}
+		else
+		{
+			current = qr_.top();
+			qr_.pop();
+		}
+
+		if (current == last)
+			continue;
+
+		last = current;
+
+		old_c_v = max_walk_part_.at(current).first;
+		old_c_h = max_walk_part_.at(current).second;
+
+		// element on the first row
+		if (current.first == 0)
+			c_v_v = 0;
+		else
+			c_v_v = max_walk_part_.at(current.first - 1, current.second).first;
+
+		if (top_left)
+		{
+			// element on the first column
+			if (current.second == 0)
+				c_h_h = 0;
+			else
+				c_h_h = max_walk_part_.at(current.first, current.second - 1).second;
+		}
+		else
+		{
+			// element on the last column
+			if (current.second == max_walk_part_.getCol() - 1)
+				c_h_h = 0;
+			else
+				c_h_h = max_walk_part_.at(current.first, current.second + 1).second;
+		}
+
+		// Initialization - copying those already found walks
+		max_walk_part_.at(current).first = c_v_v;
+		max_walk_part_.at(current).second = c_h_h;
+
+		// Search for longer part of the walk
+		// b == 1 or v_{c_v_v + 1} == 0
+		if (big_matrix.at(current) || !value_[c_v_v])
+		{
+			// I found the last element of the walk
+			if (c_v_v + 1 == size_)
+				return false;
+
+			// walk continues to the right/left
+			if (direction_[c_v_v])
+			{
+				if (max_walk_part_.at(current).second < c_v_v + 1)
+					max_walk_part_.at(current).second = c_v_v + 1;
+			}
+			// walk continues to the bottom
+			else
+			{
+				if (max_walk_part_.at(current).first < c_v_v + 1)
+					max_walk_part_.at(current).first = c_v_v + 1;
+			}
+		}
+
+		// N[i,j] == 1
+		if (big_matrix.at(current) || !value_[c_h_h])
+		{
+			if (c_h_h + 1 == size_)
+				return false;
+
+			if (direction_[c_h_h])
+			{
+				if (max_walk_part_.at(current).second < c_h_h + 1)
+					max_walk_part_.at(current).second = c_h_h + 1;
+			}
+			else
+			{
+				if (max_walk_part_.at(current).first < c_h_h + 1)
+					max_walk_part_.at(current).first = c_h_h + 1;
+			}
+		}		
+
+		if (top_left)
+		{
+			// c_v was changed and there is still an element below the current one
+			if (((current.first >= r && current.second >= c) || max_walk_part_.at(current).first != old_c_v) && current.first + 1 < big_matrix.getRow())
+				ql_.push(pair(current.first + 1, current.second));
+		}
+		else
+		{
+			// c_v was changed and there is still an element below the current one
+			if (((current.first >= r && current.second <= c) || max_walk_part_.at(current).first != old_c_v) && current.first + 1 < big_matrix.getRow())
+				qr_.push(pair(current.first + 1, current.second));
+		}
+
+		if (top_left)
+		{
+			// c_h was changed and there is still an element to the right
+			if (((current.first >= r && current.second >= c) || max_walk_part_.at(current).second != old_c_h) && current.second + 1 < big_matrix.getCol())
+				ql_.push(pair(current.first, current.second + 1));
+		}
+		else
+		{
+			// c_h was changed and there is still an element to the left
+			if (((current.first >= r && current.second <= c) || max_walk_part_.at(current).second != old_c_h) && current.second > 0)
+				qr_.push(pair(current.first, current.second - 1));
 		}
 	}
 

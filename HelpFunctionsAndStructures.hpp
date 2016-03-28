@@ -73,6 +73,22 @@ public:
 	}
 };
 
+class int_pair_order_top_left {
+public:
+	bool operator()(const std::pair<int, int>& l, const std::pair<int, int>& r) const
+	{
+		return (l.first + l.second > r.first + r.second || (l.first + l.second == r.first + r.second && l.first > r.first));
+	}
+};
+
+class int_pair_order_top_right {
+public:
+	bool operator()(const std::pair<int, int>& l, const std::pair<int, int>& r) const
+	{
+		return (l.first - l.second > r.first - r.second || (l.first - l.second == r.first - r.second && l.first > r.first));
+	}
+};
+
 struct my_exception : std::exception
 {
 	my_exception(const char* message) : message_(message) {}
@@ -107,6 +123,18 @@ public:
 	void insert_without_duplicates(const Container<T>& mappings);
 
 	void parallel_insert_without_duplicates(std::vector<int>&& mapping);
+	void prepare_iterator() { current_ = container_.begin(); }
+	bool get_next_mapping(std::vector<int>& mapping)
+	{
+		std::unique_lock<std::mutex> lock(read_);
+
+		if (current_ == container_.end())
+			return false;
+
+		mapping = *current_;
+		++current_;
+		return true;
+	}
 
 	void clear()					{ container_.clear(); }
 	int size() const				{ return (int)container_.size(); }
@@ -120,7 +148,9 @@ public:
 	const_iterator cend() const		{ return container_.cend(); }
 private:
 	T container_;
-	std::mutex write_;
+	std::mutex read_,
+		write_;
+	iterator current_;
 };
 
 template<>

@@ -239,7 +239,7 @@ void General_pattern<T>::worker(const int index, const Matrix<bool>& big_matrix)
 	int from, to;
 	const int big_matrix_rows = big_matrix.getRow(),
 		big_matrix_cols = big_matrix.getCol();
-	std::vector<int> extended;
+	std::vector<int> mapping, extended;
 
 	// the loop end (and the thread dies) at the end of MCMCgenerator
 	while (!end_)
@@ -253,11 +253,10 @@ void General_pattern<T>::worker(const int index, const Matrix<bool>& big_matrix)
 				cvs_[index].wait(lck);
 		}
 
-		// the function is forced to end from outside
-		if (!force_ends_[index] && !end_)
+		while (!force_ends_[index] && !end_ && building_tree_[level_ % 2].get_next_mapping(mapping))
 		{
 			// find boundaries of added line:
-			find_parallel_bounds(order_[level_], *mapping_ptrs_[index], big_matrix_rows, big_matrix_cols, from, to, r_, c_);
+			find_parallel_bounds(order_[level_], mapping, big_matrix_rows, big_matrix_cols, from, to, r_, c_);
 
 			// map orders_[level_] to j-th line of N if possible
 			for (int big_line = from; big_line < to; ++big_line)
@@ -267,7 +266,7 @@ void General_pattern<T>::worker(const int index, const Matrix<bool>& big_matrix)
 					break;
 
 				// if currenly added line can be mapped to big_line in mapping map
-				if (map(map_approach_.enough_entries, order_[level_], big_line, *mapping_ptrs_[index], big_matrix))
+				if (map(map_approach_.enough_entries, order_[level_], big_line, mapping, big_matrix))
 				{/*
 					if (index == 0)
 						building_tree_[(level_ + 1) % 2].insert_without_duplicates(extend(big_line, *mapping_ptrs_[index]));
@@ -275,7 +274,7 @@ void General_pattern<T>::worker(const int index, const Matrix<bool>& big_matrix)
 						// extend the mapping - linearly, have to create a new vector, because I might use the current one again for the next line, and add it to the building_tree_
 						mapping_containers_[index].insert_without_duplicates(extend(big_line, *mapping_ptrs_[index]));
 					*/
-					extended = extend(big_line, *mapping_ptrs_[index]);
+					extended = extend(big_line, mapping);
 					building_tree_[(level_ + 1) % 2].parallel_insert_without_duplicates(std::move(extended));
 
 					// I have mapped the last line so I have found the mapping of the pattern into the big matrix - it doesn't avoid the pattern
@@ -288,7 +287,7 @@ void General_pattern<T>::worker(const int index, const Matrix<bool>& big_matrix)
 					}
 				}
 			}
-		}		
+		}
 
 		// indicator that the thread sleeps
 		sleeps_[index] = true;
@@ -498,8 +497,9 @@ bool General_pattern<T>::parallel_avoid(const Matrix<bool>& big_matrix, const in
 		building_tree_[(level_ + 1) % 2].clear();
 		something_is_mapped_or_done_ = false;
 		done = false;
-		index = 0;
-
+		building_tree_[level_ % 2].prepare_iterator();
+		//index = 0;
+		/*
 		// loop through the mappings found in the last iteration
 		for (const std::vector<int>& mapping : building_tree_[level_ % 2])
 		{
@@ -541,6 +541,14 @@ bool General_pattern<T>::parallel_avoid(const Matrix<bool>& big_matrix, const in
 					++index;
 					break; // need to get the next mapping
 				}
+		}*/
+
+		for (int index = 0; index < threads_count - 1 && index < building_tree_[level_ % 2].size(); ++index)
+		{
+			std::unique_lock<std::mutex> lck(mtxs_[index]);
+			sleeps_[index] = false;
+			force_ends_[index] = false;
+			cvs_[index].notify_one();
 		}
 
 		while (!done)
