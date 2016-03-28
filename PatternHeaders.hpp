@@ -82,8 +82,8 @@ public:
 	/// <param name="custom_order">Order of lines given by user in case order is set to CUSTOM.</param>
 	General_pattern(const Matrix<bool>& pattern, const int threads_count, const Order order, const Map map_approach,  std::vector<int>&& custom_order = std::vector<int>());
 	General_pattern(const General_pattern<T>& copy) : row_(copy.row_), col_(copy.col_), lines_(copy.lines_), order_(copy.order_), what_to_remember_(copy.what_to_remember_),
-		parallel_bound_indices_(copy.parallel_bound_indices_), extending_order_(copy.extending_order_), map_index_(copy.map_index_), building_tree_(2), steps_(copy.steps_),
-		empty_lines_(copy.empty_lines_), map_approach_(copy.map_approach_) {}
+		parallel_bound_indices_(copy.parallel_bound_indices_), extending_order_(copy.extending_order_), map_index_(copy.map_index_), building_tree_(2),
+		empty_lines_(copy.empty_lines_), steps_(copy.steps_), map_approach_(copy.map_approach_) {}
 
 	/// <summary>
 	/// Tests if the pattern avoids given matrix as a submatrix.
@@ -129,9 +129,9 @@ public:
 private:
 	const int	row_,									// number of rows of the pattern
 				col_;									// number of columns of the pattern
-	std::vector<int>	lines_,							// binary number for each line of a pattern having one at i-th position if the pattern has one-entry there
+	std::vector<long long> lines_;						// binary number for each line of a pattern having one at i-th position if the pattern has one-entry there
 														// lines_[i] = (1011)_2 ... i-th line of the pattern has one-enty at 0th, 1st and 3rd position
-						order_,							// order of lines in which I am going to be mapping them
+	std::vector<int>	order_,							// order of lines in which I am going to be mapping them
 														// order_[i] = j ... in i-th step I'm going to map j-th line if the pattern
 						what_to_remember_;				// for each adding line I know which of them I still need to remember for next mapping
 														// what_to_remember[i] = (001010)_2 ... in i-th step I remember where I mapped the 1st and 3rd line of the pattern
@@ -144,8 +144,8 @@ private:
 	std::vector<std::vector<int> > map_index_;			// vector through levels - vector of indices of lines in the mapping
 														// map_index_[i][j] = k ... in i-th step, j-th line is on the k-th position in the mapping
 	std::vector<Container<T> > building_tree_;			// container for found mappings at each level
+	long long empty_lines_;								// binary number of lines with no one-entries
 	int	steps_,											// number of steps I'm going to do = number of lines I need to map (excluding empty lines)
-		empty_lines_,									// binary number of lines with no one-entries
 		level_;											// the level of the computation - index of the line being mapped
 	const Map map_approach_;							// choosen way of mapping algorithm - use recursion for nonmapped lines or not
 
@@ -338,9 +338,33 @@ public:
 	bool lazy_revert(const int r, const int c)
 	{
 		if (top_left)
-			ql_.emplace(r, c);
+		{
+			if (!diagonals_in_queue_[r + c])
+			{
+				diagonals_in_queue_[r + c] = true;
+				diagonals_to_compute_.emplace(r + c);
+			}
+
+			if (!entries_in_queue_.at(r, c))
+			{
+				entries_in_queue_.at(r, c) = true;
+				entries_to_compute_[r + c].emplace_back(r, c);
+			}
+		}
 		else
-			qr_.emplace(r, c);
+		{
+			if (!diagonals_in_queue_[r - c + col_])
+			{
+				diagonals_in_queue_[r - c + col_] = true;
+				diagonals_to_compute_.emplace(r - c + col_);
+			}
+
+			if (!entries_in_queue_.at(r, c))
+			{
+				entries_in_queue_.at(r, c) = true;
+				entries_to_compute_[r - c + col_].emplace_back(r, c);
+			}
+		}
 
 		return true;
 	}
@@ -355,16 +379,22 @@ public:
 	virtual void construct_threads(const Matrix<bool>& /* big_matrix */) {}
 	void destruct_threads() {}
 private:
-	Matrix<std::pair<int, int> > max_walk_part_;	// table of calculated [c_v,c_h] for all elements
+	Matrix<Walking_patter_structure> max_walk_part_;	// table of calculated [c_v,c_h] for all elements
+	Matrix<bool> entries_in_queue_;
 	
 	// indexed by index of v_i, the element of the walk, gives the direction of the next element (0 for vertical)
 	std::vector<char> direction_;
 	// indexed by index of v_i, the element of the walk, gives the value of v_i.
 	std::vector<int> value_;
-	std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int> >, int_pair_order_top_left> ql_;
-	std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int> >, int_pair_order_top_right> qr_;
+	//std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int> >, int_pair_order_top_left> ql_;
+	//std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int> >, int_pair_order_top_right> qr_;
+	std::vector<std::vector<std::pair<int, int> > > entries_to_compute_;
+	std::priority_queue<int, std::vector<int>, std::greater<int> > diagonals_to_compute_;
+	std::vector<bool> diagonals_in_queue_;
 	bool top_left;
 	int size_;
+	const int row_,
+		col_;
 };
 
 class Patterns

@@ -297,6 +297,14 @@ inline void Container<std::unordered_set<std::vector<int>, int_vector_hasher> >:
 	container_.emplace(mapping);
 }
 
+struct Walking_patter_structure
+{
+	Walking_patter_structure() : c_v(0), c_h(0) {}
+
+	int c_v,
+		c_h;
+};
+
 struct Counter
 {
 	Counter() : tries(0), maps(0), uniques(0) {}
@@ -308,12 +316,11 @@ struct Counter
 
 struct Job
 {
-	Job() : r(-1), c(-1), avoid(true) {}
-	Job(const int row, const int col, bool a) : r(row), c(col), avoid(a) {}
-	Job(const Job& j) : r(j.r), c(j.c), avoid(j.avoid) {}
+	Job() : r(-1), c(-1) {}
+	Job(const int row, const int col) : r(row), c(col) {}
+	Job(const Job& j) : r(j.r), c(j.c) {}
 	
 	int r, c;
-	bool avoid;
 };
 
 inline bool operator<(const Job&, const Job&) { return false; }

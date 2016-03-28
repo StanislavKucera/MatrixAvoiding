@@ -9,7 +9,8 @@
 
 /* Walking pattern */
 Walking_pattern::Walking_pattern(const Matrix<bool>& pattern, const int n)
-	: max_walk_part_(n, n, std::pair<int, int>(0, 0)), direction_(pattern.getRow() + pattern.getCol() - 2), value_(pattern.getRow() + pattern.getCol() - 1)
+	: max_walk_part_(n, n), entries_in_queue_(n, n), direction_(pattern.getRow() + pattern.getCol() - 2), value_(pattern.getRow() + pattern.getCol() - 1),
+	entries_to_compute_(2 * n), diagonals_in_queue_(2 * n, false), row_(n), col_(n)
 {	
 	// the diagonal walk starts in the top left corner
 	top_left = true;
@@ -167,14 +168,14 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 		current = q.front();
 		q.pop();
 			
-		old_c_v = max_walk_part_.at(current).first;
-		old_c_h = max_walk_part_.at(current).second;
+		old_c_v = max_walk_part_.at(current).c_v;
+		old_c_h = max_walk_part_.at(current).c_h;
 
 		// element on the first row
 		if (current.first == 0)		
 			c_v_v = 0;
 		else
-			c_v_v = max_walk_part_.at(current.first - 1, current.second).first;
+			c_v_v = max_walk_part_.at(current.first - 1, current.second).c_v;
 
 		if (top_left)
 		{
@@ -182,20 +183,20 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 			if (current.second == 0)
 				c_h_h = 0;
 			else
-				c_h_h = max_walk_part_.at(current.first, current.second - 1).second;
+				c_h_h = max_walk_part_.at(current.first, current.second - 1).c_h;
 		}
 		else
 		{
 			// element on the last column
-			if (current.second == max_walk_part_.getCol() - 1)
+			if (current.second == col_ - 1)
 				c_h_h = 0;
 			else
-				c_h_h = max_walk_part_.at(current.first, current.second + 1).second;
+				c_h_h = max_walk_part_.at(current.first, current.second + 1).c_h;
 		}
 			
 	// Initialization - copying those already found walks
-		max_walk_part_.at(current).first = c_v_v;
-		max_walk_part_.at(current).second = c_h_h;
+		max_walk_part_.at(current).c_v = c_v_v;
+		max_walk_part_.at(current).c_h = c_h_h;
 			
 	// Search for longer part of the walk
 		// b == 1 or v_{c_v_v + 1} == 0
@@ -208,14 +209,14 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 			// walk continues to the right/left
 			if (direction_[c_v_v]) 
 			{
-				if (max_walk_part_.at(current).second < c_v_v + 1)
-					max_walk_part_.at(current).second = c_v_v + 1;
+				if (max_walk_part_.at(current).c_h < c_v_v + 1)
+					max_walk_part_.at(current).c_h = c_v_v + 1;
 			}
 			// walk continues to the bottom
 			else 
 			{
-				if (max_walk_part_.at(current).first < c_v_v + 1)
-					max_walk_part_.at(current).first = c_v_v + 1;
+				if (max_walk_part_.at(current).c_v < c_v_v + 1)
+					max_walk_part_.at(current).c_v = c_v_v + 1;
 			}
 		}
 
@@ -227,18 +228,18 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 
 			if (direction_[c_h_h])
 			{
-				if (max_walk_part_.at(current).second < c_h_h + 1)
-					max_walk_part_.at(current).second = c_h_h + 1;
+				if (max_walk_part_.at(current).c_h < c_h_h + 1)
+					max_walk_part_.at(current).c_h = c_h_h + 1;
 			}
 			else
 			{
-				if (max_walk_part_.at(current).first < c_h_h + 1)
-					max_walk_part_.at(current).first = c_h_h + 1;
+				if (max_walk_part_.at(current).c_v < c_h_h + 1)
+					max_walk_part_.at(current).c_v = c_h_h + 1;
 			}
 		}		
 
 		// c_v was changed and there is still an element below the current one
-		if (max_walk_part_.at(current).first != old_c_v && current.first + 1 < big_matrix.getRow())
+		if (max_walk_part_.at(current).c_v != old_c_v && current.first + 1 < row_)
 			// if queue is not empty, check whether the element wasn't added before
 			if (q.empty() || q.back() != pair(current.first + 1, current.second))	
 				q.emplace(current.first + 1, current.second);
@@ -246,13 +247,13 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 		if (top_left)
 		{
 			// c_h was changed and there is still an element to the right
-			if (max_walk_part_.at(current).second != old_c_h && current.second + 1 < big_matrix.getCol())
+			if (max_walk_part_.at(current).c_h != old_c_h && current.second + 1 < col_)
 				q.emplace(current.first, current.second + 1);
 		}
 		else
 		{
 			// c_h was changed and there is still an element to the left
-			if (max_walk_part_.at(current).second != old_c_h && current.second > 0)
+			if (max_walk_part_.at(current).c_h != old_c_h && current.second > 0)
 				q.emplace(current.first, current.second - 1);
 		}
 	}
@@ -430,8 +431,8 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 	return true;
 }*/
 
-bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const std::atomic<bool>& force_end)
-{
+//bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const std::atomic<bool>& force_end)
+/*{
 	typedef std::pair<int, int> pair;
 	pair current, last = std::make_pair(-1, -1);							// [x,y] of the currently updated element
 	int old_c_v, old_c_h, c_v_v, c_h_h;	// c_v and c_h before an update, c_v of element to the top of current, c_h of element to the left
@@ -463,14 +464,14 @@ bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int r, co
 
 		last = current;
 
-		old_c_v = max_walk_part_.at(current).first;
-		old_c_h = max_walk_part_.at(current).second;
+		old_c_v = max_walk_part_.at(current).c_v;
+		old_c_h = max_walk_part_.at(current).c_h;
 
 		// element on the first row
 		if (current.first == 0)
 			c_v_v = 0;
 		else
-			c_v_v = max_walk_part_.at(current.first - 1, current.second).first;
+			c_v_v = max_walk_part_.at(current.first - 1, current.second).c_v;
 
 		if (top_left)
 		{
@@ -478,7 +479,7 @@ bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int r, co
 			if (current.second == 0)
 				c_h_h = 0;
 			else
-				c_h_h = max_walk_part_.at(current.first, current.second - 1).second;
+				c_h_h = max_walk_part_.at(current.first, current.second - 1).c_h;
 		}
 		else
 		{
@@ -486,12 +487,12 @@ bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int r, co
 			if (current.second == max_walk_part_.getCol() - 1)
 				c_h_h = 0;
 			else
-				c_h_h = max_walk_part_.at(current.first, current.second + 1).second;
+				c_h_h = max_walk_part_.at(current.first, current.second + 1).c_h;
 		}
 
 		// Initialization - copying those already found walks
-		max_walk_part_.at(current).first = c_v_v;
-		max_walk_part_.at(current).second = c_h_h;
+		max_walk_part_.at(current).c_v = c_v_v;
+		max_walk_part_.at(current).c_h = c_h_h;
 
 		// Search for longer part of the walk
 		// b == 1 or v_{c_v_v + 1} == 0
@@ -527,14 +528,14 @@ bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int r, co
 			// walk continues to the right/left
 			if (direction_[c_v_v])
 			{
-				if (max_walk_part_.at(current).second < c_v_v + 1)
-					max_walk_part_.at(current).second = c_v_v + 1;
+				if (max_walk_part_.at(current).c_h < c_v_v + 1)
+					max_walk_part_.at(current).c_h = c_v_v + 1;
 			}
 			// walk continues to the bottom
 			else
 			{
-				if (max_walk_part_.at(current).first < c_v_v + 1)
-					max_walk_part_.at(current).first = c_v_v + 1;
+				if (max_walk_part_.at(current).c_v < c_v_v + 1)
+					max_walk_part_.at(current).c_v = c_v_v + 1;
 			}
 		}
 
@@ -570,41 +571,319 @@ bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int r, co
 
 			if (direction_[c_h_h])
 			{
-				if (max_walk_part_.at(current).second < c_h_h + 1)
-					max_walk_part_.at(current).second = c_h_h + 1;
+				if (max_walk_part_.at(current).c_h < c_h_h + 1)
+					max_walk_part_.at(current).c_h = c_h_h + 1;
 			}
 			else
 			{
-				if (max_walk_part_.at(current).first < c_h_h + 1)
-					max_walk_part_.at(current).first = c_h_h + 1;
+				if (max_walk_part_.at(current).c_v < c_h_h + 1)
+					max_walk_part_.at(current).c_v = c_h_h + 1;
 			}
 		}		
 
 		if (top_left)
 		{
 			// c_v was changed and there is still an element below the current one
-			if (max_walk_part_.at(current).first != old_c_v && current.first + 1 < big_matrix.getRow())
+			if (max_walk_part_.at(current).c_v != old_c_v && current.first + 1 < big_matrix.getRow())
 				ql_.emplace(current.first + 1, current.second);
 		}
 		else
 		{
 			// c_v was changed and there is still an element below the current one
-			if (max_walk_part_.at(current).first != old_c_v && current.first + 1 < big_matrix.getRow())
+			if (max_walk_part_.at(current).c_v != old_c_v && current.first + 1 < big_matrix.getRow())
 				qr_.emplace(current.first + 1, current.second);
 		}
 
 		if (top_left)
 		{
 			// c_h was changed and there is still an element to the right
-			if (max_walk_part_.at(current).second != old_c_h && current.second + 1 < big_matrix.getCol())
+			if (max_walk_part_.at(current).c_h != old_c_h && current.second + 1 < big_matrix.getCol())
 				ql_.emplace(current.first, current.second + 1);
 		}
 		else
 		{
 			// c_h was changed and there is still an element to the left
-			if (max_walk_part_.at(current).second != old_c_h && current.second > 0)
+			if (max_walk_part_.at(current).c_h != old_c_h && current.second > 0)
 				qr_.emplace(current.first, current.second - 1);
 		}
+	}
+
+	// I haven't mapped the last element of the walk - matrix avoids the pattern
+	return true;
+}*/
+
+bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const std::atomic<bool>& force_end)
+{
+	std::pair<int, int> current;		// [x,y] of the currently updated element
+	int old_c_v, old_c_h, c_v_v, c_h_h;	// c_v and c_h before an update, c_v of element to the top of current, c_h of element to the left
+
+	// add [r, c] to the structures if needed
+	if (top_left)
+	{
+		if (!diagonals_in_queue_[r + c])
+		{
+			diagonals_in_queue_[r + c] = true;
+			diagonals_to_compute_.emplace(r + c);
+		}
+
+		if (!entries_in_queue_.at(r, c))
+		{
+			entries_in_queue_.at(r, c) = true;
+			entries_to_compute_[r + c].emplace_back(r, c);
+		}
+	}
+	else
+	{
+		if (!diagonals_in_queue_[r - c + col_])
+		{
+			diagonals_in_queue_[r - c + col_] = true;
+			diagonals_to_compute_.emplace(r - c + col_);
+		}
+
+		if (!entries_in_queue_.at(r, c))
+		{
+			entries_in_queue_.at(r, c) = true;
+			entries_to_compute_[r - c + col_].emplace_back(r, c);
+		}
+	}
+	
+	while (!diagonals_to_compute_.empty())
+	{
+		const int diagonal = diagonals_to_compute_.top();
+
+		while (!entries_to_compute_[diagonal].empty())
+		{
+			// the function is forced to end from outside
+			if (force_end)
+				return false;
+
+			current = entries_to_compute_[diagonal].back();
+
+			old_c_v = max_walk_part_.at(current).c_v;
+			old_c_h = max_walk_part_.at(current).c_h;
+
+			// element on the first row
+			if (current.first == 0)
+				c_v_v = 0;
+			else
+				c_v_v = max_walk_part_.at(current.first - 1, current.second).c_v;
+
+			if (top_left)
+			{
+				// element on the first column
+				if (current.second == 0)
+					c_h_h = 0;
+				else
+					c_h_h = max_walk_part_.at(current.first, current.second - 1).c_h;
+			}
+			else
+			{
+				// element on the last column
+				if (current.second == col_ - 1)
+					c_h_h = 0;
+				else
+					c_h_h = max_walk_part_.at(current.first, current.second + 1).c_h;
+			}
+
+			// Initialization - copying those already found walks
+			max_walk_part_.at(current).c_v = c_v_v;
+			max_walk_part_.at(current).c_h = c_h_h;
+
+			// Search for longer part of the walk
+			// b == 1 or v_{c_v_v + 1} == 0
+			if (big_matrix.at(current) || !value_[c_v_v])
+			{
+				// I found the last element of the walk
+				if (c_v_v + 1 == size_)
+				{
+					const int r_ = current.first;
+					const int c_ = current.second;
+
+					if (top_left)
+					{
+						if (r_ + c_ + 1 < row_ + col_ - 1 && !diagonals_in_queue_[r_ + c_ + 1])
+						{
+							diagonals_in_queue_[r_ + c_ + 1] = true;
+							diagonals_to_compute_.emplace(r_ + c_ + 1);
+						}
+
+						if (r_ + 1 < row_ && !entries_in_queue_.at(r_ + 1, c_))
+						{
+							entries_in_queue_.at(r_ + 1, c_) = true;
+							entries_to_compute_[r_ + c_ + 1].emplace_back(r_ + 1, c_);
+						}
+
+						if (c_ + 1 < col_ && !entries_in_queue_.at(r_, c_ + 1))
+						{
+							entries_in_queue_.at(r_, c_ + 1) = true;
+							entries_to_compute_[r_ + c_ + 1].emplace_back(r_, c_ + 1);
+						}
+					}
+					else
+					{
+						if (r_ - c_ + 1 < row_ && !diagonals_in_queue_[r_ - c_ + col_ + 1])
+						{
+							diagonals_in_queue_[r_ - c_ + col_ + 1] = true;
+							diagonals_to_compute_.emplace(r_ - c_ + col_ + 1);
+						}
+
+						if (r_ + 1 < row_ && !entries_in_queue_.at(r_ + 1, c_))
+						{
+							entries_in_queue_.at(r_ + 1, c_) = true;
+							entries_to_compute_[r_ - c_ + col_ + 1].emplace_back(r_ + 1, c_);
+						}
+
+						if (c_ > 0 && !entries_in_queue_.at(r_, c_ - 1))
+						{
+							entries_in_queue_.at(r_, c_ - 1) = true;
+							entries_to_compute_[r_ - c_ + col_ + 1].emplace_back(r_, c_ - 1);
+						}
+					}
+
+					return false;
+				}
+
+				// walk continues to the right/left
+				if (direction_[c_v_v])
+				{
+					if (max_walk_part_.at(current).c_h < c_v_v + 1)
+						max_walk_part_.at(current).c_h = c_v_v + 1;
+				}
+				// walk continues to the bottom
+				else
+				{
+					if (max_walk_part_.at(current).c_v < c_v_v + 1)
+						max_walk_part_.at(current).c_v = c_v_v + 1;
+				}
+			}
+
+			// N[i,j] == 1
+			if (big_matrix.at(current) || !value_[c_h_h])
+			{
+				if (c_h_h + 1 == size_)
+				{
+					const int r_ = current.first;
+					const int c_ = current.second;
+
+					if (top_left)
+					{
+						if (r_ + c_ + 1 < row_ + col_ - 1 && !diagonals_in_queue_[r_ + c_ + 1])
+						{
+							diagonals_in_queue_[r_ + c_ + 1] = true;
+							diagonals_to_compute_.emplace(r_ + c_ + 1);
+						}
+
+						if (r_ + 1 < row_ && !entries_in_queue_.at(r_ + 1, c_))
+						{
+							entries_in_queue_.at(r_ + 1, c_) = true;
+							entries_to_compute_[r_ + c_ + 1].emplace_back(r_ + 1, c_);
+						}
+
+						if (c_ + 1 < col_ && !entries_in_queue_.at(r_, c_ + 1))
+						{
+							entries_in_queue_.at(r_, c_ + 1) = true;
+							entries_to_compute_[r_ + c_ + 1].emplace_back(r_, c_ + 1);
+						}
+					}
+					else
+					{
+						if (r_ - c_ + 1 < row_ && !diagonals_in_queue_[r_ - c_ + col_ + 1])
+						{
+							diagonals_in_queue_[r_ - c_ + col_ + 1] = true;
+							diagonals_to_compute_.emplace(r_ - c_ + col_ + 1);
+						}
+
+						if (r_ + 1 < row_ && !entries_in_queue_.at(r_ + 1, c_))
+						{
+							entries_in_queue_.at(r_ + 1, c_) = true;
+							entries_to_compute_[r_ - c_ + col_ + 1].emplace_back(r_ + 1, c_);
+						}
+
+						if (c_ > 0 && !entries_in_queue_.at(r_, c_ - 1))
+						{
+							entries_in_queue_.at(r_, c_ - 1) = true;
+							entries_to_compute_[r_ - c_ + col_ + 1].emplace_back(r_, c_ - 1);
+						}
+					}
+
+					return false;
+				}
+
+				if (direction_[c_h_h])
+				{
+					if (max_walk_part_.at(current).c_h < c_h_h + 1)
+						max_walk_part_.at(current).c_h = c_h_h + 1;
+				}
+				else
+				{
+					if (max_walk_part_.at(current).c_v < c_h_h + 1)
+						max_walk_part_.at(current).c_v = c_h_h + 1;
+				}
+			}
+
+			if (top_left)
+			{
+				// c_v was changed and there is still an element below the current one
+				if (current.first + 1 < row_ && max_walk_part_.at(current).c_v != old_c_v && !entries_in_queue_.at(current.first + 1, current.second))
+				{
+					entries_in_queue_.at(current.first + 1, current.second) = true;
+					entries_to_compute_[current.first + current.second + 1].emplace_back(current.first + 1, current.second);
+
+					if (!diagonals_in_queue_[current.first + current.second + 1])
+					{
+						diagonals_in_queue_[current.first + current.second + 1] = true;
+						diagonals_to_compute_.emplace(current.first + current.second + 1);
+					}
+				}
+
+				// c_h was changed and there is still an element to the right
+				if (current.second + 1 < col_ && max_walk_part_.at(current).c_h != old_c_h && !entries_in_queue_.at(current.first, current.second + 1))
+				{
+					entries_in_queue_.at(current.first, current.second + 1) = true;
+					entries_to_compute_[current.first + current.second + 1].emplace_back(current.first, current.second + 1);
+
+					if (!diagonals_in_queue_[current.first + current.second + 1])
+					{
+						diagonals_in_queue_[current.first + current.second + 1] = true;
+						diagonals_to_compute_.emplace(current.first + current.second + 1);
+					}
+				}
+			}
+			else
+			{
+				// c_v was changed and there is still an element below the current one
+				if (current.first + 1 < row_ && max_walk_part_.at(current).c_v != old_c_v && !entries_in_queue_.at(current.first + 1, current.second))
+				{
+					entries_in_queue_.at(current.first + 1, current.second) = true;
+					entries_to_compute_[current.first - current.second + col_ + 1].emplace_back(current.first + 1, current.second);
+
+					if (!diagonals_in_queue_[current.first - current.second + col_ + 1])
+					{
+						diagonals_in_queue_[current.first - current.second + col_ + 1] = true;
+						diagonals_to_compute_.emplace(current.first - current.second + col_ + 1);
+					}
+				}
+
+				// c_h was changed and there is still an element to the left
+				if (current.second > 0 && max_walk_part_.at(current).c_h != old_c_h && !entries_in_queue_.at(current.first, current.second - 1))
+				{
+					entries_in_queue_.at(current.first, current.second - 1) = true;
+					entries_to_compute_[current.first - current.second + col_ + 1].emplace_back(current.first, current.second - 1);
+
+					if (!diagonals_in_queue_[current.first - current.second + col_ + 1])
+					{
+						diagonals_in_queue_[current.first - current.second + col_ + 1] = true;
+						diagonals_to_compute_.emplace(current.first - current.second + col_ + 1);
+					}
+				}
+			}
+
+			entries_to_compute_[diagonal].pop_back();
+			entries_in_queue_.at(current) = false;
+		}
+
+		diagonals_to_compute_.pop();
+		diagonals_in_queue_[diagonal] = false;
 	}
 
 	// I haven't mapped the last element of the walk - matrix avoids the pattern
@@ -643,17 +922,17 @@ bool Walking_pattern::parallel_avoid(const Matrix<bool>& big_matrix, const int r
 				if (i == 0)
 					c_v_v = 0;
 				else
-					c_v_v = max_walk_part_.at(i - 1, j).first;
+					c_v_v = max_walk_part_.at(i - 1, j).c_v;
 
 				// element on the first column
 				if (j == 0)
 					c_h_h = 0;
 				else
-					c_h_h = max_walk_part_.at(i, j - 1).second;
+					c_h_h = max_walk_part_.at(i, j - 1).c_h;
 
 				// Initialization - copying those already found walks
-				max_walk_part_.at(i, j).first = c_v_v;
-				max_walk_part_.at(i, j).second = c_h_h;
+				max_walk_part_.at(i, j).c_v = c_v_v;
+				max_walk_part_.at(i, j).c_h = c_h_h;
 
 				// Search for longer part of the walk
 				// b == 1 or v_{c_v_v + 1} == 0
@@ -666,14 +945,14 @@ bool Walking_pattern::parallel_avoid(const Matrix<bool>& big_matrix, const int r
 					// walk continues to the right/left
 					if (direction_[c_v_v])
 					{
-						if (max_walk_part_.at(i, j).second < c_v_v + 1)
-							max_walk_part_.at(i, j).second = c_v_v + 1;
+						if (max_walk_part_.at(i, j).c_h < c_v_v + 1)
+							max_walk_part_.at(i, j).c_h = c_v_v + 1;
 					}
 					// walk continues to the bottom
 					else
 					{
-						if (max_walk_part_.at(i, j).first < c_v_v + 1)
-							max_walk_part_.at(i, j).first = c_v_v + 1;
+						if (max_walk_part_.at(i, j).c_v < c_v_v + 1)
+							max_walk_part_.at(i, j).c_v = c_v_v + 1;
 					}
 				}
 
@@ -685,13 +964,13 @@ bool Walking_pattern::parallel_avoid(const Matrix<bool>& big_matrix, const int r
 
 					if (direction_[c_h_h])
 					{
-						if (max_walk_part_.at(i, j).second < c_h_h + 1)
-							max_walk_part_.at(i, j).second = c_h_h + 1;
+						if (max_walk_part_.at(i, j).c_h < c_h_h + 1)
+							max_walk_part_.at(i, j).c_h = c_h_h + 1;
 					}
 					else
 					{
-						if (max_walk_part_.at(i, j).first < c_h_h + 1)
-							max_walk_part_.at(i, j).first = c_h_h + 1;
+						if (max_walk_part_.at(i, j).c_v < c_h_h + 1)
+							max_walk_part_.at(i, j).c_v = c_h_h + 1;
 					}
 				}
 			}
@@ -725,18 +1004,18 @@ bool Walking_pattern::parallel_avoid(const Matrix<bool>& big_matrix, const int r
 				if (i == 0)
 					c_v_v = 0;
 				else
-					c_v_v = max_walk_part_.at(i - 1, j).first;
+					c_v_v = max_walk_part_.at(i - 1, j).c_v;
 
 
 				// element on the last column
 				if (j == max_walk_part_.getCol() - 1)
 					c_h_h = 0;
 				else
-					c_h_h = max_walk_part_.at(i, j + 1).second;
+					c_h_h = max_walk_part_.at(i, j + 1).c_h;
 
 				// Initialization - copying those already found walks
-				max_walk_part_.at(i, j).first = c_v_v;
-				max_walk_part_.at(i, j).second = c_h_h;
+				max_walk_part_.at(i, j).c_v = c_v_v;
+				max_walk_part_.at(i, j).c_h = c_h_h;
 
 				// Search for longer part of the walk
 				// b == 1 or v_{c_v_v + 1} == 0
@@ -749,14 +1028,14 @@ bool Walking_pattern::parallel_avoid(const Matrix<bool>& big_matrix, const int r
 					// walk continues to the right/left
 					if (direction_[c_v_v])
 					{
-						if (max_walk_part_.at(i, j).second < c_v_v + 1)
-							max_walk_part_.at(i, j).second = c_v_v + 1;
+						if (max_walk_part_.at(i, j).c_h < c_v_v + 1)
+							max_walk_part_.at(i, j).c_h = c_v_v + 1;
 					}
 					// walk continues to the bottom
 					else
 					{
-						if (max_walk_part_.at(i, j).first < c_v_v + 1)
-							max_walk_part_.at(i, j).first = c_v_v + 1;
+						if (max_walk_part_.at(i, j).c_v < c_v_v + 1)
+							max_walk_part_.at(i, j).c_v = c_v_v + 1;
 					}
 				}
 
@@ -768,13 +1047,13 @@ bool Walking_pattern::parallel_avoid(const Matrix<bool>& big_matrix, const int r
 
 					if (direction_[c_h_h])
 					{
-						if (max_walk_part_.at(i, j).second < c_h_h + 1)
-							max_walk_part_.at(i, j).second = c_h_h + 1;
+						if (max_walk_part_.at(i, j).c_h < c_h_h + 1)
+							max_walk_part_.at(i, j).c_h = c_h_h + 1;
 					}
 					else
 					{
-						if (max_walk_part_.at(i, j).first < c_h_h + 1)
-							max_walk_part_.at(i, j).first = c_h_h + 1;
+						if (max_walk_part_.at(i, j).c_v < c_h_h + 1)
+							max_walk_part_.at(i, j).c_v = c_h_h + 1;
 					}
 				}
 			}

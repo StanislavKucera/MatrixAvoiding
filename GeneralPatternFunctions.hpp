@@ -17,8 +17,8 @@ General_pattern<T>::General_pattern(const Matrix<bool>& pattern, const int threa
 	extending_order_(row_ + col_),
 	map_index_(row_ + col_ + 1),
 	building_tree_(2),
-	steps_(row_ + col_),
 	empty_lines_(0),
+	steps_(row_ + col_),
 	map_approach_(map_approach), 
 	threads_(threads_count),
 	qs_(threads_count),
@@ -635,7 +635,7 @@ void General_pattern<T>::find_SUM_order()
 	std::vector<int> back_trace(1 << (row_ + col_), -1);
 
 	// the set of all lines I want to map
-	int position = ((1 << (row_ + col_)) - 1) ^ empty_lines_;
+	long long position = ((1 << (row_ + col_)) - 1) ^ empty_lines_;
 
 	while (!q.empty())
 	{
@@ -650,7 +650,7 @@ void General_pattern<T>::find_SUM_order()
 				continue;
 
 			// extend current subset by i-th line
-			int supset = current | (1 << i);
+			long long supset = current | (1 << i);
 			// distance from 0 is equal to distance to current + number of elements I need to remember in this step
 			int count = (supset == position) ? distances[current] : distances[current] + count_what_to_remember(supset);
 
@@ -690,7 +690,7 @@ void General_pattern<T>::find_MAX_order()
 	std::vector<int> back_trace(1 << (row_ + col_), -1);
 
 	// the set of all lines I want to map
-	int position = ((1 << (row_ + col_)) - 1) ^ empty_lines_;
+	long long position = ((1 << (row_ + col_)) - 1) ^ empty_lines_;
 
 	while (!q.empty())
 	{
@@ -705,7 +705,7 @@ void General_pattern<T>::find_MAX_order()
 				continue;
 
 			// extend current subset by i-th line
-			int supset = current | (1 << i);
+			long long supset = current | (1 << i);
 			int number = count_what_to_remember(supset);
 			// distance from 0 is equal to distance to current + number of elements I need to remember in this step
 			std::pair<int, int> count;

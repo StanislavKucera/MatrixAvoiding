@@ -211,7 +211,6 @@ inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<boo
 	{
 		worker_states[i].jobs.r = uni(rng);
 		worker_states[i].jobs.c = uni(rng);
-		worker_states[i].jobs.avoid = true;
 
 		worker_states[i].force_end = false;
 		worker_states[i].done = false;
@@ -405,7 +404,6 @@ inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<boo
 
 			worker_states[index].jobs.r = uni(rng);
 			worker_states[index].jobs.c = uni(rng);
-			worker_states[index].jobs.avoid = true;
 			++last_id;
 			queue[index].emplace_back(worker_states[index].jobs, last_id, last_id + 1, false, false);
 			//ar << index << ": avoid [" << worker_states[index].jobs.r << "," << worker_states[index].jobs.c << "] - " << last_id << " (" << current_id << ")" << std::endl;
@@ -535,7 +533,7 @@ inline void make_iteration(const int my_index, std::deque<Task>& queue, Matrix<b
 
 		// the next calculation I will wait for has its id equal to next_id
 		current_id = queue.front().next_id;
-		std::cout << current_id << std::endl;
+		//std::cout << current_id << std::endl;
 		// the task was dealt with
 		queue.pop_front();
 	}
@@ -558,7 +556,7 @@ void parallel_avoid2(const int my_index, Patterns patterns, Matrix<bool>& big_ma
 
 	// random generator from uniform distribution [0, n-1]
 	std::random_device rd;
-	std::mt19937 rng(random_seed == -1 ? rd() : random_seed + my_index);
+	std::mt19937 rng(random_seed);//1993);//random_seed == -1 ? rd() : random_seed + my_index);
 	std::uniform_int_distribution<int> uni(0, N - 1);
 
 	while (!end)
@@ -655,7 +653,7 @@ void parallel_avoid2(const int my_index, Patterns patterns, Matrix<bool>& big_ma
 		// create a new job
 		int r = uni(rng);
 		int c = uni(rng);
-		Job new_job(r, c, true);
+		Job new_job(r, c);
 		// id of the newly created job
 		int my_id = 0;
 
@@ -675,8 +673,8 @@ void parallel_avoid2(const int my_index, Patterns patterns, Matrix<bool>& big_ma
 		// add the new task to the list
 		queue.emplace_back(new_job, my_id, my_id + 1, false, false);
 		last_job_id[my_index] = my_id;
-		queue.back().returned = patterns.avoid(new_job.r, new_job.c, sizes, forced_ends[my_index]);
-		ar << my_index << ": avoid [" << new_job.r << "," << new_job.c << "] : " << queue.back().returned << " - " << my_id << " - " << current_id << std::endl;
+		queue.back().returned = patterns.avoid(r, c, sizes, forced_ends[my_index]);
+		ar << my_index << ": avoid [" << r << "," << c << "] : " << queue.back().returned << " - " << my_id << " - " << current_id << std::endl;
 		/*
 		if (queue.size() > 1000)
 		{
@@ -805,12 +803,15 @@ inline void parallelMCMCgenerator2(const int iter, Patterns& patterns, Matrix<bo
 	for (int i = 1; i != threads_count; ++i)
 	{
 		force_end[i] = false;
+		last_change_noted[i] = true;
 		threads[i - 1] = std::thread(parallel_avoid2, i, patterns, std::ref(big_matrix), std::ref(sizes[i]), std::ref(force_end), std::ref(synchronize), std::ref(end),
 			std::ref(current_id), std::ref(last_id), std::ref(iterations), std::ref(reverting), std::ref(syncs), size, iter, std::ref(ones), std::ref(matrix_stats),
 			std::ref(syncs_mutexes), std::ref(reverting_mutexes), std::ref(last_id_mutex), std::ref(last_perc), std::ref(last_job_id), std::ref(oFile), std::ref(ar),
 			std::ref(last_change_noted), std::ref(reverts), random_seed);
 	}
 
+	force_end[0] = false;
+	last_change_noted[0] = true;
 	parallel_avoid2(0, patterns, big_matrix, sizes[0], force_end, synchronize, end, current_id, last_id, iterations, reverting, syncs,
 		size, iter, ones, matrix_stats, syncs_mutexes, reverting_mutexes, last_id_mutex, last_perc, last_job_id, oFile, ar, last_change_noted, reverts, random_seed);
 
