@@ -479,7 +479,7 @@ bool General_pattern<T>::parallel_avoid(const Matrix<bool>& big_matrix, const in
 
 	// I start with empty mapping - no lines are mapped
 	building_tree_[0].init();
-	int index;
+	//int index;
 	//bool mapped = false;
 	bool done = false;
 

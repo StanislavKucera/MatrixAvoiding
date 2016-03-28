@@ -435,14 +435,7 @@ bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int r, co
 	typedef std::pair<int, int> pair;
 	pair current, last = std::make_pair(-1, -1);							// [x,y] of the currently updated element
 	int old_c_v, old_c_h, c_v_v, c_h_h;	// c_v and c_h before an update, c_v of element to the top of current, c_h of element to the left
-
-	if (r == 6 && c == 8)
-	{
-		bool ahoj = big_matrix.at(6, 8);
-		bool hell = big_matrix.at(6, 9);
-		current = last;
-	}
-
+	
 	if (top_left)
 		ql_.emplace(r, c);
 	else
@@ -506,7 +499,30 @@ bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int r, co
 		{
 			// I found the last element of the walk
 			if (c_v_v + 1 == size_)
+			{
+				if (top_left)
+				{
+					ql_.emplace(current);
+
+					if (current.first + 1 < big_matrix.getRow())
+						ql_.emplace(current.first + 1, current.second);
+
+					if (current.second + 1 < big_matrix.getCol())
+						ql_.emplace(current.first, current.second + 1);
+				}
+				else
+				{
+					qr_.emplace(current);
+
+					if (current.first + 1 < big_matrix.getRow())
+						qr_.emplace(current.first + 1, current.second);
+
+					if (current.second > 0)
+						qr_.emplace(current.first, current.second - 1);
+				}
+
 				return false;
+			}
 
 			// walk continues to the right/left
 			if (direction_[c_v_v])
@@ -526,7 +542,31 @@ bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int r, co
 		if (big_matrix.at(current) || !value_[c_h_h])
 		{
 			if (c_h_h + 1 == size_)
+			{
+				if (top_left)
+				{
+					ql_.emplace(current);
+
+					if (current.first + 1 < big_matrix.getRow())
+						ql_.emplace(current.first + 1, current.second);
+
+					if (current.second + 1 < big_matrix.getCol())
+						ql_.emplace(current.first, current.second + 1);
+				}
+				else
+				{
+					qr_.emplace(current);
+
+					if (current.first + 1 < big_matrix.getRow())
+						qr_.emplace(current.first + 1, current.second);
+					
+					if (current.second > 0)
+						qr_.emplace(current.first, current.second - 1);
+				}
+
 				return false;
+			}
+
 
 			if (direction_[c_h_h])
 			{
@@ -543,27 +583,27 @@ bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int r, co
 		if (top_left)
 		{
 			// c_v was changed and there is still an element below the current one
-			if (((current.first >= r && current.second >= c) || max_walk_part_.at(current).first != old_c_v) && current.first + 1 < big_matrix.getRow())
-				ql_.push(pair(current.first + 1, current.second));
+			if (max_walk_part_.at(current).first != old_c_v && current.first + 1 < big_matrix.getRow())
+				ql_.emplace(current.first + 1, current.second);
 		}
 		else
 		{
 			// c_v was changed and there is still an element below the current one
-			if (((current.first >= r && current.second <= c) || max_walk_part_.at(current).first != old_c_v) && current.first + 1 < big_matrix.getRow())
-				qr_.push(pair(current.first + 1, current.second));
+			if (max_walk_part_.at(current).first != old_c_v && current.first + 1 < big_matrix.getRow())
+				qr_.emplace(current.first + 1, current.second);
 		}
 
 		if (top_left)
 		{
 			// c_h was changed and there is still an element to the right
-			if (((current.first >= r && current.second >= c) || max_walk_part_.at(current).second != old_c_h) && current.second + 1 < big_matrix.getCol())
-				ql_.push(pair(current.first, current.second + 1));
+			if (max_walk_part_.at(current).second != old_c_h && current.second + 1 < big_matrix.getCol())
+				ql_.emplace(current.first, current.second + 1);
 		}
 		else
 		{
 			// c_h was changed and there is still an element to the left
-			if (((current.first >= r && current.second <= c) || max_walk_part_.at(current).second != old_c_h) && current.second > 0)
-				qr_.push(pair(current.first, current.second - 1));
+			if (max_walk_part_.at(current).second != old_c_h && current.second > 0)
+				qr_.emplace(current.first, current.second - 1);
 		}
 	}
 
