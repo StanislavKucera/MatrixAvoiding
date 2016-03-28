@@ -21,11 +21,11 @@
 #include <fstream>
 
 // Generates random-ish matrix of given size, which is avoiding given walking pattern. Uses iter iterations on markov chain.
-inline void MCMCgenerator(const int iter, Patterns& patterns, Matrix<bool>& big_matrix, Performance_Statistics& perf_stats, Matrix_Statistics& matrix_stats, const int threads_count)
+inline void MCMCgenerator(const int iter, Patterns& patterns, Matrix<bool>& big_matrix, Performance_Statistics& perf_stats, Matrix_Statistics& matrix_stats, const int threads_count, const int random_seed)
 {
 	// random generator from uniform distribution [0, n-1]
 	std::random_device rd;
-	std::mt19937 rng(1993);
+	std::mt19937 rng(random_seed == -1 ? rd() : random_seed);
 	std::uniform_int_distribution<int> uni(0, big_matrix.getRow() - 1);
 
 	// coordinates of changed element
@@ -55,6 +55,7 @@ inline void MCMCgenerator(const int iter, Patterns& patterns, Matrix<bool>& big_
 
 		r = uni(rng);
 		c = uni(rng);
+
 		// switch 0 and 1 entry of the element
 		big_matrix.at(r, c) = big_matrix.at(r, c) ? (--ones, 0) : (++ones, 1);
 
@@ -147,12 +148,12 @@ void parallel_avoid(worker_state& worker_state, const std::atomic<bool>& end, st
 }
 
 // Generates random-ish matrix of given size, which is avoiding given walking pattern. Uses iter iterations on markov chain.
-inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<bool>& big_matrix, Performance_Statistics& perf_stats, Matrix_Statistics& matrix_stats, const int threads_count)
+inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<bool>& big_matrix, Performance_Statistics& perf_stats, Matrix_Statistics& matrix_stats, const int threads_count, const int random_seed)
 {
 	// I wouldn't accomplish anothing using 0 workers
 	if (threads_count == 0)
 	{
-		MCMCgenerator(iter, patterns, big_matrix, perf_stats, matrix_stats, 1);
+		MCMCgenerator(iter, patterns, big_matrix, perf_stats, matrix_stats, 1, random_seed);
 		return;
 	}
 
@@ -193,7 +194,7 @@ inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<boo
 
 	// random generator from uniform distribution [0, n-1]
 	std::random_device rd;
-	std::mt19937 rng(1993);
+	std::mt19937 rng(random_seed == -1 ? rd() : random_seed);
 	std::uniform_int_distribution<int> uni(0, big_matrix.getRow() - 1);
 
 	//std::ofstream oFile("changes.txt"), ar("avoidrevert.txt");
@@ -544,7 +545,7 @@ void parallel_avoid2(const int my_index, Patterns patterns, Matrix<bool>& big_ma
 	std::vector<std::atomic<bool>>& synchronize, std::atomic<bool>& end, std::atomic<int>& current_id, std::atomic<int>& last_id, std::atomic<int>& iterations, std::vector<int>& revertings,
 	std::vector<std::queue<std::pair<int, Job> > >& syncs, const int N, const int iter, std::atomic<int>& ones, Matrix_Statistics& matrix_stats,
 	std::vector<std::mutex>& syncs_mutexes, std::vector<std::mutex>& revertings_mutexes, std::mutex& last_id_mutex, int& last_perc, std::vector<std::atomic<int>>& last_job_id,
-	std::ostream& oFile, std::ostream& ar, std::vector<std::atomic<bool>>& last_change_noted, std::vector<std::atomic<bool>>& reverts)
+	std::ostream& oFile, std::ostream& ar, std::vector<std::atomic<bool>>& last_change_noted, std::vector<std::atomic<bool>>& reverts, const int random_seed)
 {
 	// everytime there is a successful avoid taken, all the threads need to get its own matrix into a valid state - this is the queue of all changes
 	std::deque<std::pair<int, Job> > sync;
@@ -557,7 +558,7 @@ void parallel_avoid2(const int my_index, Patterns patterns, Matrix<bool>& big_ma
 
 	// random generator from uniform distribution [0, n-1]
 	std::random_device rd;
-	std::mt19937 rng(1993);
+	std::mt19937 rng(random_seed == -1 ? rd() : random_seed + my_index);
 	std::uniform_int_distribution<int> uni(0, N - 1);
 
 	while (!end)
@@ -744,12 +745,12 @@ void parallel_avoid2(const int my_index, Patterns patterns, Matrix<bool>& big_ma
 	}
 }
 
-inline void parallelMCMCgenerator2(const int iter, Patterns& patterns, Matrix<bool>& big_matrix, Performance_Statistics& perf_stats, Matrix_Statistics& matrix_stats, const int threads_count)
+inline void parallelMCMCgenerator2(const int iter, Patterns& patterns, Matrix<bool>& big_matrix, Performance_Statistics& perf_stats, Matrix_Statistics& matrix_stats, const int threads_count, const int random_seed)
 {
 	// I wouldn't accomplish anothing using 0 workers
 	if (threads_count == 0)
 	{
-		MCMCgenerator(iter, patterns, big_matrix, perf_stats, matrix_stats, 1);
+		MCMCgenerator(iter, patterns, big_matrix, perf_stats, matrix_stats, 1, random_seed);
 		return;
 	}
 
@@ -807,11 +808,11 @@ inline void parallelMCMCgenerator2(const int iter, Patterns& patterns, Matrix<bo
 		threads[i - 1] = std::thread(parallel_avoid2, i, patterns, std::ref(big_matrix), std::ref(sizes[i]), std::ref(force_end), std::ref(synchronize), std::ref(end),
 			std::ref(current_id), std::ref(last_id), std::ref(iterations), std::ref(reverting), std::ref(syncs), size, iter, std::ref(ones), std::ref(matrix_stats),
 			std::ref(syncs_mutexes), std::ref(reverting_mutexes), std::ref(last_id_mutex), std::ref(last_perc), std::ref(last_job_id), std::ref(oFile), std::ref(ar),
-			std::ref(last_change_noted), std::ref(reverts));
+			std::ref(last_change_noted), std::ref(reverts), random_seed);
 	}
 
 	parallel_avoid2(0, patterns, big_matrix, sizes[0], force_end, synchronize, end, current_id, last_id, iterations, reverting, syncs,
-		size, iter, ones, matrix_stats, syncs_mutexes, reverting_mutexes, last_id_mutex, last_perc, last_job_id, oFile, ar, last_change_noted, reverts);
+		size, iter, ones, matrix_stats, syncs_mutexes, reverting_mutexes, last_id_mutex, last_perc, last_job_id, oFile, ar, last_change_noted, reverts, random_seed);
 
 	for (int i = 1; i != threads_count; ++i)
 		threads[i - 1].join();

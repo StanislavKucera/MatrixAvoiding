@@ -196,7 +196,7 @@ Pattern* create_new_pattern(Matrix<bool>&& pattern, const Type type, const Map m
 				patterns.add(new General_pattern<std::vector<std::vector<int> > >(pattern, threads_count - 1, MAX, map));
 				Matrix_Statistics matrix_stats(-1, 0, N, -1);
 				Performance_Statistics perf_stats(1, -1);
-				MCMCgenerator(N*N, patterns, init, perf_stats, matrix_stats, 1);
+				MCMCgenerator(N*N, patterns, init, perf_stats, matrix_stats, 1, -1);
 			}
 
 			General_pattern<std::vector<std::vector<int> > > gpSUM(pattern, threads_count - 1, SUM, map);
@@ -241,7 +241,7 @@ Pattern* create_new_pattern(Matrix<bool>&& pattern, const Type type, const Map m
 				patterns.add(new General_pattern<std::set<std::vector<int> > >(pattern, threads_count - 1, MAX, map));
 				Matrix_Statistics matrix_stats(-1, 0, N, -1);
 				Performance_Statistics perf_stats(1, -1);
-				MCMCgenerator(N*N, patterns, init, perf_stats, matrix_stats, 1);
+				MCMCgenerator(N*N, patterns, init, perf_stats, matrix_stats, 1, -1);
 			}
 
 			General_pattern<std::set<std::vector<int> > > gpSUM(pattern, threads_count - 1, SUM, map);
@@ -286,7 +286,7 @@ Pattern* create_new_pattern(Matrix<bool>&& pattern, const Type type, const Map m
 				patterns.add(new General_pattern<std::unordered_set<std::vector<int>, int_vector_hasher> >(pattern, threads_count - 1, MAX, map));
 				Matrix_Statistics matrix_stats(-1, 0, N, -1);
 				Performance_Statistics perf_stats(1, -1);
-				MCMCgenerator(N*N, patterns, init, perf_stats, matrix_stats, 1);
+				MCMCgenerator(N*N, patterns, init, perf_stats, matrix_stats, 1, -1);
 			}
 
 			General_pattern<std::unordered_set<std::vector<int>, int_vector_hasher> > gpSUM(pattern, threads_count - 1, SUM, map);
@@ -326,7 +326,7 @@ Pattern* create_new_pattern(Matrix<bool>&& pattern, const Type type, const Map m
 	return new General_pattern<std::vector<std::vector<int> > >(pattern, threads_count - 1, order, map, std::move(custom_order));
 }
 
-std::vector<Pattern_info> parse_config(std::istream& config, int& N, int& iter, int& hist_from, int& hist_to, int& hist_freq,
+std::vector<Pattern_info> parse_config(std::istream& config, int& N, int& iter, int& random_seed, int& hist_from, int& hist_to, int& hist_freq,
 	std::string& bmp_file, std::string& hist_file, std::string& max_ones_file, std::string& csv_file, std::string& perf_file, std::string& init_matrix,
 	bool& console_time, bool& console_pattern, bool& console_matrix, bool& console_perf, bool& console_csv, bool& console_hist, bool& console_max_ones,
 	int& threads_count, Parallel_mode& parallel_mode)
@@ -383,6 +383,13 @@ std::vector<Pattern_info> parse_config(std::istream& config, int& N, int& iter, 
 			N = my_stoi(value);
 		else if (var == "iter" || var == "iterations")
 			iter = my_stoi(value);
+		else if (var == "random_seed" || var == "seed")
+		{
+			if (value == "random" || value == "rand" || value == "r")
+				random_seed = -1;
+			else
+				random_seed = my_stoi(value);
+		}
 		else if (var == "threads" || var == "threads_count")
 			threads_count = my_stoi(value);
 		else if (var == "parallel_mode" || var == "parallelism")

@@ -1,6 +1,7 @@
 [input]
 size = 100
 iterations = 10000
+random_seed = random
 init_matrix = zero
 parallel_mode = serial
 threads_count = 1

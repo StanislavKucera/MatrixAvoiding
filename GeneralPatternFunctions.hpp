@@ -1057,8 +1057,9 @@ bool General_pattern<T>::check_orthogonal_bounds(const int line, const int big_l
 				top = parallel_bound_indices_[level_][line].first.second,	// index to the upper bound for currently added line in map vector
 				i_bot = parallel_bound_indices_[level_][line].second.first,	// index of the line of the pattern which is a upper bound of currently added line 
 				i_top = parallel_bound_indices_[level_][line].second.second;// index of the line of the pattern which is a lower bound of currently added line
-	return true;
 	int from, to, current;
+	const int big_matrix_rows = big_matrix.getRow(),
+		big_matrix_cols = big_matrix.getCol();
 
 	// i have parallel boundaries of -1 if there are not any, return correct bounds in both cases:
 	// if there is no lower bound
@@ -1073,27 +1074,27 @@ bool General_pattern<T>::check_orthogonal_bounds(const int line, const int big_l
 		// "line" is a column
 		else
 		{
-			from = big_matrix.getRow();
+			from = big_matrix_rows;
 			current = row_;
 		}
 	}
 	// else return found lower bound with offset, which ensures there at least enough lines in the big matrix to map those from the pattern, which are in between
 	else
 	{
-		from = mapping[bot];
-		current = i_bot;
+		from = mapping[bot] + 1;
+		current = i_bot + 1;
 	}
 
-	while (current != line)
+	while (current < line)
 	{
 		// I didn't manage to find enough one-entries
 		if (big_line == from)
 			return false;
 
-		if ((orthogonal_line >> current) & 1)
+		if ((line < row_ && (orthogonal_line >> current) & 1) || (line >= row_ && (orthogonal_line >> (current - row_)) & 1))
 		{
 			if ((line < row_ && big_matrix.at(from, big_orthogonal_line)) ||
-				(line >= row_ && big_matrix.at(big_orthogonal_line, from - big_matrix.getRow())))
+				(line >= row_ && big_matrix.at(big_orthogonal_line, from - big_matrix_rows)))
 				++current;
 		}
 		else
@@ -1106,76 +1107,44 @@ bool General_pattern<T>::check_orthogonal_bounds(const int line, const int big_l
 	if (top == -1)
 	{
 		// and "line" is a row
-		if (line < row_) {
-			to = big_line + 1;
-			current = line + 1;
-
-			while (current < row_)
-			{
-				// I didn't manage to find enough one-entries
-				if (big_matrix.getRow() == to)
-					return false;
-
-				if ((orthogonal_line >> current) & 1)
-				{
-					if (big_matrix.at(to, big_orthogonal_line))
-						++current;
-				}
-				else
-					++current;
-
-				++to;
-			}
+		if (line < row_)
+		{
+			to = row_ - 1;
+			current = big_matrix_rows - 1;
 		}
 		// "line" is a column
-		else {
-			to = big_line + 1;
-			current = line + 1;
-
-			while (current < row_ + col_)
-			{
-				// I didn't manage to find enough one-entries
-				if (big_matrix.getRow() + big_matrix.getCol() == to)
-					return false;
-
-				if ((orthogonal_line >> current) & 1)
-				{
-					if (big_matrix.at(big_orthogonal_line, to - big_matrix.getRow()))
-						++current;
-				}
-				else
-					++current;
-
-				++to;
-			}
+		else
+		{
+			to = big_matrix_rows + big_matrix_cols - 1;
+			current = row_ + col_ - 1;
 		}
 	}
 	// else return found upper bound with offset, which ensures there at least enough lines in the big matrix to map those from the pattern, which are in between
 	else
 	{
-		to = big_line + 1;
-		current = line + 1;
-
-		while (current != i_top + 1)
-		{
-			// I didn't manage to find enough one-entries
-			if (to == mapping[top] + 1)
-				return false;
-
-			if ((orthogonal_line >> current) & 1)
-			{
-				if ((line < row_ && big_matrix.at(to, big_orthogonal_line)) ||
-					(line >= row_ && big_matrix.at(big_orthogonal_line, to - big_matrix.getRow())))
-					++current;
-			}
-			else
-				++current;
-
-			++to;
-		}
+		to = mapping[top] - 1;
+		current = i_top - 1;
 	}
 
-	return from < to;
+	while (current > line)
+	{
+		// I didn't manage to find enough one-entries
+		if (big_line == to)
+			return false;
+
+		if ((line < row_ && (orthogonal_line >> current) & 1) || (line >= row_ && (orthogonal_line >> (current - row_)) & 1))
+		{
+			if ((line < row_ && big_matrix.at(to, big_orthogonal_line)) ||
+				(line >= row_ && big_matrix.at(big_orthogonal_line, to - big_matrix_rows)))
+				--current;
+		}
+		else
+			--current;
+
+		--to;
+	}
+
+	return true;
 }
 
 template<typename T>

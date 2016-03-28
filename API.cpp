@@ -13,7 +13,8 @@ int main()
 {
 	int N(100),
 		iter(1000),
-		threads_count(1);
+		threads_count(1),
+		random_seed(-1);
 	int hist_from(0),
 		hist_to(1000),
 		hist_freq(100);							// matrix statistics settings
@@ -34,7 +35,7 @@ int main()
 
 	std::ifstream config("config.txt");
 
-	std::vector<Pattern_info> pattern_info = parse_config(config, N, iter, hist_from, hist_to, hist_freq, bmp_file, hist_file, max_ones_file, csv_file, perf_file,
+	std::vector<Pattern_info> pattern_info = parse_config(config, N, iter, random_seed, hist_from, hist_to, hist_freq, bmp_file, hist_file, max_ones_file, csv_file, perf_file,
 		init_matrix, console_time, console_pattern, console_matrix, console_perf, console_csv, console_hist, console_max_ones, threads_count, parallel_mode);
 
 	std::chrono::system_clock::time_point start, end;
@@ -64,11 +65,11 @@ int main()
 	start = std::chrono::system_clock::now();
 
 	if (parallel_mode == MCMC)
-		parallelMCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, threads_count - 1);
+		parallelMCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, threads_count - 1, random_seed);
 	else if (parallel_mode == MCMC2)
-		parallelMCMCgenerator2(iter, patterns, result, perf_stats, matrix_stats, threads_count);
+		parallelMCMCgenerator2(iter, patterns, result, perf_stats, matrix_stats, threads_count, random_seed);
 	else //if (parallel_mode == MAP)
-		MCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, (parallel_mode == SERIAL ? 1 : threads_count));
+		MCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, (parallel_mode == SERIAL ? 1 : threads_count), random_seed);
 
 	end = std::chrono::system_clock::now();
 	//////////////////////////////////////////////////////
