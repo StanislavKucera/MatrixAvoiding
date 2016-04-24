@@ -10,33 +10,29 @@
 class Matrix_Statistics
 {
 public:
-	Matrix_Statistics(const int from, const int to, const int n, const int freq) : all_entries(n, n), max_all_entries(n, n),
-		ones_count(0), max_ones_count(0), hist_count(0), iter_from(from), iter_to(to), frequency(freq) {}
+	Matrix_Statistics(const int from, const int to, const int n, const int freq, const bool ones) : all_entries(n, n), max_all_entries(n, n),
+		ones_count(0), max_ones_count(0), hist_count(0), iter_from(from), iter_to(to), frequency(freq), count_max_ones(ones) {}
 
 	void add_data(const int iter, const int ones, const Matrix<bool>& big_matrix)
 	{
-		if (iter < iter_from || iter > iter_to)
-			return;
-
-		ones_count += ones;
-
-		if (ones > max_ones_count)
+		if (count_max_ones && ones > max_ones_count)
 		{
 			max_ones_count = ones;
 			max_all_entries = big_matrix;
 		}
 
-		if (iter % frequency == 0)
-		{
-			for (int i = 0; i < big_matrix.getRow(); ++i)
-				for (int j = 0; j < big_matrix.getCol(); ++j)
-					if (big_matrix.at(i, j))
-						++all_entries.at(i, j);
+		if (iter < iter_from || iter > iter_to || frequency == 0 || iter % frequency == 0)
+			return;
 
-			++hist_count;
-		}
+		for (int i = 0; i < big_matrix.getRow(); ++i)
+			for (int j = 0; j < big_matrix.getCol(); ++j)
+				if (big_matrix.at(i, j))
+					++all_entries.at(i, j);
+
+		ones_count += ones;
+		++hist_count;
 	}
-	void print_histogram(const char* output) const
+	void print_bmp_histogram(const char* output) const
 	{
 		BMP hist;
 		hist.SetSize(all_entries.getRow(), all_entries.getCol());
@@ -54,6 +50,12 @@ public:
 
 		hist.WriteToFile(output);
 	}
+	void print_text_histogram(const char* output) const
+	{
+		std::ofstream oFile(output);
+		oFile << all_entries.Print() << std::endl << hist_count;
+		oFile.close();
+	}
 	void print_histogram(std::ostream& output) const
 	{
 		for (int i = 0; i < all_entries.getRow(); i++)
@@ -69,7 +71,7 @@ public:
 			output << "\n";
 		}
 	}
-	void print_max_ones(const char* output) const
+	void print_bmp_max_ones(const char* output) const
 	{
 		BMP matrix;
 		matrix.SetSize(max_all_entries.getRow(), max_all_entries.getCol());
@@ -87,6 +89,12 @@ public:
 
 		matrix.WriteToFile(output);
 	}
+	void print_text_max_ones(const char* output) const
+	{
+		std::ofstream oFile(output);
+		oFile << max_all_entries.Print();
+		oFile.close();
+	}
 	void print_max_ones(std::ostream& output) const { output << max_all_entries.Print(); }
 private:
 	Matrix<long long> all_entries;
@@ -97,6 +105,7 @@ private:
 	const int iter_from,
 		iter_to,
 		frequency;
+	const bool count_max_ones;
 };
 
 // performance statistics - is size_t big enough?

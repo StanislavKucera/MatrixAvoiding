@@ -117,23 +117,26 @@ inline bool get_bool(const std::string& write)
 		throw my_exception("Not sure what to write into the console. Choose yes or no in config.txt.");
 }
 
-inline void set_file_or_bool(const std::string& input, std::string& filename, bool& console)
+inline void set_file_or_console(const std::string& input, std::vector<std::string>& files, std::vector<Console_output>& console_outputs, Console_output output)
 {
 	if (input != "no" && input != "n" && input != "0")				// no output file
 	{
 		if (input == "console" || input == "c")
 		{
-			console = true;
+			console_outputs.push_back(output);
+			files.push_back("console");
 			return;
 		}
 
-		filename = input;
-		FILE* test = fopen(filename.c_str(), "w");
+		FILE* test = fopen(input.c_str(), "w");
 
 		if (!test)
-			std::cerr << "Cannot open file \"" << filename << "\". Please check that all directories are created and accessible.\n";
+			std::cerr << "Cannot open file \"" << input << "\". Please check that all directories are created and accessible.\n";
 		else
+		{
 			fclose(test);
+			files.push_back(input);
+		}
 	}
 }
 
@@ -194,7 +197,7 @@ Pattern* create_new_pattern(Matrix<bool>&& pattern, const Type type, const Map m
 				init = Matrix<bool>(N, N);
 				Patterns patterns;
 				patterns.add(new General_pattern<std::vector<std::vector<int> > >(pattern, threads_count - 1, MAX, map));
-				Matrix_Statistics matrix_stats(-1, 0, N, -1);
+				Matrix_Statistics matrix_stats(-1, 0, N, -1, false);
 				Performance_Statistics perf_stats(1, -1);
 				MCMCgenerator(N*N, patterns, init, perf_stats, matrix_stats, 1, -1);
 			}
@@ -239,7 +242,7 @@ Pattern* create_new_pattern(Matrix<bool>&& pattern, const Type type, const Map m
 				init = Matrix<bool>(N, N);
 				Patterns patterns;
 				patterns.add(new General_pattern<std::set<std::vector<int> > >(pattern, threads_count - 1, MAX, map));
-				Matrix_Statistics matrix_stats(-1, 0, N, -1);
+				Matrix_Statistics matrix_stats(-1, 0, N, -1, false);
 				Performance_Statistics perf_stats(1, -1);
 				MCMCgenerator(N*N, patterns, init, perf_stats, matrix_stats, 1, -1);
 			}
@@ -284,7 +287,7 @@ Pattern* create_new_pattern(Matrix<bool>&& pattern, const Type type, const Map m
 				init = Matrix<bool>(N, N);
 				Patterns patterns;
 				patterns.add(new General_pattern<std::unordered_set<std::vector<int>, int_vector_hasher> >(pattern, threads_count - 1, MAX, map));
-				Matrix_Statistics matrix_stats(-1, 0, N, -1);
+				Matrix_Statistics matrix_stats(-1, 0, N, -1, false);
 				Performance_Statistics perf_stats(1, -1);
 				MCMCgenerator(N*N, patterns, init, perf_stats, matrix_stats, 1, -1);
 			}
@@ -327,8 +330,8 @@ Pattern* create_new_pattern(Matrix<bool>&& pattern, const Type type, const Map m
 }
 
 std::vector<Pattern_info> parse_config(std::istream& config, int& N, int& iter, int& random_seed, int& hist_from, int& hist_to, int& hist_freq,
-	std::string& bmp_file, std::string& hist_file, std::string& max_ones_file, std::string& csv_file, std::string& perf_file, std::string& init_matrix,
-	bool& console_time, bool& console_pattern, bool& console_matrix, bool& console_perf, bool& console_csv, bool& console_hist, bool& console_max_ones,
+	std::vector<Console_output>& console_outputs, std::vector<std::string>& output_files, std::vector<std::string>& hist_files,
+	std::vector<std::string>& max_ones_files, std::vector<std::string>& csv_files, std::vector<std::string>& perf_files, std::string& init_matrix,
 	int& threads_count, Parallel_mode& parallel_mode)
 {
 	std::string input, var, value;
@@ -373,9 +376,15 @@ std::vector<Pattern_info> parse_config(std::istream& config, int& N, int& iter, 
 		if (pos == std::string::npos || pos == 0 || pos == input.size() - 1)
 			continue;
 
-		var = input.substr(0, (input[pos - 1] == ' ' ? pos - 1 : pos));
+		int prewhitespaces = 0;
+		int postwhitespaces = 0;
+
+		for (; input[pos - prewhitespaces - 1] == ' ' || input[pos - prewhitespaces - 1] == '\t'; ++prewhitespaces) { if (prewhitespaces >= pos) break; }
+		for (; input[pos + postwhitespaces + 1] == ' ' || input[pos + postwhitespaces + 1] == '\t'; ++postwhitespaces) { if (postwhitespaces >= input.size() - pos - 1) break; }
+
+		var = input.substr(0, pos - prewhitespaces);
 		std::transform(var.begin(), var.end(), var.begin(), ::tolower);			// never seen this ::sth before
-		value = input.substr((input[pos + 1] == ' ' ? pos + 2 : pos + 1));
+		value = input.substr(pos + 1 + postwhitespaces);
 		std::transform(value.begin(), value.end(), value.begin(), ::tolower);	// just seen this ::sth two lines above for the first time
 
 		// input
@@ -391,7 +400,12 @@ std::vector<Pattern_info> parse_config(std::istream& config, int& N, int& iter, 
 				random_seed = my_stoi(value);
 		}
 		else if (var == "threads" || var == "threads_count")
+		{
 			threads_count = my_stoi(value);
+
+			if (threads_count == -1)
+				threads_count = (int)std::thread::hardware_concurrency();
+		}
 		else if (var == "parallel_mode" || var == "parallelism")
 			parallel_mode = get_parallel_mode(value);
 		else if (var == "initial_matrix_file" || var == "init_matrix")
@@ -425,51 +439,46 @@ std::vector<Pattern_info> parse_config(std::istream& config, int& N, int& iter, 
 		}
 		// output
 		else if (var == "matrix_output" || var == "output")
-			set_file_or_bool(value, bmp_file, console_matrix);
+			set_file_or_console(value, output_files, console_outputs, MATRIX);
 		else if (var == "pattern_to_console")
 		{
 			try
 			{
-				console_pattern = get_bool(value);
+				if (get_bool(value))
+					console_outputs.push_back(PATTERNS);
 			}
 			catch (const my_exception& exc)
 			{
 				std::cout << "While processing \"" << var << "\", exception triggered: " << exc.what() << std::endl;
-				console_pattern = false;
 			}
 		}
 		else if (var == "time_to_console" || var == "time")
 		{
 			try
 			{
-				console_time = get_bool(value);
+				if (get_bool(value))
+					console_outputs.push_back(TIME);
 			}
 			catch (const my_exception& exc)
 			{
 				std::cout << "While processing \"" << var << "\", exception triggered: " << exc.what() << std::endl;
-				console_time = false;
 			}
 		}
 		else if (var == "performance_stats" || var == "performance")
-			set_file_or_bool(value, perf_file, console_perf);
+			set_file_or_console(value, perf_files, console_outputs, PERF);
 		else if (var == "performance_csv_stats" || var == "performance_csv")
-			set_file_or_bool(value, csv_file, console_csv);
+			set_file_or_console(value, csv_files, console_outputs, CSV);
 		// matrix stats
 		else if (var == "histogram_file" || var == "histogram")
-			set_file_or_bool(value, hist_file, console_hist);
+			set_file_or_console(value, hist_files, console_outputs, HIST);
 		else if (var == "max_ones_file" || var == "max_ones" || var == "max_ones_matrix_file")
-			set_file_or_bool(value, max_ones_file, console_max_ones);
+			set_file_or_console(value, max_ones_files, console_outputs, MAX_ONES);
 		else if (var == "histogram_frequency" || var == "frequency")
 			hist_freq = my_stoi(value);
 		else if (var == "histogram_initial" || var == "initial")
 			hist_from = my_stoi(value);
 		else if (var == "histogram_final" || var == "final")
-		{
 			hist_to = my_stoi(value);
-
-			if (hist_to == 0)
-				hist_to = -1;
-		}
 		else
 			std::cerr << "Couldn't parse the line \"" << var << " = " << value << "\" from config file. Make sure there are no spelling errors." << std::endl;
 	}
@@ -514,7 +523,7 @@ void set_patterns(Patterns& patterns, const std::vector<Pattern_info>& pattern_i
 			{
 				try
 				{
-					Matrix<bool>(N, N, pattern.init_matrix_file);
+					Matrix<bool>(pattern.init_matrix_file);
 				}
 				catch (...)
 				{

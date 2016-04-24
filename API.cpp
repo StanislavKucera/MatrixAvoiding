@@ -18,25 +18,19 @@ int main()
 	int hist_from(0),
 		hist_to(1000),
 		hist_freq(100);							// matrix statistics settings
-	std::string bmp_file("notset"),
-		hist_file("notset"),
-		max_ones_file("notset"),
-		csv_file("notset"),
-		perf_file("notset"),
-		init_matrix("zero");
-	bool console_time(false),
-		console_pattern(false),
-		console_matrix(false),
-		console_perf(false),
-		console_csv(false),
-		console_hist(false),
-		console_max_ones(false);
+	std::vector<Console_output> console_outputs;
+	std::vector<std::string> output_files,
+		hist_files,
+		max_ones_files,
+		csv_files,
+		perf_files;
+	std::string	init_matrix("zero");
 	Parallel_mode parallel_mode(SERIAL);
 
 	std::ifstream config("config.txt");
 
-	std::vector<Pattern_info> pattern_info = parse_config(config, N, iter, random_seed, hist_from, hist_to, hist_freq, bmp_file, hist_file, max_ones_file, csv_file, perf_file,
-		init_matrix, console_time, console_pattern, console_matrix, console_perf, console_csv, console_hist, console_max_ones, threads_count, parallel_mode);
+	std::vector<Pattern_info> pattern_info = parse_config(config, N, iter, random_seed, hist_from, hist_to, hist_freq, console_outputs,
+		output_files, hist_files, max_ones_files, csv_files, perf_files, init_matrix, threads_count, parallel_mode);
 
 	std::chrono::system_clock::time_point start, end;
 	Patterns patterns;
@@ -58,7 +52,7 @@ int main()
 
 	set_patterns(patterns, pattern_info, result, init_matrix != "zero", N, threads_count);
 
-	Matrix_Statistics matrix_stats(hist_from, hist_to, N, hist_freq);
+	Matrix_Statistics matrix_stats(hist_from, (hist_to == -1) ? iter : hist_to, N, (hist_files.empty()) ? 0 : hist_freq, !max_ones_files.empty());
 	Performance_Statistics perf_stats(5, iter);
 
 	//////////////////////////////////////////////////////
@@ -75,25 +69,41 @@ int main()
 	//////////////////////////////////////////////////////
 
 	// if output file is specified
-	if (bmp_file != "notset") {
-		BMP matrix;
-		matrix.SetSize(N, N);
-		matrix.SetBitDepth(1);
-		CreateGrayscaleColorTable(matrix);
+	for (const auto& output_file : output_files)
+	{
+		if (output_file == "console")
+			continue;
+		else if (output_file.substr(output_file.size() - 4) == ".bmp")
+		{
+			BMP matrix;
+			matrix.SetSize(N, N);
+			matrix.SetBitDepth(1);
+			CreateGrayscaleColorTable(matrix);
 
-		for (int i = 0; i != N; ++i)
-			for (int j = 0; j != N; ++j)
-			{
-				matrix(i, j)->Red = (ebmpBYTE)((1 - result.at(i, j)) * 255);
-				matrix(i, j)->Green = (ebmpBYTE)((1 - result.at(i, j)) * 255);
-				matrix(i, j)->Blue = (ebmpBYTE)((1 - result.at(i, j)) * 255);
-			}
+			for (int i = 0; i != N; ++i)
+				for (int j = 0; j != N; ++j)
+				{
+					matrix(i, j)->Red = (ebmpBYTE)((1 - result.at(i, j)) * 255);
+					matrix(i, j)->Green = (ebmpBYTE)((1 - result.at(i, j)) * 255);
+					matrix(i, j)->Blue = (ebmpBYTE)((1 - result.at(i, j)) * 255);
+				}
 
-		matrix.WriteToFile(bmp_file.c_str());
+			matrix.WriteToFile(output_file.c_str());
+		}
+		else
+		{
+			std::ofstream outFile(output_file);
+			outFile << result.Print();
+			outFile.close();
+		}
 	}
 
 	// if performance stats file is specified
-	if (perf_file != "notset") {
+	for (const auto& perf_file : perf_files)
+	{
+		if (perf_file == "console")
+			continue;
+
 		std::ofstream opFile(perf_file);
 		opFile << "Total running time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000000.0 << " sec.\n\n";
 		perf_stats.print_data(opFile);
@@ -101,7 +111,11 @@ int main()
 	}
 
 	// if performance stats csv file is specified
-	if (csv_file != "notset") {
+	for (const auto& csv_file : csv_files)
+	{
+		if (csv_file == "console")
+			continue;
+
 		std::ofstream opcFile(csv_file);
 		opcFile << "Total running time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000000.0 << " sec.\n\n";
 		perf_stats.print_csv(opcFile);
@@ -109,66 +123,89 @@ int main()
 	}
 
 	// if histogram file is specified
-	if (hist_file != "notset")
-		matrix_stats.print_histogram(hist_file.c_str());
+	for (const auto& hist_file : hist_files)
+	{
+		if (hist_file == "console")
+			continue;
+		else if (hist_file.substr(hist_file.size() - 4) == ".bmp")
+			matrix_stats.print_bmp_histogram(hist_file.c_str());
+		else
+			matrix_stats.print_text_histogram(hist_file.c_str());
+	}
 
 	// if max ones file is specified
-	if (max_ones_file != "notset")
-		matrix_stats.print_max_ones(max_ones_file.c_str());
-
-	if (console_matrix)
-		std::cout << result.Print();
-	if (console_pattern)
+	for (const auto& max_ones_file : max_ones_files)
 	{
-		std::cout << "\nAvoiding patterns:\n\n";
+		if (max_ones_file == "console")
+			continue;
+		else if (max_ones_file.substr(max_ones_file.size() - 4) == ".bmp")
+			matrix_stats.print_bmp_max_ones(max_ones_file.c_str());
+		else
+			matrix_stats.print_text_max_ones(max_ones_file.c_str());
+	}
 
-		for (const auto& pat : pattern_info)
+	// console output
+	for (const auto& console_output : console_outputs)
+	{
+		switch (console_output)
 		{
-			int row, col, val;
-			std::ifstream iFile(pat.pattern_file);
-			iFile >> row >> col;
+		case MATRIX:
+			std::cout << result.Print();
+			break;
+		case TIME:
+			std::cout << "Running time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000000.0 << " sec.";
+			break;
+		case PATTERNS:
+			std::cout << "Avoiding patterns:\n\n";
 
-			for (int i = 0; i < row; ++i)
+			for (const auto& pat : pattern_info)
 			{
-				for (int j = 0; j < col; ++j)
+				int row, col, val;
+				std::ifstream iFile(pat.pattern_file);
+				iFile >> row >> col;
+
+				for (int i = 0; i < row; ++i)
 				{
-					iFile >> val;
+					for (int j = 0; j < col; ++j)
+					{
+						iFile >> val;
 
-					if (j != 0)
-						std::cout << " ";
+						if (j != 0)
+							std::cout << " ";
 
-					std::cout << val;
+						std::cout << val;
+					}
+
+					std::cout << std::endl;
 				}
 
 				std::cout << std::endl;
+
+				iFile.close();
 			}
 
-			std::cout << std::endl;
-
-			iFile.close();
+			break;
+		case PERF:
+			std::cout << "Performance statistics:\n";
+			perf_stats.print_data(std::cout);
+			break;
+		case CSV:
+			std::cout << "Performance csv statistics:\n";
+			perf_stats.print_csv(std::cout);
+			break;
+		case HIST:
+			std::cout << "\nHistogram:\n";
+			matrix_stats.print_histogram(std::cout);
+			break;
+		case MAX_ONES:
+			std::cout << "\nMatrix with the maximum number of one-entries:\n";
+			matrix_stats.print_max_ones(std::cout);
+			break;
+		default:
+			break;
 		}
-	}
-	if (console_time)
-		std::cout << "\nRunning time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000000.0 << " sec.\n";
-	if (console_perf)
-	{
-		std::cout << "\nPerformance statistics:\n";
-		perf_stats.print_data(std::cout);
-	}
-	if (console_csv)
-	{
-		std::cout << "\nPerformance csv statistics:\n";
-		perf_stats.print_csv(std::cout);
-	}
-	if (console_hist)
-	{
-		std::cout << "\nHistogram:\n";
-		matrix_stats.print_histogram(std::cout);
-	}
-	if (console_max_ones)
-	{
-		std::cout << "\nMatrix with the maximum number of one-entries:\n";
-		matrix_stats.print_max_ones(std::cout);
+
+		std::cout << std::endl << std::endl;
 	}
 
 	getchar();

@@ -59,6 +59,8 @@ enum Map_container { VECTOR, SET, HASH };
 
 enum Parallel_mode { SERIAL, MCMC, MCMC2, MAP };
 
+enum Console_output { MATRIX, TIME, PATTERNS, PERF, CSV, HIST, MAX_ONES };
+
 // hash function for a vector of size_t
 class int_vector_hasher {
 public:
