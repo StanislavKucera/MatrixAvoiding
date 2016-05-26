@@ -145,12 +145,20 @@ public:
 		{
 			++success_counter[index];
 			success_time[index] += time;
+			
+			if (sizes.empty())
+				return;
+
 			success_levels[index] += sizes[0].size();
 		}
 		else
 		{
 			++fail_counter[index];
 			fail_time[index] += time;
+
+			if (sizes.empty())
+				return;
+
 			fail_levels[index] += sizes[0].size();
 		}
 

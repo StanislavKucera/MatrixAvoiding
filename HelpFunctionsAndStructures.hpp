@@ -13,7 +13,7 @@
 enum Type { GENERAL, WALKING, SLOW };
 
 // Enum for the line ordering functions
-enum Order { DESC, SUM, MAX, AUTO, CUSTOM };
+enum Order { DESC, SUM, MAX, TWO, AUTO, CUSTOM };
 
 struct Map 
 { 

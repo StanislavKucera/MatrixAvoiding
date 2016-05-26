@@ -9,7 +9,7 @@
 #include "API.hpp"
 #include "GeneralPatternFunctions.hpp"
 
-int main()
+int main(int argc, char **argv)
 {
 	int N(100),
 		iter(1000),
@@ -24,13 +24,32 @@ int main()
 		max_ones_files,
 		csv_files,
 		perf_files;
-	std::string	init_matrix("zero");
+	std::string	init_matrix("zero"),
+		config_file("config.txt");
 	Parallel_mode parallel_mode(SERIAL);
 
-	std::ifstream config("config.txt");
+	if (argc > 1)
+		config_file = argv[1];
+
+	{
+		FILE* test = fopen(config_file.c_str(), "r");
+
+		if (!test)
+		{
+			std::cerr << "Cannot open configuration file \"" << config_file << "\". Please check that all directories are created and accessible.\n";
+			getchar();
+			return 1;
+		}
+		else
+			fclose(test);
+	}
+
+	std::ifstream config(config_file);
 
 	std::vector<Pattern_info> pattern_info = parse_config(config, N, iter, random_seed, hist_from, hist_to, hist_freq, console_outputs,
 		output_files, hist_files, max_ones_files, csv_files, perf_files, init_matrix, threads_count, parallel_mode);
+
+	config.close();
 
 	std::chrono::system_clock::time_point start, end;
 	Patterns patterns;

@@ -131,6 +131,7 @@ private:
 				col_;									// number of columns of the pattern
 	std::vector<long long> lines_;						// binary number for each line of a pattern having one at i-th position if the pattern has one-entry there
 														// lines_[i] = (1011)_2 ... i-th line of the pattern has one-enty at 0th, 1st and 3rd position
+	Matrix<bool> pattern_;								// the avoided pattern
 	std::vector<int>	order_,							// order of lines in which I am going to be mapping them
 														// order_[i] = j ... in i-th step I'm going to map j-th line if the pattern
 						what_to_remember_;				// for each adding line I know which of them I still need to remember for next mapping
@@ -200,6 +201,13 @@ private:
 	/// Takes 2^k time because it needs to try all the subsets of lines to find out the best one.
 	/// </summary>
 	void find_MAX_order();
+
+	/// <summary>
+	/// Orders lines of the pattern so that there is the smallest number of lines it needs to remember in two consecutive levels throughout the whole algorithm.
+	/// Smallest in this case means smallest number in the worst case.
+	/// Takes 2^k time because it needs to try all the subsets of lines to find out the best one.
+	/// </summary>
+	void find_TWO_order();
 	
 	/// <summary>
 	/// For given subset returns the number of lines it needs to remember (excluding those, which are not needed).

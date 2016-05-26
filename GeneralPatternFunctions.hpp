@@ -11,6 +11,7 @@ General_pattern<T>::General_pattern(const Matrix<bool>& pattern, const int threa
 	: row_(pattern.getRow()),
 	col_(pattern.getCol()), 
 	lines_(row_ + col_),
+	pattern_(pattern),
 	order_(row_ + col_),
 	what_to_remember_(row_ + col_ + 1),
 	parallel_bound_indices_(row_ + col_),
@@ -73,6 +74,9 @@ General_pattern<T>::General_pattern(const Matrix<bool>& pattern, const int threa
 		break;
 	case MAX:
 		find_MAX_order();
+		break;
+	case TWO:
+		find_TWO_order();
 		break;
 	case CUSTOM:
 		steps_ = custom_order.size();
@@ -706,7 +710,7 @@ void General_pattern<T>::find_MAX_order()
 
 			// extend current subset by i-th line
 			long long supset = current | (1 << i);
-			int number = count_what_to_remember(supset);
+			const int number = count_what_to_remember(supset);
 			// distance from 0 is equal to distance to current + number of elements I need to remember in this step
 			std::pair<int, int> count;
 
@@ -716,6 +720,67 @@ void General_pattern<T>::find_MAX_order()
 				count = std::make_pair(distances[current].first, distances[current].second + 1);
 			else
 				count = std::make_pair(number, 1);
+
+			if (count < distances[supset])
+			{
+				// I haven't seen this subset yet, if I did there is not reason to add it to queue, since algorithm goes through layers of the same number of lines
+				if (back_trace[supset] == -1 && supset != position)
+					q.emplace(supset);
+
+				// update improved distance
+				distances[supset] = count;
+				back_trace[supset] = i;
+			}
+		}
+	}
+
+	// get the best order backtracing found shortest path from 0 lines to all lines
+	for (int i = 0; i < steps_; ++i)
+	{
+		order_[steps_ - 1 - i] = back_trace[position];
+		position = position - (1 << back_trace[position]);
+	}
+}
+
+template<typename T>
+void General_pattern<T>::find_TWO_order()
+{
+	// queue for subsets of lines
+	std::queue<int> q;
+	q.emplace(0);
+
+	// vector of distances for each subset of all lines indices - distance is a number of mapped lines I need to remember throughout the whole algorithm
+	std::vector<std::pair<int, int> > distances(1 << (row_ + col_), std::make_pair(INT_MAX, 0));
+	distances[0] = std::make_pair(0, 0);
+
+	// vector for retrieving the order of line mapped after I find the shortest path from 0 lines mapped to all lines mapped
+	std::vector<int> back_trace(1 << (row_ + col_), -1);
+
+	// the set of all lines I want to map
+	long long position = ((1 << (row_ + col_)) - 1) ^ empty_lines_;
+
+	while (!q.empty())
+	{
+		int current = q.front();
+		q.pop();
+
+		// extend current subset by one if possible
+		for (int i = 0; i < row_ + col_; ++i)
+		{
+			// this line is already an element of the subset or the line is empty
+			if ((current >> i) & 1 || (empty_lines_ >> i) & 1)
+				continue;
+
+			// extend current subset by i-th line
+			long long supset = current | (1 << i);
+			const int number = count_what_to_remember(supset);
+			std::pair<int, int> count(0, number);
+
+			// distance from 0 is equal to distance to current + number of elements I need to remember in this step
+			if (supset == position || distances[current].first > (distances[current].second + number))
+				count.first = distances[current].first;
+			else
+				count.first = distances[current].second + number;
 
 			if (count < distances[supset])
 			{

@@ -85,6 +85,8 @@ inline Order get_order(const std::string& order)
 		return MAX;
 	else if (order == "sum" || order == "s")
 		return SUM;
+	else if (order == "two" || order == "t")
+		return TWO;
 	else if (order == "auto" || order == "a" || "automatic")
 		return AUTO;
 	else
@@ -376,9 +378,10 @@ std::vector<Pattern_info> parse_config(std::istream& config, int& N, int& iter, 
 		if (pos == std::string::npos || pos == 0 || pos == input.size() - 1)
 			continue;
 
-		int prewhitespaces = 0;
-		int postwhitespaces = 0;
+		size_t prewhitespaces = 0;
+		size_t postwhitespaces = 0;
 
+		// dealing with possible whitespaces around "="
 		for (; input[pos - prewhitespaces - 1] == ' ' || input[pos - prewhitespaces - 1] == '\t'; ++prewhitespaces) { if (prewhitespaces >= pos) break; }
 		for (; input[pos + postwhitespaces + 1] == ' ' || input[pos + postwhitespaces + 1] == '\t'; ++postwhitespaces) { if (postwhitespaces >= input.size() - pos - 1) break; }
 
