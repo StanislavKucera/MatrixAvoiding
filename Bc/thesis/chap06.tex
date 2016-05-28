@@ -1,0 +1,274 @@
+\chapter{User documentation}
+In the last chapter of the thesis we show how to make the program generate random matrices or to test whether a certain matrix avoids a given forbidden pattern. In the first section we find out how to set a configuration file. After that we go through necessary input and output files and see how they are formatted.
+
+\section{Configuration file}
+
+In order to modify what the program computes, we use a configuration file. There is only command line options to be used and that is a path to the configuration file. If no path is inserted the configuration file is expected to be located in the same directory as the executable file is and its name is ``config.txt''.
+
+The file is a standard text file which can be modified by any text editor and is structured into four sections:
+\begin{itemize}
+\item input
+\item pattern
+\item output
+\item statistics
+\end{itemize}
+The order of the sections is not fixed and there can be additional empty lines for better readability. In each section there is a list of values that can be set either to arbitrary value or to a specific one. There is at most one command of format ``option=value'' per line and there might be additional white spaces surrounding the ``='' sign.
+
+If an option is set more than once, the latter value is always used. If, on the other hand, an option is not set at all, the default value is used. If there is a line encountered that sets a wrong option, for instance when the user mistypes a valid option, the line is skipped and the user gets a warning in the standard error output.
+
+Let us provide a list of all options for each section together with their default values.
+
+\subsection{Input}
+In the first section of the configuration file we set the generating process.
+\begin{itemize}
+\item size: The size of the generated matrix. Results in $M\in\{0,1\}^{size\times size}$.
+
+\begin{tabular}{ll}
+Possible value: & $s\in\mathbb{N}$ \\
+Default value: & 100
+\end{tabular}
+
+\item iterations: The number of iterations of the MCMC process.
+
+\begin{tabular}{ll}
+Possible value: & $i\in\mathbb{N}$ \\
+Default value: & 10,000
+\end{tabular}
+
+\item random\_seed: The random seed for the MCMC process.
+
+\begin{tabular}{ll}
+Possible value: & $s\in\mathbb{N}$ \\
+& ``random'' - chooses a random seed \\
+Default value: & ``random''
+\end{tabular}
+
+\item init\_matrix: A \textit{size}$\times$\textit{size} matrix the MCMC process starts with.
+
+\begin{tabular}{ll}
+Possible value: & \textit{input file path} \\
+& ``zero'' - a matrix containing no one-entries \\
+Default value: & ``zero''
+\end{tabular}
+
+\item parallel\_mode: choose whether to compute in parallel or serial.
+
+\begin{tabular}{ll}
+Possible value: & ``serial'' \\
+& ``mcmc'' - more iterations of the MCMC generator are tested in parallel \\
+& ``map'' - more partial mappings are being extended in parallel \\
+Default value: & ``serial''
+\end{tabular}
+
+\item threads\_count: The number of threads that are going to be used if a parallel mode is chosen.
+
+\begin{tabular}{ll}
+Possible value: & $t\in\mathbb{N}$ \\
+& -1 - chosen according to the number of cores \\
+Default value: & 1
+\end{tabular}
+
+\end{itemize}
+
+\subsection{Pattern}
+It is time to set the options that matter the most - matrix patterns. As you generate a matrix which avoids more than just one pattern, the section [pattern] can be used multiple times, specifying one pattern for each occurrence.
+\begin{itemize}
+\item pattern\_file: A path to a input matrix file - the pattern.
+
+\begin{tabular}{ll}
+Possible value: & matrix file path \\
+Default value: & ``input.txt''
+\end{tabular}
+
+\item pattern\_type: The type of the pattern. Determines the method used for testing avoidance.
+
+\begin{tabular}{ll}
+Possible value: & ``general'' \\
+& ``walking'' - see [chapter3] \\
+& ``slow'' - brute force algorithm for a general pattern \\
+Default value: & ``general''
+\end{tabular}
+\end{itemize}
+
+The next options are only useful if the general pattern type is chosen. It specifies how the mappings are stored as well as what the map function tests.
+\begin{itemize}
+\item map\_one\_entries: If set to ``yes'', the map function not only checks that already mapped lines do cross the currently added one in a one-entry if needed but also tests whether there is enough one-entries in between those already mapped lines. The result is that the map function takes a little longer but it recognizes hopeless mappings earlier.
+
+\begin{tabular}{ll}
+Possible value: & ``yes'' \\
+& ``no'' \\
+Default value: & ``yes''
+\end{tabular}
+
+\item map\_recursion: If set to ``yes'' and the map\_one\_entries is also set to ``yes'', the map function not only tests there are enough one-entries in between already mapped lines on the currently added one, but for those non-mapped lines crossing the current one in a one-entry, it also tests if the partial mapping has one-entries everywhere they are supposed to be. Although this comes with a big time consumption it can filter a big portion of partial mapping that would later become unfeasible.
+
+\begin{tabular}{ll}
+Possible value: & ``yes'' \\
+& ``no'' \\
+Default value: & ``yes''
+\end{tabular}
+
+\item map\_orthogonal\_bounds: If set to ``yes'', the map function also tests the orthogonal bounds of added line - see [chapter2].
+
+\begin{tabular}{ll}
+Possible value: & ``yes'' \\
+& ``no'' \\
+Default value: & ``no''
+\end{tabular}
+
+\item map\_container: A container in which the partial mappings are stored.
+
+\begin{tabular}{ll}
+Possible value: & ``set'' - std::set (red-black tree) \\
+& ``hash'' - std::unordered\_set (hash table) \\
+& ``vector'' - std::vector (dynamic array) \\
+Default value: & ``hash''
+\end{tabular}
+
+\item line\_order: Choose the order in which the lines are being added to the partial mapping. See [chapter2]
+
+\begin{tabular}{ll}
+Possible value: & ``max'' \\
+& ``two'' \\
+& ``sum'' \\
+& ``desc'' \\
+& ``auto'' \\
+& ``order file path'' \\
+Default value: & ``max''
+\end{tabular}
+
+\end{itemize}
+\subsection{Output}
+There is no reason to generate a matrix noone will ever see. In this section we make the matrix show. As the matrix can be output to console, a text file or a bmp file an option in the section can be set more than once and all the settings make difference.
+\begin{itemize}
+\item matrix\_output: The generated matrix can be output as a bmp file in which one-entries are black pixels and zero-entries white. To do that, the file path has to have a pattern ``path.bmp''. If a different path is given the file is stored as a matrix text file. It can also be output into a console if ``console'' is set. In that case it has the text format.
+
+\begin{tabular}{ll}
+Possible value: & ``console'' \\
+& matrix bmp file path \\
+& matrix text file path \\
+& ``no'' \\
+Default value: & ``no''
+\end{tabular}
+
+\item performance\_stats: If the serial computation or the map parallelism is chosen, the program can output a statistics like the percentage of avoid call success, how long did one call take on average and what was the average size of structures. Note that this is not very useful as a matrix statistics, see the next section for that. If more patterns are set, the statistics may get misleading as it also counts the cases when the first pattern is contained in the matrix and the other patterns are not tested at all.
+
+\begin{tabular}{ll}
+Possible value: & ``console'' \\
+& performance file path \\
+& ``no'' \\
+Default value: & ``no''
+\end{tabular}
+
+\item performance\_csv\_stats: The same information as above but formatted to a csv file so the data can be more easily worked with.
+
+\begin{tabular}{ll}
+Possible value: & ``console'' \\
+& csv file path \\
+& ``no'' \\
+Default value: & ``no''
+\end{tabular}
+
+\item time\_to\_console: Prints how long the computation took into a console.
+
+\begin{tabular}{ll}
+Possible value: & ``yes'' \\
+& ``no'' \\
+Default value: & ``no''
+\end{tabular}
+
+\item patterns\_to\_console: Prints all the used patterns into the console.
+
+\begin{tabular}{ll}
+Possible value: & ``yes'' \\
+& ``no'' \\
+Default value: & ``no''
+\end{tabular}
+\end{itemize}
+\subsection{Statistics}
+The last section handles the options important for scientists. While generating a random matrix is a great result, on its way the program can also create some statistics, namely make a histogram of occurrences of one-entries in a generated matrix as the MCMC iterates as well as store the matrix with the highest amount of one-entries. As the process usually does not start with a random matrix, the user can decide to only compute the statistics after a certain number of iterations has been done and to only check a small portion of iterations, every 10th for instance, as a single iteration may not make any difference and counting the histogram takes time.
+\begin{itemize}
+\item histogram\_frequency: Sets how often the histogram gets refreshed.
+
+\begin{tabular}{ll}
+Possible value: & $f\in\mathbb{N}$ \\
+& 0 - the histogram is not computed at all \\
+Default value: & 0
+\end{tabular}
+
+\item histogram\_initial: Sets the initial iteration of the MCMC process when the histogram gets refreshed.
+
+\begin{tabular}{ll}
+Possible value: & $i\in\mathbb{N}$ \\
+Default value: & 1,000
+\end{tabular}
+
+\item histogram\_final: Sets the last iteration of the MCMC process when the histogram gets refreshed.
+
+\begin{tabular}{ll}
+Possible value: & $f\in\mathbb{N}$ \\
+& -1 - the histogram is computed till the end \\
+Default value: & -1
+\end{tabular}
+
+\item histogram\_file: Sets where to output the histogram computed during the MCMC process.
+
+\begin{tabular}{ll}
+Possible value: & matrix bmp file path \\
+& matrix text file path \\
+& ``console'' \\
+& ``no'' \\
+Default value: & ``no''
+\end{tabular}
+
+\item max\_ones\_matrix\_file: Sets where to output the matrix that had the most one-entries among all matrices iterated through during the MCMC process.
+
+\begin{tabular}{ll}
+Possible value: & matrix bmp file path \\
+& matrix text file path \\
+& ``console'' \\
+& ``no'' \\
+Default value: & ``no''
+\end{tabular}
+
+\end{itemize}
+\section{File input}
+There are only two types of input files expected by the program. Either you want to read a matrix file, which can be a pattern or an initial matrix, or an order file that determines an order in which the lines are going to be mapped if the general pattern is chosen.
+
+\subsection{Matrix file}
+A matrix file is a standard text file having the format as follows:
+\begin{itemize}
+\item 2 natural numbers specifying the number of rows and columns in this order.
+\item a sequence of zeros and ones of length rows$\times$columns specifying the matrix from the top left corner one row after another.
+\end{itemize}
+\paragraph{Example:}
+$\begin{array}{ccc}
+2 & 3 & \\
+1 & 0 & 1 \\
+1 & 1 & 0 \\
+\end{array}$
+
+\subsection{Order file}
+If you want to choose the order in which the lines are going to be mapped when a general pattern is chosen, it is your responsibility to check that all lines that need to be mapped are mapped. It is for example possible to only map three lines even if the pattern consists of six lines just because there is for example no need to map empty lines at all. Therefore the program does not check the validity of the order and just uses it.
+
+Now that the user has been warned, the format of the custom order file is simple. It consist of the indices of the lines of the pattern numbered starting with 0 and starting from the top row and ending with the right column.
+
+One possible order for the matrix given as an example in [6.2.1] is this file:
+\begin{center}
+2 1 0 3 4
+\end{center}
+First mapping the left column, the second and first row after that and finishing the mapping with the middle column and the right one.
+
+\section{File output}
+Let us now find out what the output files look like.
+
+\subsection{Matrix text file}
+The matrix text file has the same format as the input one. It consists of:
+\begin{itemize}
+\item 2 natural numbers specifying the number of rows and columns in this order.
+\item a sequence of zeros and ones of length rows$\times$columns specifying the matrix from the top left corner one row after another.
+\end{itemize}
+The matrix is binary except for the one produced as a histogram, which can have higher natural numbers and contains the number of samples as the last number. If you then divide all the entries by the last number, you get a percentage of the entry being a one-entry.
+
+\subsection{Matrix bmp file}
+For an $n\times n$ matrix the standard bmp file contains $n\times n$ pixel of black color meaning a one-entry and a white color for a zero-entry. If the histogram is output as a bmp file, the pixels are greyscaled and the darker a pixel is the more often the entry was a one-entry during the MCMC process.

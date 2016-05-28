@@ -1,0 +1,47 @@
+\chapter{Technical documentation}
+In this chapter, we cover those parts of the algorithm that may be hard to understand just from the code. This only means functions that are technically hard - functions with unexpected dependencies, side effects and so on. Algorithmic difficult tasks are explained in [chapter4].
+
+\section{General pattern}
+The general pattern class contains a lot of function. Most of them are easy to follow and they all should be commented enough in the code. The only part which deserves more attention is the constructor.
+
+\subsection{Construction}
+In the constructor of a general pattern, there are a few function that are easy in nature but as they somehow use each other it is hard not to lose track of their dependencies and results. In order to make this part of the code, which is a very important part indeed, more understandable, we go through the constructor and explain all that is happening in the order it is happening in.
+
+\subsubsection{Storing the pattern}
+The first thing, which is done right after initialization of variable, is storing the pattern. Instead of storing the pattern in a Matrix$<$bool$>$, I decided to use to store lines into a number, where in the binary coding a one-entry in the position $i$ means there is a one-entry in the line at the intersection with $i$-th orthogonal line. This comes handy when computing lines orders. At the same time we also find those lines that are empty (more in [chapter4]) and remember them, because we do not have to map them at all.
+
+\subsubsection{Choosing the line order}
+After that we need to choose the right line order (again more in [chapter4]). To compute MAX or SUM order we just use a brute force algorithm that checks sequences of line adding and for each it computes how many lines are unimportant. Then it just chooses the order which is the best in chosen metric.
+
+\subsubsection{What to remember}
+In the next step, we find what do we need to remember in each level of partial mappings with respect to chosen order. As mention earlier, for MAX or SUM order it is already computed when finding the order, but for other variants of orders it is not, so we just compute it every time. What to remember is based on the equivalence introduced in [chapter2] and the decision not to remember unimportant lines (which we explained in [chapter4]).
+
+\subsubsection{Parallel bound indices}
+Now comes the hardest to follow part - precomputing the indices for searching for parallel bounds. The idea behind is simple. When we are adding a new line and we already have a partial mapping, it restricts to where we can add the line. For example, if there are three rows in the pattern and the rows 1 and 3 are mapped, the second one need to be mapped in between those two. The question is, where are those two lines mapped to? First we add in a chosen order and second we do not remember all lines, as some are unimportant. What do we want is to have a instant access to the index of the line, which bounds added line, in the partial mapping so we do not need to compute the index over and over again. That is exactly what gets computed when the function ``find\_parralel\_bound\_indices'' is called. The series of other function calls follows just because we compute the indices for all added lines in the order in which they are going to be added.
+
+\subsubsection{Extending order}
+The last function, ``find\_extending\_order'' just specifies how the next partial mapping will look like a from where from the previous mapping the values will be copied. Again, unimportant lines play their role here and it may easily be the case from a partial mapping storing $k$ lines, after mapping one more line, we end up with a partial mapping only storing $k-1$ lines, because two lines become unimportant by adding the line.
+
+\section{Parallel computing}
+
+\subsection{MCMC parallelism}
+While the idea behind MCMC parallelism is described in [chapter4.3] and the code is heavily commented, the work done by the main thread may still be hard to understand.
+
+Let $I$ be the ID the process is currently waiting for, that is, the lowest ID of a task that is being tested by a worker. In a structure called ``queue'' (which is std::vector$<$std::deque$>$) each worker has a queue of tasks related to it. In the queue, there are tasks that are either being computed or have been computed. The history of tasks is needed to allow reverting changes that should have not happen when the main thread encounters a different successful task with lower ID. There is no need to have a complete history of all tasks computed. There are only those tasks, that have higher ID than $I$ or have lower ID, but those are going to be removed from the ``queue'' as soon as possible. The name ``queue'' is not random, it describes the order in which the tasks are being stored - the tasks with lower ID have been inserted earlier and therefore they are at the bottom.
+
+Now that we know the most important structure let's see how the main thread works with that and what are the situations.
+\begin{itemize}
+\item pop\_front: The main thread deletes the first tasks (the one with the lowest ID) if one of two things happen:
+\begin{itemize}
+\item The ID of the task being deleted is equal to $I$. That means the change computed by the task is being propagated to the generated matrix and there is no need to remember the task anymore. This also increases $I$, not necessarily by one.
+\item The ID of the task being deleted is less than $I$. This situation is due to synchronization. The worker was supposed to synchronize a task computed by a different worker that did not have the lowest ID at the time. Therefore the task needs to be in the list of tasks so we can revert it if needed. If there is no need to revert it and the lowest ID gets greater or equal to the ID of the task, we can just delete it from the ``queue''.
+\end{itemize}
+\item pop\_back: There is only one reason to delete tasks from the end of the ``queue'' and that is reverting. Imagine there is a task with id $J$ at the end of the ``queue''. Now a different worker computes a task with lower ID and finds out the change is successful. This means the task $J$ won't propagate to the generated matrix and there in no use for it. If it is still being computed, we cannot do much about it, so we just tell the worker to stop computing and deal with it later. If the task is finished, we need to revert it, but only in case the task was successful, because if it was not, it had already been reverted by the worker. So we revert the task if needed and we can just delete it from ``queue'' as it will never be used.
+\item emplace\_back: The main thread only inserts new tasks to the end of the ``queue'' and there are two reasons to insert:
+\begin{itemize}
+\item Worker is assigned a completely new task to check the avoidance. In this situation the task is given a new, globally highest ID and we add the task at the end of the list.
+\item The second reason to insert into ``queue'' are, again, synchronizations. The situation is the same as it was in the case, when we pop\_back - after we revert all the tasks in the list, we need to synchronize changes that forced reverting and if their ID is not lower or equal to $I$, we need to add them to the list so they can be reverted if needed.
+\end{itemize}
+\end{itemize}
+
+\section{Library interface}

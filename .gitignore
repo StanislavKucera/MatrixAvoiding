@@ -46,3 +46,12 @@ Temporary Items
 Debug/
 Release/
 *.vcxproj*
+
+# TeX files
+*.aux
+*.log
+*.dvi
+*.lot
+*.lof
+*.out
+*.gz

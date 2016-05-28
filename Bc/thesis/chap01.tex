@@ -1,0 +1,14 @@
+\chapter{Markov chain Monte Carlo}
+We shall consider discrete-time Markov chains $X_0,X_l,X_2,\dots$, where each $X_i$ takes values in a finite or countably infinite state space $S$. For $k=0,1,2,\dots$, the $k$-step transition probabilities are:
+$$p_{i,j}^{(k)}=Pr(X_{t+k}=j|X_t=i) \hspace{1cm} (i,j\in S)$$
+
+A Markov chain is \textbf{irreducible} if the chain can eventually get from each state to every other state, that is, for every $i,j\in S$ there exists a $k\geq0$ (depending on $i$ and $j$) such that $p_{i,j}^{(k)}>0$.
+
+An irreducible chain has period $D$ if $D$ is the greatest common divisor of $\{k\geq1|p_{i,j}^{(k)}>0\}$ for some $i\in S$ (equivalently, for all $i\in S$). A chain is called \textbf{aperiodic} if its period is 1. In particular, if an irreducible chain has $P_{i,i}>0$ for some $i$, then it is aperiodic.
+
+A Markov chain is said to be \textbf{symmetric} if $P_{i,j}=P_{j,i}$ for every pair of states $i$ and $j$.
+
+[Madras]
+[Madras-Liu]
+
+\section{Markov chain for pattern-avoiding binary matrices}
