@@ -44,29 +44,21 @@ While the algorithm introduced in [chapter2] finds out the partial mapping is in
 
 Imaging this as the pattern, where $0,\cdots,8$ are indices of the lines:
 
-\centerline{\mbox{$\begin{array}{c|cccc}
-&5&6&7&8 \\
-\hline
-0&1&1&1&1 \\
-1&0&1&1&0 \\
-2&1&1&0&0 \\
-3&0&1&0&1 \\
-4&1&1&1&0
-\end{array}$}}
+\centerline{\mbox{\includegraphics[width=60mm]{../img/approaches.pdf}}}
 
 We are in a situation when only lines 0, 3 and 7 are mapped and line 6 is currently being mapped. Here are some mapping approaches:
 \subsubsection{Enough one-entries}
 In the situation above, we not only want to check there are one-entries at the intersections of line 6 with lines 0 and 3, but we also check if there are enough one-entries in lines between where lines 0 and 3 are mapped so that there is a hope we can map lines 1 and 2 there and if there is a one-entry below the line where line 3 is mapped so we can map line 4 there later.
 
-\centerline{\mbox{\includegraphics[width=60mm]{../img/enough_one-entries.png}}}
+\centerline{\mbox{\includegraphics[width=60mm]{../img/enough_one-entries.pdf}}}
 \subsubsection{Recursive mapping}
 While we were only testing whether there are enough one-entries in between already mapped lines in the previous approach, this time, we also check whether those one-entries can be used for the lines that are intended to be mapped there. For example, when we check there is a one-entry to be used for line 1 later, we also check the line 1 can be mapped to that row, which in this situation means to also check there is a one-entry at the intersection with the line to which the line 7 is mapped.
 
-\centerline{\mbox{\includegraphics[width=60mm]{../img/recursive.png}}}
+\centerline{\mbox{\includegraphics[width=60mm]{../img/recursive.pdf}}}
 \subsubsection{Orthogonal bounds}
 When adding line 6, we check whether there are enough one-entries on the already mapped lines orthogonal to line 6, in between line 6 and the closest mapped lines next to line 6. The same idea as in ``Enough one-entries'', but checking different lines.
 
-\centerline{\mbox{\includegraphics[width=60mm]{../img/orthogonal.png}}}
+\centerline{\mbox{\includegraphics[width=60mm]{../img/orthogonal.pdf}}}
 \subsubsection{Usage}
 These restrictions on the added lines are not a fixed part of the program. A user can decide which approaches they want to use in the configuration file. This is due to the fact that there is no right path to choose.
 
@@ -86,6 +78,48 @@ This can all be done, but the whole thing comes with three huge inconveniences:
 \item Reverting - if the change is unsuccessful (the pattern is contained) we need to revert the change which means to completely revert all changes we did to the list of partial mappings. This can be either done by making a backup copy of the whole structure and override the structure if needed, which again is very costly as the structure is huge, or we can remember what partial mappings are new and we go through all partial mappings and remove those new ones. This again means to iterate through the big structure one more time.
 \end{itemize}
 After realizing these issues it no longer looks useful to me to implement this version of the algorithm.
+
+\section{MCMC parallelism}
+To speed up the computations, it is often possible to use parallelism. In this section, we show how to make the MCMC generator parallel, while still allowing both types of the pattern.
+
+While the serial MCMC generator in each iteration changes one element in the generated matrix and checks whether it still avoids forbidden patterns, the parallel one makes several iterations at once, one on each copy of the generated matrix. This means that while iteration $x$ is being computed by a thread, iteration $x+1$ can at the same time be computed by a different thread. The only issue is that iteration $x+1$ does not know what is going to be the state of the generated matrix at the time it should start. It expects iteration $x$ to fail - not change the generated matrix at all, counting on the fact at some point it is unlikely a change does not create a mapping of the pattern, and starts with the same matrix as iteration $x$. If iteration $x$ succeeds though, then the computed iteration $x+1$ is invalid and the iteration is going to be recomputed again, starting with the altered matrix.
+
+When the parallel version of MCMC generator is chosen and it is assigned $n$ threads, it creates $n-1$ private copies of the generated matrix and assigns one thread, called worker, to each of them. The last thread, which we call the main thread and which has exclusive access to the master copy of the generated matrix, makes one change of a bit in each private copy of the matrix and makes the corresponding worker check the avoidance.
+
+The job of a worker is only to check if its copy of the matrix still avoids the pattern when one bit is changed. On the other hand all synchronization is left to the main thread. As mentioned before, one iteration of the MCMC process can be recomputed several times. We still want the generator to satisfy the conditions we have for the Markov chain (more in [chapter1]) in order to generate a random matrix. To achieve that, if a computed iteration $x$ succeeds (and changes the generated matrix), all the other computed iterations that would follow after the iteration $x$ become invalid and they all have to be recomputed. The process ends when all iterations get computed.
+
+From now one, we won't be talking about iterations but about tasks. A task is basically one iteration of the MCMC process. The usefulness if this notation comes with an ID - a number, unique per task, assigned to each task, starting with 1 and always increasing. For a pair of consecutive iterations $x$ and $x+1$ it will always be the case that if task $a$ is the last task to compute iteration $x$ (which means the iteration does not get recomputed ever again after) and task $b$ is the last task to compute iteration $x+1$, then the ID of $a$ is lower then the ID of $b$. Also there is no point in which two different tasks would be computing the same iteration at the same time. If tasks with IDs $a<b$ computed the same iteration, it must have been the case an earlier iteration succeeded when task with ID $a$ was computed and after it got removed, task with ID $b$ was assigned to recompute.
+
+At any point in time, we only consider those tasks, that are being computed or those that wait to be processed (not those that have been processed), which means the lowest ID of tasks we consider increases in time.
+
+When a task ends and it has the lowest ID (we can always wait for the task with the lowest ID) we do:
+\begin{itemize}
+\item if it fails:
+\begin{itemize}
+\item Do nothing - there is no change to propagate to the master copy of the generated matrix and all the tasks with higher ID expected this task to fail, which it did.
+\item This increases the lowest ID by exactly one, as the task we speak of got processed.
+\end{itemize}
+\item if it succeeds: 
+\begin{itemize}
+\item The main thread propagates the change tested by the task to the master copy of the generated matrix.
+\item All the rest of the task get removed as they all had a higher ID - computed iterations that follow after the one just computed and they expected the task to fail, which it did not.
+\item This increases the lowest ID by more then one, because there are tasks that got removed and one that got processed.
+\end{itemize}
+\end{itemize}
+
+\subsection{Example of the MCMC process for $n$ threads}
+At first, iterations $1$ to $n-1$ are assigned one to each worker as tasks with ID $1$ to $n-1$ with the same order as the order of iterations. If iteration $1$ is not successful (which all the other iterations count on), everything is alright. However, if the iteration (its task) is successful, all the results of other tasks (and some of them might have been already finished) are cleared and those iterations get recomputed in tasks $n$ to $2n-3$ and the worker that computed task with ID $1$ is assigned a new task with ID $2n-2$ - to compute iteration $n$. The result of the task gets propagated to the master copy of the generated matrix only if all the tasks $n$ to $2n-3$ fail, else is gets recomputed. This is what happens till the end.
+
+\subsection{Speculative computing}
+It may easily happen that a task not having the lowest ID ends first. In that case we could just wait until it has the lowest ID and process it later. This is not a very efficient approach. Instead we process the task immediately, but we don't propagate the changes to the master copy of the generated matrix until all tasks with lower ID fail and we do not stop the workers processing a task with lower ID. If the task succeeds we remove all the changes computed by tasks with higher ID and override their private copy of the generated matrix. Also it might happen a task with even lower ID succeeds as well. This leads to more and more overriding. Luckily this is the only precarious situation we may encounter and it is not that hard to deal with it, even without copying the possibly huge generated matrix all over the place.
+
+The way we deal with these inconveniences is described in [chapter5] and should be clear from the code itself.
+
+\subsection{Reverting and synchronizing in the main thread}
+The speculative computing discussed above is not the only improvement
+we can make. It turns out to be costly to wake a thread so it computes a trivial function, sets a few atomic variables and falls asleep again. This happens a lot in the MCMC process. Every time a task succeeds it makes other workers revert the changes they computed and synchronize the successful change, which are both trivial functions.
+
+To workaround this problem we make a theoretically bad decision which has very nice practical results. All the reverts and synchronizations are computed by the main thread instead of by an appropriate worker. There is no problem with concurrency because the worker is always asleep when a task is to be assigned and using the fact those tasks are really trivial, it does not make the rest of threads wait for the main thread for too long while it computes changes.
 
 \section{Walking pattern}
 While the brute force implementation of an avoid algorithm for a general pattern was improved heavily, the algorithm for a walking pattern is very fast in its nature and cannot be much better. Or can it be?
@@ -118,29 +152,3 @@ A different approach is closer to the one used in a standard avoid function. Ins
 Using std::priority\_queue the function had no more problems with recomputing the entries that were not influenced by the changes and used all the benefits mentioned in the previous section. But the container does not come for free and in the end I found out the price I payed for the operations on the priority queue made the whole implementation comparably slow as in the previous attempt.
 \subsubsection{Two leveled queue of positions to recompute}
 The final solution comes with the same idea, but a different storage type. As the priority depends upon a diagonal (two entries on the same diagonal can be recomputed in any order) we only remember a priority queue of diagonals and an array of diagonals saying whether a diagonal is already a member of the priority queue. As far as the entries are concerned for every diagonal we have a std::vector of entries-to-recompute as well as an array saying whether an entry is already a member of the vector. So finally it is the case that the storage used is not only good theoretically but as the numbers say, also practically. [reference to a table of measurements or something]
-
-\section{Parallel computing}
-
-
-\subsection{MCMC parallelism}
-The first approach makes the MCMC generator parallel and it can be used with all types of patterns. While the serial MCMC generator changes one element in the generated matrix and checks whether it still avoids forbidden patterns, the parallel one counts on the fact at some point it is unlikely a change does not create a mapping of the pattern. So as it expects almost every change of one element to form a pattern, it tries to deal with those changes as fast as possible.
-
-When the parallel version of MCMC generator is chosen and it is assigned $n$ threads, it creates $n-1$ copies of the generated matrix and assigns one thread, called worker, to each of them. The last thread, which we call the main thread, makes one change of a bit in each matrix and makes the corresponding worker check the avoidance.
-
-The job of a worker is, when woken up, only to check if its copy of the matrix still avoids the pattern when one bit is changed. On the other hand all synchronization is left to the main thread. We still want the generator to satisfy the conditions we have for the Markov chain (more in [chapter1]) in order to generate a random matrix. To achieve that we have an ID for each task it assigns and it always waits for the task with the lowest ID to end and depending on its result it continues:
-\begin{itemize}
-\item success: If the task with the lowest ID is successful, we can propagate the changed bit into the generated matrix. Also, since all other threads expected this one to fail, they compute a change that will never be propagated to the generated matrix and therefore is useless. What we do with that is we stop all the workers that compute a task with higher ID, revert the changes they made on their matrices and we synchronize the change computed by the successful thread. After all of this is done, all the matrices are the same.
-\item fail: If the task with the lowest ID is not successful, there is no change to propagate to the generated matrix. This still makes a valid iteration of the MCMC process though and since all the other threads expected this one to fail, they compute correct changes.
-\end{itemize}
-In both cases a new task is then assigned to the worker.
-
-\subsubsection{Speculative computing}
-It may easily happen that a task not having the lowest ID ends first. In that case we could just wait until it has the lowest ID and process it later. This would be pretty costly though. Instead we process the task immediately, just as described for the task with the lowest ID, but we don't propagate the changes to the generated matrix and we do not stop the workers processing a task with lower ID. This gets a bit tricky when the task succeeds. Not only we revert all the changes computed by tasks with higher ID and synchronize the changes computed by the worker (we would do that even if waiting for the task to have the lowest ID), but it might happen a task with even lower ID succeeds as well. This leads to a need of reverting the synchronizations we made. Luckily this is the only precarious situation we may encounter and it is not that hard to deal with it.
-
-The way we deal with these inconveniences is described in [chapter5] and should be clear from the code itself.
-
-\subsubsection{Reverting and synchronizing in the main thread}
-The speculative computing discussed above is not the only improvement
-we can make. It turns out that it is costly to wake a thread so it computes a trivial function, sets a few atomic variables and falls asleep again. This happens a lot. Every time a call of avoid succeeds it makes other workers revert their changes and synchronize the successful change, which are both trivial functions.
-
-To workaround this problem we make a theoretically bad decision which has very nice practical results. All the reverts and synchronizations are computed by the main thread instead of by an appropriate worker. There is no problem with concurrency because the worker is always asleep when a revert or sync calls are to be assigned and using the fact those calls are really trivial, it does not make the rest of threads wait for the main thread for too long while it computes changes.

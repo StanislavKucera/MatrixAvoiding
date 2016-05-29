@@ -6,7 +6,7 @@ We call the specific pattern a walking pattern. The additional condition we want
 
 The \textbf{walk} in a matrix is a sequence of some of its entries beginning in the top left corner and ending in the bottom right one. If an entry at the position $[i,j]$ is in the sequence, the next one is either $[i+1,j]$ or $[i,j+1]$. Therefore the length of an arbitrary walk is equal to $w+h-1$.
 
-\centerline{\mbox{\includegraphics[width=100mm]{../img/walk.pdf}}}
+\centerline{\mbox{\includegraphics[width=75mm]{../img/walk.pdf}}}
 
 In the picture you can see a matrix that is a walking pattern as all the one-entries are included in a walk. Not all entries of a walk need to be one-entries though.
 
@@ -76,6 +76,6 @@ The same algorithm, just rotated by 90 degrees, can be also used for a pattern w
 
 On the other hand a direct generalization for a general pattern does not work. While we can index all entries of the pattern, when trying to map a certain $w_k$ to an element it is not sufficient to just check whether $w_l$ is above and $w_l'$ to the left from the element.
 
-\centerline{\mbox{\includegraphics[width=100mm]{../img/nogeneral.pdf}}}
+\centerline{\mbox{\includegraphics[width=75mm]{../img/nogeneral.pdf}}}
 
 In the picture, let the matrix on the left side be the pattern $P$ and let $M$ be the other matrix. The entry in the square can be mapped to the element in the square and the same holds for entries in the circle but it is not a sufficient condition for the entry in the triangle to be mapped to the element in the triangle.

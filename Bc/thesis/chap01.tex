@@ -1,14 +1,33 @@
 \chapter{Markov chain Monte Carlo}
+Our goal to generate a binary matrix avoiding a forbidden pattern that is uniformly random heavily depends on the theory of Markov chains. In this work we only define useful terms and state an important theorem. If you are interested in more details, see [A first course in stochastic processes][An Introduction to Probability Theory and Its Applications][Lectures on Monte Carlo methods].
+
 We shall consider discrete-time Markov chains $X_0,X_l,X_2,\dots$, where each $X_i$ takes values in a finite or countably infinite state space $S$. For $k=0,1,2,\dots$, the $k$-step transition probabilities are:
 $$p_{i,j}^{(k)}=Pr(X_{t+k}=j|X_t=i) \hspace{1cm} (i,j\in S)$$
 
 A Markov chain is \textbf{irreducible} if the chain can eventually get from each state to every other state, that is, for every $i,j\in S$ there exists a $k\geq0$ (depending on $i$ and $j$) such that $p_{i,j}^{(k)}>0$.
 
-An irreducible chain has period $D$ if $D$ is the greatest common divisor of $\{k\geq1|p_{i,j}^{(k)}>0\}$ for some $i\in S$ (equivalently, for all $i\in S$). A chain is called \textbf{aperiodic} if its period is 1. In particular, if an irreducible chain has $P_{i,i}>0$ for some $i$, then it is aperiodic.
+An irreducible chain has period $D$ if $D$ is the greatest common divisor of $\{k\geq1|p_{i,i}^{(k)}>0\}$ for some $i\in S$ (equivalently, for all $i\in S$). A chain is called \textbf{aperiodic} if its period is 1. In particular, if an irreducible chain has $P_{i,i}>0$ for some $i$, then it is aperiodic.
 
 A Markov chain is said to be \textbf{symmetric} if $P_{i,j}=P_{j,i}$ for every pair of states $i$ and $j$.
 
-[Madras]
-[Madras-Liu]
+Suppose that an irreducible Markov chain on the finite state
+space $S$ is symmetric. Then the equilibrium distribution is uniform on $S$.
 
 \section{Markov chain for pattern-avoiding binary matrices}
+Now when we want to generate a binary matrix $M\in\{0,1\}^{n\times n}$ avoiding pattern $P$, we create a Markov chain, which states will be the set of all binary matrices of size $n\times n$ that avoid $P$.
+
+A step looks like this:
+\begin{enumerate}
+\item Choose $r\in\{0,1,\cdots,n-1\}$ uniformly at random.
+\item Choose $c\in\{0,1,\cdots,n-1\}$ uniformly at random.
+\item Flip the bit at $M[r,c]$.
+\item If $M$ contains $P$, flip the bit back.
+\end{enumerate}
+
+When the process starts with a matrix which avoids $P$, then after every step it still avoids $P$. We need to show the Markov chain we just presented satisfies the conditions of the theorem:
+\subsubsection{Symmetry}
+Imagine a sequence of bits flipping which changes the $i$-th matrix to $j$-th one. The reversed order of the same sequence changes the $j$-th matrix to the $i$-th one.
+\subsubsection{Irreducibility}
+As the steps go, it is easy to see we can with non-zero probability create any matrix $M\in\{0,1\}^{n\times n}$ that avoids $P$ from a zero matrix $0_n=0^{n\times n}$. When we can get from $0_n$ to $M$ by a sequence of flip changes $a$, the reversed sequence is a sequence of steps from any matrix $M$ avoiding $P$ to $0_n$. Thus the Markov chain is irreducible.
+\subsubsection{Aperiodicity}
+The Markov chain is irreducible so it suffices to show that there is an $i$ for which $P_{i,i}>0$. Clearly there is a matrix for which there is atleast one bit that cannot be flipped without creating a pattern and this forces $P_{i,i}=1$.

@@ -34,4 +34,7 @@ At the beginning, when no line is mapped, all lines are important. After some li
 
 We say two partial mappings of the same level are \textbf{equivalent} if all important lines in the mapping of that level are mapped to the same lines of the big matrix in both mappings.
 
-Picture and use...
+\centerline{\mbox{\includegraphics[width=100mm]{../img/equivalent.pdf}}}
+For $P$ being the left matrix of the picture and $M$ being the other matrix in the picture, in partial mapping $f=\{(1,1),(2,2),(3,4),(5,6)\}$ line $2$ is unimportant, as both lines $1$ and $3$ are mapped and so is line $5$ - the only line to intersect line $2$ in a one-entry. Line $3$ is important, because there is line $7$ intersecting it in one-entry, which is not mapped.
+
+In the same situation as above, consider a different partial mapping $f'=\{(1,1),(2,3),(3,4),(5,6)\}$, which is a mapping of the same level as $f$ and only differs from $f$ in mapping line $2$. The line $2$ is unimportant and by the definition of equivalent partial mappings, $f$ and $f'$ are equivalent. The idea behind this notion is simple. It is not important where we map line $2$, because it does not restrict where we can map other line that have not been mapped yet. This means that if a partial mapping $f$ can be somehow extended, the equivalent partial mapping $f'$ can be extended in the same way; therefore, it is sufficient to only extend one of them in order to find one full mapping. Note that it would be also sufficient to only extend one of the partial mappings if we were looking for all full mappings, but we would need to keep the information about unimportant lines.
