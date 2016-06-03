@@ -12,7 +12,7 @@ My thesis does not fit entirely into only one category and it does not try to. T
 \item Making it run fast on inputs which are usual for researchers
 \item Implementing the algorithm to provide practical tool
 \end{itemize}
-None of these points would make sense alone but together the thesis may become very useful for scientists as it is a common practice to test hypothesis on random data.
+None of these points would make sense alone but together the thesis may become very useful for scientists as it is provides with a process generating random matrices and it is a common practice to test hypothesis on random data.
 \chapter*{Introduction}
 The area of pattern avoidance is heavily studied for permutations and it also becomes studied more for its generalization - binary matrices.
 
@@ -25,19 +25,24 @@ We say a binary matrix $M$ contains a binary matrix $P$, which we call a ``patte
 \item $\forall l,l'\in L(P):$ if lines $l$ and $l'$ intersect and there is a one-entry at the intersection, then there is a one-entry at the intersection of $f(l)$ and $f(l')$.
 \end{itemize}
 otherwise, it avoids the pattern $P$.
+\begin{figure}[h!]
+\centering
+\includegraphics[width=100mm]{../img/avoiding.pdf}
+\caption{An example of a matrix containing a pattern and a matrix avoiding the pattern.}
+\label{avoiding}
+\end{figure}
+%\centerline{\mbox{\includegraphics[width=100mm]{../img/avoiding.pdf}}}
 
-\centerline{\mbox{\includegraphics[width=100mm]{../img/avoiding.pdf}}}
+Let the pattern $P$ be the left matrix from Figure \ref{avoiding}. The middle matrix contains the pattern $P$, because a mapping $\{(0,0),(1,2),(2,3),(3,4)\}$ satisfies all the conditions. On the other hand the right matrix avoids the pattern as there is no such mapping.
 
-Let the pattern $P$ be the left matrix from the picture. The middle matrix contains the pattern $P$, because a mapping $\{(0,0),(1,2),(2,3),(3,4)\}$ satisfies all the conditions. On the other hand the right matrix avoids the pattern as there is no such mapping.
-
-There are other possible definitions of containing but from now on we will always consider a pattern to be contained as a submatrix. We will always denote $M$ the binary matrix for which we test the containing and by $P$ the pattern that is being tested. Moreover, we denote $h$ the height (the number of rows) of $P$ and $w$ its width.
+There are other possible definitions of containing but from now on we will always consider a pattern to be contained (or avoided) as a submatrix. We will always denote $M$ the binary matrix for which we test the containing and by $P$ the pattern that is being tested. Moreover, we denote $h$ the height (the number of rows) of $P$ and $w$ its width.
 
 \subsection*{Generating random matrix}
-Our main goal is to show an iterated algorithm, which, with high enough number of iterations, for a given forbidden pattern and number $n$ generates a uniformly random binary matrix $M\in\{0,1\}^{n\times n}$ avoiding the pattern.
+Our main goal is to show an iterated algorithm, which, for a high enough number of iterations, a given forbidden pattern and number $n$, generates a binary matrix $M\in\{0,1\}^{n\times n}$ avoiding the pattern uniformly at random.
 
-To create such an algorithm we generalize an algorithm generating fixed size permutations without a forbidden pattern introduced by [Madras-Liu]. To achieve randomness it uses Markov chain Monte Carlo method, which is explained in the next section.
+To create such an algorithm we generalize an algorithm generating fixed size permutations without a forbidden pattern introduced by Madras and Liu in \cite{madrasliu}. To achieve randomness it uses Markov chain Monte Carlo method, which is explained in the next section.
 
-The process starts with a binary matrix of the correct size avoiding the pattern (zero matrix is always sufficient) and in each step it changes uniformly at random one bit of the matrix and tests whether the matrix still avoids the pattern after the change. If it does the step is over, if it does not, we revert the change (flip the bit back) and end the step.
+The process starts with a binary matrix of the correct size avoiding the pattern (zero matrix always works) and in each step it uniformly at random changes one bit of the matrix and tests whether the matrix still avoids the pattern after the change. If it does, the step is over, if it does not, we revert the change (flip the bit back) and end the step.
 
 It can be proven that if the Markov chain is chosen carefully, this leads to a uniformly random matrix avoiding the pattern, after a sufficient number of steps. Sadly no-one knows what is ``sufficient'' in this manner of speaking.
 

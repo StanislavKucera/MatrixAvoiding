@@ -3,12 +3,17 @@ In the previous chapter, we have seen an algorithm for a general forbidden patte
 
 \section{Walking pattern}
 We call the specific pattern a walking pattern. The additional condition we want the pattern to satisfy is that there is a walk from one corner to the opposite one and all the one-entries of the pattern are contained on the walk.
+\paragraph{Definition}
+A \textbf{walk} in a matrix is a sequence of some of its entries beginning in the top left corner and ending in the bottom right one. If an entry at the position $[i,j]$ is in the sequence, the next one is either $[i+1,j]$ or $[i,j+1]$. Therefore, the length of an arbitrary walk is equal to $w+h-1$.
+\begin{figure}[h!]
+\centering
+\includegraphics[width=100mm]{../img/walk.pdf}
+\caption{An example of a walk and the order of its entries.}
+\label{walk}
+\end{figure}
+%\centerline{\mbox{\includegraphics[width=75mm]{../img/walk.pdf}}}
 
-The \textbf{walk} in a matrix is a sequence of some of its entries beginning in the top left corner and ending in the bottom right one. If an entry at the position $[i,j]$ is in the sequence, the next one is either $[i+1,j]$ or $[i,j+1]$. Therefore the length of an arbitrary walk is equal to $w+h-1$.
-
-\centerline{\mbox{\includegraphics[width=75mm]{../img/walk.pdf}}}
-
-In the picture you can see a matrix that is a walking pattern as all the one-entries are included in a walk. Not all entries of a walk need to be one-entries though.
+In Figure \ref{walk} you can see a matrix that is a walking pattern as all the one-entries are included in a walk. Not all entries of a walk need to be one-entries though.
 
 It can be shown a walking pattern with a walk is exactly a matrix avoiding a forbidden pattern
 $$\left(\begin{array}{cc}
@@ -17,13 +22,13 @@ $$\left(\begin{array}{cc}
 \end{array}\right)$$
 
 \section{Dynamic program}
-Now that we know what the walking pattern is, we show an algorithm deciding whether a pattern $P$ is contained in a big matrix $M$ or not.
+Now that we know what walking pattern is, we show an algorithm deciding whether a pattern $P$ is contained in a big matrix $M$ or not.
 
-The pattern $P$ is a walking pattern so there is a walk containing all the one-entries of the pattern. We choose one such walk arbitrarily and index its entries $w_1,w_2,\dots,w_{m+n-1}$ starting from the beginning of the walk. For each entry of the walk we remember whether its value is one or zero and whether the walk continues from the entry vertically, which we call a \textbf{vertical entry} or horizontally, calling it a \textbf{horizontal entry}.
+The pattern $P$ is a walking pattern so there is a walk containing all the one-entries of the pattern. We choose one such walk arbitrarily and index its entries $e_1,e_2,\dots,e_{h+w-1}$ starting from the beginning of the walk. For each entry of the walk we remember whether its value is one or zero and whether the walk continues from the entry vertically, in which case we call it a \textbf{vertical entry} or horizontally, calling it a \textbf{horizontal entry}.
 
-For an element $e$ of $M$ at the position $[i,j]$, the matrix $M_{\leq e}$ is a $(i+1)\times(j+1)$ submatrix of $M$ consisting of rows with the index smaller than or equal to $i$ and columns with the index smaller than or equal to $j$. The element $e$ lies in its bottom right corner. Similarly $M_{\geq e}$ is a $(n-i)\times(n-j)$ submatrix of $M$ consisting of rows with the index greater than or equal to $i$ and columns with index greater then or equal to $j$. The element $e$ is its first element.
+For an element $e$ of $M$ at the position $[i,j]$, the matrix $M_{\leq e}$ is a $(i+1)\times(j+1)$ submatrix of $M$ consisting of rows with the index smaller than or equal to $i$ and columns with the index smaller than or equal to $j$. The element $e$ then lies in the bottom right corner. Similarly, $M_{\geq e}$ is a $(n-i)\times(n-j)$ submatrix of $M$ consisting of rows with the index greater than or equal to $i$ and columns with index greater then or equal to $j$. The element $e$ is its first element.
 
-To determine whether $P$ is contained in $M$ we find out for each element $e$ of $M$ what is the longest part of the pattern that can be found in $M_{\leq e}$. If there is an element for which we manage to find the last entry of the pattern, the pattern is contained in the matrix, otherwise it is avoided.
+To determine whether $P$ is contained in $M$ we find out for each element $e$ of $M$ what is the longest part of the pattern that can be found in $M_{\leq e}$. If there is an element for which we manage to find the last entry of the pattern, the pattern is contained in the matrix; otherwise, it is avoided.
 
 For each element $e$ of $M$ at the position $[i,j]$ we remember two numbers. The number $c_v(e)$ says what is the longest part of the walk in $M_{\leq e}$ with the last entry in $j$-th column and being a vertical entry. The number $c_h(e)$, symmetrically, says what is the longest part of the walk in $M_{\leq e}$ with the last entry in $i$-th row and and being a horizontal entry.
 
