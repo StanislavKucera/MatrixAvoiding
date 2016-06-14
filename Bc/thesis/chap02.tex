@@ -17,7 +17,7 @@ Let $L=(l_1,l_2,\cdots,l_{w+h})$ be a permutation of lines (rows and columns) of
 \end{itemize}
 The basic algorithm we use goes as follows. First it maps $l_1$ to all possible lines of $M$, creating partial mappings of $\{l_1\}\subseteq L$. For $k=2,\cdots,w+h$ it takes each partial mapping from the previous iteration and extends it by adding line $l_k$ to the partial mapping in all possible ways. If we manage to map all the lines of $P$, then $M$ does not avoid it and if at some point there are no partial mappings to extend it means $M$ avoids $P$.
 
-The algorithm can be improved in two ways. Firstly, we can try to recognize unextendable partial mappings earlier than at the moment a line can no longer be mapped, for example by counting whether there is enough one-entries in between already mapped lines (more in \autoref{sect:approaches}). Secondly, which is going to be fundamental for us, we can try not to remember more copies of different mapping, which can be extended in the same way.
+The algorithm can be improved in two ways. Firstly, we can try to recognize unextendable partial mappings earlier than at the moment a line can no longer be mapped, for example by counting whether there is enough one-entries in between already mapped lines (more in \autoref{sect:approaches}). Secondly, which is going to be fundamental for us, we can try not to remember more copies of different mappings that can be extended in the same way.
 
 \section{Equivalent mappings}
 There is no need to remember two different mappings if they can be both extended exactly the same way as our function is only supposed to check whether a pattern can be mapped to a big matrix not to find all such mappings.

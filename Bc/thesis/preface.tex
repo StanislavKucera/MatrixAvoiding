@@ -14,7 +14,7 @@ My thesis does not fit entirely into only one category and it does not try to. T
 \end{itemize}
 None of these points would make sense alone but together the thesis may become very useful for scientists as it is provides with a process generating random matrices and it is a common practice to test hypothesis on random data.
 \chapter*{Introduction}
-We denote by $M\in\{0,1\}^{n\times m}$ a \emph{binary matrix} of size $n$ by $m$, calling $n$ the number of rows of $M$ - the \emph{height} of the matrix $M$ and $m$ the number of columns - its \emph{width}. A \emph{line} of a matrix is one of its rows or columns and we denote by $L(M)$ the ordered set of all lines of $M$. Its order is given by the natural indexing of rows and columns.
+We let $M\in\{0,1\}^{n\times m}$ denote a \emph{binary matrix} of size $n$ by $m$. The \emph{height} of $M$, denoted by $n$, is the number of rows of $M$ and $m$ is its width (the number of columns). A \emph{line} of a matrix is one of its rows or columns and we denote by $L(M)$ the ordered set of all lines of $M$. Its order is given by the standard indexing of rows and columns.
 
 \begin{defn}
 We say a binary matrix $M$ \emph{contains} a binary matrix $P$, which we call a ``pattern'', as a submatrix, if there is a mapping $f:L(P)\rightarrow L(M)$, such that
@@ -35,7 +35,7 @@ otherwise, it \emph{avoids} the pattern $P$.
 
 The interesting cases are square matrices of size $n$ by $n$, where $n$ is big (going to infinity) and the size of a pattern (not necessarily square matrix) is small (constant). Even for a constant size forbidden pattern it is hard to determine the number of matrices of size $n$ that avoid it or to characterize, what properties they have. Sometimes we consider matrices avoiding more than just one forbidden pattern, in which case we denote the set of all forbidden matrices by $\mathcal{P}$. When a matrix avoids $\mathcal{P}$, it avoids every $P\in\mathcal{P}$. 
 \begin{defn}
-We denote by $\mathcal{M}_n(\mathcal{P})$ a set of all binary matrices of size $n$ by $n$ avoiding $\mathcal{P}$ as submatrices. We always denote $M$ the square binary matrix for which we test the containing and by $P$ the pattern (if there is one) that is being tested. Moreover, we denote $h$ the height (the number of rows) of $P$ and $w$ its width.
+We denote by $\mathcal{M}_n(\mathcal{P})$ a set of all binary matrices of size $n$ by $n$ avoiding $\mathcal{P}$ as submatrices. We always call $M$ the square binary matrix for which we test the containing and $P$ the pattern (if there is one) that is being tested. Moreover, we denote by $h$ the height (the number of rows) of $P$ and $w$ its width.
 \end{defn}
 The area of pattern avoidance has been heavily studied for permutations and it also becomes more popular for their generalization - binary matrices. In most of the areas in combinatorics it is useful to explore properties of random objects and a lot of attention is directed towards random matrices when considering pattern avoidance. The goal of the work is, for given $n\in\mathbb{N}$ and set of forbidden patterns $\mathcal{P}$, to generate a uniformly random $M\in_R\mathcal{M}_n(\mathcal{P})$.
 \subsection*{Generating random matrix}
