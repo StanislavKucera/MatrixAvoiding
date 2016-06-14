@@ -1,4 +1,5 @@
 \chapter{Improvements to basic algorithms}
+\label{chap:imp}
 
 \section{General pattern}
 
@@ -38,6 +39,7 @@ In the program a user can either choose their own custom order or one of four al
 \end{itemize}
 
 \subsection{Mapping approaches}
+\label{sect:approaches}
 The one thing the approaches we will introduce have in common is that they try to recognize those partial mappings that have no chance to be extended to a full mapping as early as possible.
 
 While the algorithm introduced in [chapter2] finds out the partial mapping is invalid only at the time it maps two lines having a one-entry at their intersection to two lines having a zero-entry at the intersection, different approaches try to reveal the fact we would end up in the situation earlier by checking more conditions.

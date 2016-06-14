@@ -1,4 +1,5 @@
 \chapter{An algorithm for testing pattern-avoidance of a special pattern}
+\label{chap:walking}
 In the previous chapter, we have seen an algorithm for a general forbidden pattern which, using some heuristics, runs pretty fast. In this chapter, we introduce a special kind of a pattern, satisfying additional conditions, for which we can produce much faster algorithm.
 
 \section{Walking pattern}
@@ -22,7 +23,7 @@ $$\left(\begin{array}{cc}
 \end{array}\right)$$
 
 \section{Dynamic program}
-Now that we know what walking pattern is, we show an algorithm deciding whether a pattern $P$ is contained in a big matrix $M$ or not.
+Now that we know what walking pattern is, we show an algorithm deciding whether such a pattern $P$ is contained in a big matrix $M$ or not.
 
 The pattern $P$ is a walking pattern so there is a walk containing all the one-entries of the pattern. We choose one such walk arbitrarily and index its entries $e_1,e_2,\dots,e_{h+w-1}$ starting from the beginning of the walk. For each entry of the walk we remember whether its value is one or zero and whether the walk continues from the entry vertically, in which case we call it a \textbf{vertical entry} or horizontally, calling it a \textbf{horizontal entry}.
 
@@ -32,7 +33,7 @@ To determine whether $P$ is contained in $M$ we find out for each element $e$ of
 
 For each element $e$ of $M$ at the position $[i,j]$ we remember two numbers. The number $c_v(e)$ says what is the longest part of the walk in $M_{\leq e}$ with the last entry in $j$-th column and being a vertical entry. The number $c_h(e)$, symmetrically, says what is the longest part of the walk in $M_{\leq e}$ with the last entry in $i$-th row and and being a horizontal entry.
 
-An observation we make is that if we have a fixed element $e$ of $M$ and any other element $e'$ above $e$ in the same column then if $c_v(e')$ is equal to some $k$, then $c_v(e)$ is at least $k$. This means that for $e$ we can find the maximum part of the pattern ending in the column of $e$ and continuing vertically by looking only to elements in that column above $e$ and since this is true for all of them, it is sufficient to only check the value of the element right above $e$ (at the position $[i-1,j]$). Similarly the argument goes for the value of $c_h$ in horizontal way.
+An observation we make is that if we have a fixed element $e$ of $M$ and any other element $e'$ above $e$ in the same column then $c_v(e')$ is less than or equal to $c_v(e)$. This means that for $e$ we can find the maximum part of the pattern ending in the column of $e$ and continuing vertically by looking only to elements in that column above $e$ and since this is true for all of them, it is sufficient to only check the value of the element right above $e$ (at the position $[i-1,j]$). Similarly the argument goes for the value of $c_h$ in horizontal way.
 
 The algorithm iterates through diagonals. A diagonal in this matter of speaking is a subset of elements of $M$, such that all elements have the same sum of their coordinates. For example, zero diagonal only consists of an element $[0,0]$, the first diagonal contains elements $[0,1]$ and $[1,0]$, and so on.
 
