@@ -29,6 +29,6 @@ time_to_console = yes
 [matrix statistics]
 histogram_frequency = 100
 histogram_initial = 1000
-histogram_final = 0
+histogram_final = -1
 histogram_file = hist.bmp
 max_ones_matrix_file = max_ones.bmp

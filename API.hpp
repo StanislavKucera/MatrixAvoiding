@@ -187,7 +187,14 @@ Pattern* create_new_pattern(Matrix<bool>&& pattern, const Type type, const Map m
 	Matrix<bool> init;
 
 	if (type == WALKING)
-		return new Walking_pattern(pattern, N);
+	{
+		Walking_pattern* wp = new Walking_pattern(pattern, N);
+
+		if (!wp->initial_avoid(result))
+			throw my_exception("Initial big matrix does not avoid the pattern");
+
+		return wp;
+	}
 	else if (type == SLOW)
 		return new Slow_pattern(pattern);
 	else if (type == GENERAL && map_container == VECTOR)

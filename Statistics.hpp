@@ -53,6 +53,7 @@ public:
 	void print_text_histogram(const char* output) const
 	{
 		std::ofstream oFile(output);
+		oFile << all_entries.getRow() << " " << all_entries.getCol() << std::endl;
 		oFile << all_entries.Print() << std::endl << hist_count;
 		oFile.close();
 	}
@@ -92,6 +93,7 @@ public:
 	void print_text_max_ones(const char* output) const
 	{
 		std::ofstream oFile(output);
+		oFile << max_all_entries.getRow() << " " << max_all_entries.getCol() << std::endl;
 		oFile << max_all_entries.Print();
 		oFile.close();
 	}
@@ -326,18 +328,18 @@ public:
 			return;
 
 		output << "Success\n";
-		output << "from;to;time;count;ratio;average call time;average lines mapped;line number;average map calls;average maps found;average unique maps;max map calls;max maps found;max unique maps";
+		output << ";from;to;time;count;ratio;average call time;average lines mapped;line number;average map calls;average maps found;average unique maps;max map calls;max maps found;max unique maps";
 		output << "\n";
 
 		for (size_t ind = 0; ind < orders.size(); ++ind)
 		{
-			output << "Pattern " << ind + 1 << ";";
+			output << "Pattern " << ind + 1;
 
 			for (int m = 0; m < iter / mod; ++m)
 			{
 				const double s_counter = (double)success_counter[m];
 
-				output << m * mod + 1 << ";" << (m + 1) * mod << ";";														// from;to;
+				output << ";" << m * mod + 1 << ";" << (m + 1) * mod << ";";														// from;to;
 				output << success_time[m] / CLOCKS_PER_SEC << " sec;";														// time;
 				output << success_counter[m] << ";" << s_counter / (success_counter[m] + fail_counter[m]) * 100 << " %;";	// count;ratio;
 
@@ -371,18 +373,18 @@ public:
 		}
 
 		output << "\nFail\n";
-		output << "from;to;time;count;ratio;average call time;average lines mapped;line number;average map calls;average maps found;average unique maps;max map calls;max maps found;max unique maps";
+		output << ";from;to;time;count;ratio;average call time;average lines mapped;line number;average map calls;average maps found;average unique maps;max map calls;max maps found;max unique maps";
 		output << "\n";
 
 		for (size_t ind = 0; ind < orders.size(); ++ind)
 		{
-			output << "Pattern " << ind + 1 << ";";
+			output << "Pattern " << ind + 1;
 
 			for (int m = 0; m < iter / mod; ++m)
 			{
 				const double f_counter = (double)fail_counter[m];
 
-				output << m * mod + 1 << ";" << (m + 1) * mod << ";";													// from;to;
+				output << ";" << m * mod + 1 << ";" << (m + 1) * mod << ";";													// from;to;
 				output << fail_time[m] / CLOCKS_PER_SEC << " sec;";														// time;
 				output << fail_counter[m] << ";" << f_counter / (success_counter[m] + fail_counter[m]) * 100 << " %;";	// count;ratio;
 
@@ -410,9 +412,9 @@ public:
 							<< max_fail_sizes[m][ind][i].uniques;
 					}
 				}
-			}
 
-			output << "\n";
+				output << "\n";
+			}
 		}
 	}
 private:

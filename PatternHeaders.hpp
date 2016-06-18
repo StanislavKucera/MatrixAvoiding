@@ -339,7 +339,8 @@ public:
 	/// <param name="r">Row of the big matrix that has been changed.</param>
 	/// <param name="c">Column of the big matrix that has been changed.</param>
 	/// <param name="sizes">Vector of numbers of found mappings on each level.</param>
-	bool avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false);	
+	bool avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false);
+	bool initial_avoid(const Matrix<bool>& big_matrix);
 	// reverts changes in max_walk_part matrix after an unsuccessful change of the big matrix
 	bool revert(const Matrix<bool>& big_matrix, const int r, const int c) { std::vector<Counter> sizes; return avoid(big_matrix, r, c, sizes); }
 	bool lazy_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& sizes, const std::atomic<bool>& force_end = false);

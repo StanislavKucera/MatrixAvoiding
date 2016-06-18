@@ -61,12 +61,18 @@ int main(int argc, char **argv)
 	{
 		try
 		{
-			result = Matrix<bool>(N, N, init_matrix);
+			result = Matrix<bool>(init_matrix);
 		}
 		catch (...)
 		{
 			std::cerr << "Cannot read the initial matrix from \"" << init_matrix << "\"." << std::endl;
 		}
+	}
+
+	if (result.getRow() != N || result.getCol() != N)
+	{
+		std::cerr << "Initial matrix from \"" + init_matrix + "\" is not of size NxN." << std::endl;
+		throw my_exception("Initial matrix is not of correct size.");
 	}
 
 	set_patterns(patterns, pattern_info, result, init_matrix != "zero", N, threads_count);
@@ -112,6 +118,7 @@ int main(int argc, char **argv)
 		else
 		{
 			std::ofstream outFile(output_file);
+			outFile << N << " " << N << std::endl;
 			outFile << result.Print();
 			outFile.close();
 		}
@@ -144,7 +151,7 @@ int main(int argc, char **argv)
 	// if histogram file is specified
 	for (const auto& hist_file : hist_files)
 	{
-		if (hist_file == "console")
+		if (hist_file == "console" || hist_freq == 0 || (hist_from > hist_to && hist_to != -1))
 			continue;
 		else if (hist_file.substr(hist_file.size() - 4) == ".bmp")
 			matrix_stats.print_bmp_histogram(hist_file.c_str());
@@ -214,7 +221,10 @@ int main(int argc, char **argv)
 			break;
 		case HIST:
 			std::cout << "\nHistogram:\n";
-			matrix_stats.print_histogram(std::cout);
+			if (hist_freq == 0 || (hist_from > hist_to && hist_to != -1))
+				std::cout << "Histogram data were not taken due to the settings from configuration file.\n";
+			else
+				matrix_stats.print_histogram(std::cout);
 			break;
 		case MAX_ONES:
 			std::cout << "\nMatrix with the maximum number of one-entries:\n";

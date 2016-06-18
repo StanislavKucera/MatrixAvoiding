@@ -262,17 +262,13 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 	return true;
 }
 
-//bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int /* r */, const int /* c */, std::vector<Counter>& /* sizes */, const std::atomic<bool>& force_end)
-/*{
+bool Walking_pattern::initial_avoid(const Matrix<bool>& big_matrix)
+{
 	if (top_left)
 	{
 		// all elements on the same diagonal have the same sum of their coordinates, go through diagonals
 		for (int sum = 0; sum < max_walk_part_.getRow() + max_walk_part_.getCol() - 1; ++sum)
 		{
-			// the function is forced to end from outside
-			if (force_end)
-				return false;
-
 			// go through indices of rows
 			for (int i = 0; i <= sum; ++i)
 			{
@@ -291,17 +287,17 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 				if (i == 0)
 					c_v_v = 0;
 				else
-					c_v_v = max_walk_part_.at(i - 1, j).first;
+					c_v_v = max_walk_part_.at(i - 1, j).c_v;
 
 				// element on the first column
 				if (j == 0)
 					c_h_h = 0;
 				else
-					c_h_h = max_walk_part_.at(i, j - 1).second;
+					c_h_h = max_walk_part_.at(i, j - 1).c_h;
 
 				// Initialization - copying those already found walks
-				max_walk_part_.at(i, j).first = c_v_v;
-				max_walk_part_.at(i, j).second = c_h_h;
+				max_walk_part_.at(i, j).c_v = c_v_v;
+				max_walk_part_.at(i, j).c_h = c_h_h;
 
 				// Search for longer part of the walk
 				// b == 1 or v_{c_v_v + 1} == 0
@@ -314,14 +310,14 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 					// walk continues to the right/left
 					if (direction_[c_v_v])
 					{
-						if (max_walk_part_.at(i, j).second < c_v_v + 1)
-							max_walk_part_.at(i, j).second = c_v_v + 1;
+						if (max_walk_part_.at(i, j).c_h < c_v_v + 1)
+							max_walk_part_.at(i, j).c_h = c_v_v + 1;
 					}
 					// walk continues to the bottom
 					else
 					{
-						if (max_walk_part_.at(i, j).first < c_v_v + 1)
-							max_walk_part_.at(i, j).first = c_v_v + 1;
+						if (max_walk_part_.at(i, j).c_v < c_v_v + 1)
+							max_walk_part_.at(i, j).c_v = c_v_v + 1;
 					}
 				}
 
@@ -333,13 +329,13 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 
 					if (direction_[c_h_h])
 					{
-						if (max_walk_part_.at(i, j).second < c_h_h + 1)
-							max_walk_part_.at(i, j).second = c_h_h + 1;
+						if (max_walk_part_.at(i, j).c_h < c_h_h + 1)
+							max_walk_part_.at(i, j).c_h = c_h_h + 1;
 					}
 					else
 					{
-						if (max_walk_part_.at(i, j).first < c_h_h + 1)
-							max_walk_part_.at(i, j).first = c_h_h + 1;
+						if (max_walk_part_.at(i, j).c_v < c_h_h + 1)
+							max_walk_part_.at(i, j).c_v = c_h_h + 1;
 					}
 				}
 			}
@@ -350,10 +346,6 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 		// all elements on the same diagonal have the same difference of their coordinates, go through diagonals
 		for (int diff = 1 - max_walk_part_.getCol(); diff < max_walk_part_.getRow(); ++diff)
 		{
-			// the function is forced to end from outside
-			if (force_end)
-				return false;
-
 			// go through indices of rows
 			for (int i = 0; i < max_walk_part_.getRow(); ++i)
 			{
@@ -372,17 +364,17 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 				if (i == 0)
 					c_v_v = 0;
 				else
-					c_v_v = max_walk_part_.at(i - 1, j).first;
+					c_v_v = max_walk_part_.at(i - 1, j).c_v;
 
 				// element on the last column
 				if (j == max_walk_part_.getCol() - 1)
 					c_h_h = 0;
 				else
-					c_h_h = max_walk_part_.at(i, j + 1).second;
+					c_h_h = max_walk_part_.at(i, j + 1).c_h;
 
 				// Initialization - copying those already found walks
-				max_walk_part_.at(i, j).first = c_v_v;
-				max_walk_part_.at(i, j).second = c_h_h;
+				max_walk_part_.at(i, j).c_v = c_v_v;
+				max_walk_part_.at(i, j).c_h = c_h_h;
 
 				// Search for longer part of the walk
 				// b == 1 or v_{c_v_v + 1} == 0
@@ -395,14 +387,14 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 					// walk continues to the right/left
 					if (direction_[c_v_v])
 					{
-						if (max_walk_part_.at(i, j).second < c_v_v + 1)
-							max_walk_part_.at(i, j).second = c_v_v + 1;
+						if (max_walk_part_.at(i, j).c_h < c_v_v + 1)
+							max_walk_part_.at(i, j).c_h = c_v_v + 1;
 					}
 					// walk continues to the bottom
 					else
 					{
-						if (max_walk_part_.at(i, j).first < c_v_v + 1)
-							max_walk_part_.at(i, j).first = c_v_v + 1;
+						if (max_walk_part_.at(i, j).c_v < c_v_v + 1)
+							max_walk_part_.at(i, j).c_v = c_v_v + 1;
 					}
 				}
 
@@ -414,13 +406,13 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 
 					if (direction_[c_h_h])
 					{
-						if (max_walk_part_.at(i, j).second < c_h_h + 1)
-							max_walk_part_.at(i, j).second = c_h_h + 1;
+						if (max_walk_part_.at(i, j).c_h < c_h_h + 1)
+							max_walk_part_.at(i, j).c_h = c_h_h + 1;
 					}
 					else
 					{
-						if (max_walk_part_.at(i, j).first < c_h_h + 1)
-							max_walk_part_.at(i, j).first = c_h_h + 1;
+						if (max_walk_part_.at(i, j).c_v < c_h_h + 1)
+							max_walk_part_.at(i, j).c_v = c_h_h + 1;
 					}
 				}
 			}
@@ -429,7 +421,7 @@ bool Walking_pattern::avoid(const Matrix<bool>& big_matrix, const int r, const i
 
 	// I haven't mapped the last element of the walk - matrix avoids the pattern
 	return true;
-}*/
+}
 
 //bool Walking_pattern::lazy_avoid(const Matrix<bool>& big_matrix, const int r, const int c, std::vector<Counter>& /* sizes */, const std::atomic<bool>& force_end)
 /*{
