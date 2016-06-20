@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE ipe SYSTEM "ipe.dtd">
 <ipe version="70107" creator="Ipe 7.2.2">
-<info created="D:20160529161258" modified="D:20160613222231"/>
+<info created="D:20160529161258" modified="D:20160619185502"/>
 <ipestyle name="basic">
 <symbol name="arrow/arc(spx)">
 <path stroke="sym-stroke" fill="sym-stroke" pen="sym-pen">
@@ -339,5 +339,61 @@ h
 </path>
 <text matrix="1 0 0 1 0 -12" transformations="translations" pos="4 796" stroke="black" type="label" width="15.529" height="6.808" depth="0" valign="baseline">$P$=</text>
 <text matrix="1 0 0 1 -4 0" transformations="translations" pos="116 784" stroke="black" type="label" width="18.5" height="6.808" depth="0" valign="baseline">$M$=</text>
+<path matrix="1 0 0 1 -1.22504 -1.22504" stroke="black">
+40 800 m
+40 788 l
+96 788 l
+96 800 l
+h
+</path>
+<path matrix="1 0 0 1 -1.22504 -1.22504" stroke="black">
+40 784 m
+40 772 l
+96 772 l
+96 784 l
+h
+</path>
+<path matrix="1 0 0 1 -1.22504 -1.22504" stroke="black">
+40 768 m
+40 756 l
+96 756 l
+96 768 l
+h
+</path>
+<path matrix="1 0 0 1 -2.69508 -1.22504" stroke="black">
+56 816 m
+56 756 l
+68 756 l
+68 816 l
+h
+</path>
+<path matrix="1 0 0 1 -0.735023 -1.47005" stroke="black">
+148 812 m
+148 800 l
+220 800 l
+220 812 l
+h
+</path>
+<path matrix="1 0 0 1 -0.735023 -1.47005" stroke="black">
+148 796 m
+148 784 l
+220 784 l
+220 796 l
+h
+</path>
+<path matrix="1 0 0 1 -0.735023 -1.47005" stroke="black">
+148 764 m
+148 752 l
+220 752 l
+220 764 l
+h
+</path>
+<path matrix="1 0 0 1 -2.20507 -1.47005" stroke="black">
+164 828 m
+164 752 l
+176 752 l
+176 828 l
+h
+</path>
 </page>
 </ipe>

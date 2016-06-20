@@ -4,7 +4,7 @@ In the last chapter of the thesis we show how to make the program generate rando
 
 \section{Configuration file}
 
-In order to modify what the program computes, we use a configuration file. There is only command line options to be used and that is a path to the configuration file. If no path is inserted the configuration file is expected to be located in the same directory as the executable file is and its name is ``config.txt''.
+In order to modify what the program computes, we use a configuration file. There is only one command line options to be used and that is a relative path to the configuration file. If no path is inserted then the configuration file is expected to be located in the same directory as the executable file and its name is ``config.txt''.
 
 The file is a standard text file which can be modified by any text editor and is structured into four sections:
 \begin{itemize}
@@ -47,53 +47,54 @@ Default value: & ``random''
 \item init\_matrix: A \textit{size}$\times$\textit{size} matrix the MCMC process starts with.
 
 \begin{tabular}{ll}
-Possible value: & \textit{input file path} \\
+Possible value: & \textit{matrix file path} \\
 & ``zero'' - a matrix containing no one-entries \\
 Default value: & ``zero''
 \end{tabular}
 
-\item parallel\_mode: choose whether to compute in parallel or serial.
+\item parallel\_mode: A choice to compute in parallel or serial.
 
 \begin{tabular}{ll}
 Possible value: & ``serial'' \\
-& ``mcmc'' - more iterations of the MCMC generator are tested in parallel \\
-& ``map'' - more partial mappings are being extended in parallel \\
+& ``mcmc'' - more in \autoref{sect:parallel} \\
+%& ``map'' - more partial mappings are being extended in parallel \\
 Default value: & ``serial''
 \end{tabular}
 
-\item threads\_count: The number of threads that are going to be used if a parallel mode is chosen.
+\item threads\_count: The number of threads if a parallel mode is chosen.
 
 \begin{tabular}{ll}
 Possible value: & $t\in\mathbb{N}$ \\
 & -1 - chosen according to the number of cores \\
 Default value: & 1
 \end{tabular}
-
 \end{itemize}
 
 \subsection{Pattern}
-It is time to set the options that matter the most - matrix patterns. As you generate a matrix which avoids more than just one pattern, the section [pattern] can be used multiple times, specifying one pattern for each occurrence.
+In this section we set the options that matter the most -- matrix patterns. As we are allowed to generate a matrix which avoids more than just one pattern, the section \textbf{[pattern]} can be used multiple times, specifying one pattern for each occurrence.
 \begin{itemize}
-\item pattern\_file: A path to a input matrix file - the pattern.
+\item pattern\_file: A relative path to a input matrix file - the pattern.
 
 \begin{tabular}{ll}
-Possible value: & matrix file path \\
-Default value: & ``input.txt''
+Possible value: & \textit{matrix file path} \\
+Default value: & ``pattern/input.txt''
 \end{tabular}
 
 \item pattern\_type: The type of the pattern. Determines the method used for testing avoidance.
 
 \begin{tabular}{ll}
 Possible value: & ``general'' \\
-& ``walking'' - see [chapter3] \\
+& ``walking'' - see \autoref{chap:walking} \\
 & ``slow'' - brute force algorithm for a general pattern \\
 Default value: & ``general''
 \end{tabular}
 \end{itemize}
 
 The next options are only useful if the general pattern type is chosen. It specifies how the mappings are stored as well as what the map function tests.
+
+First we can decide what mapping approaches to use. More about them in \autoref{sect:approaches}.
 \begin{itemize}
-\item map\_one\_entries: If set to ``yes'', the map function not only checks that already mapped lines do cross the currently added one in a one-entry if needed but also tests whether there is enough one-entries in between those already mapped lines. The result is that the map function takes a little longer but it recognizes hopeless mappings earlier.
+\item map\_one\_entries: If set to ``yes'', the map function  tests whether there is enough one-entries in between already mapped lines.
 
 \begin{tabular}{ll}
 Possible value: & ``yes'' \\
@@ -101,7 +102,7 @@ Possible value: & ``yes'' \\
 Default value: & ``yes''
 \end{tabular}
 
-\item map\_recursion: If set to ``yes'' and the map\_one\_entries is also set to ``yes'', the map function not only tests there are enough one-entries in between already mapped lines on the currently added one, but for those non-mapped lines crossing the current one in a one-entry, it also tests if the partial mapping has one-entries everywhere they are supposed to be. Although this comes with a big time consumption it can filter a big portion of partial mapping that would later become unfeasible.
+\item map\_recursion: If set to ``yes'' and the map\_one\_entries is also set to ``yes'', the map function tests mapping recursively.
 
 \begin{tabular}{ll}
 Possible value: & ``yes'' \\
@@ -109,14 +110,16 @@ Possible value: & ``yes'' \\
 Default value: & ``yes''
 \end{tabular}
 
-\item map\_orthogonal\_bounds: If set to ``yes'', the map function also tests the orthogonal bounds of added line - see [chapter2].
+\item map\_orthogonal\_bounds: If set to ``yes'', the map function also tests the orthogonal bounds of added line.
 
 \begin{tabular}{ll}
 Possible value: & ``yes'' \\
 & ``no'' \\
 Default value: & ``no''
 \end{tabular}
+\end{itemize}
 
+\begin{itemize}
 \item map\_container: A container in which the partial mappings are stored.
 
 \begin{tabular}{ll}
@@ -126,7 +129,7 @@ Possible value: & ``set'' - std::set (red-black tree) \\
 Default value: & ``hash''
 \end{tabular}
 
-\item line\_order: Choose the order in which the lines are being added to the partial mapping. See [chapter2]
+\item line\_order: Choose the order in which the lines are being added to the partial mapping. See \autoref{sect:order}.
 
 \begin{tabular}{ll}
 Possible value: & ``max'' \\
@@ -140,9 +143,9 @@ Default value: & ``max''
 
 \end{itemize}
 \subsection{Output}
-There is no reason to generate a matrix noone will ever see. In this section we make the matrix show. As the matrix can be output to console, a text file or a bmp file an option in the section can be set more than once and all the settings make difference.
+In this section we specify, where to output the generated matrix or statistics files. As the matrix can be output to console, a text file or a bmp file, each option in the section can be set more than once and every line will make a new output.
 \begin{itemize}
-\item matrix\_output: The generated matrix can be output as a bmp file in which one-entries are black pixels and zero-entries white. To do that, the file path has to have a pattern ``path.bmp''. If a different path is given the file is stored as a matrix text file. It can also be output into a console if ``console'' is set. In that case it has the text format.
+\item matrix\_output: The generated matrix can be output as a bmp file in which one-entries are black pixels and zero-entries white. To do that, the file path has to have a pattern ``$\ast$.bmp''. If a different path is given the file is stored as a matrix text file. It can also be output into a console if ``console'' is set. In that case it has the text format.
 
 \begin{tabular}{ll}
 Possible value: & ``console'' \\

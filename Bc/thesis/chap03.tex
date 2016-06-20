@@ -1,45 +1,57 @@
 \chapter{An algorithm for testing pattern-avoidance of a special pattern}
 \label{chap:walking}
-In the previous chapter, we have seen an algorithm for a general forbidden pattern which, using some heuristics, runs pretty fast. In this chapter, we introduce a special kind of a pattern, satisfying additional conditions, for which we can produce much faster algorithm.
+In the previous chapter, we have seen an algorithm for a general forbidden patter. In this chapter, we introduce a special kind of a pattern, satisfying additional conditions, for which we can produce a much faster algorithm.
 
 \section{Walking pattern}
 We call the specific pattern a walking pattern. The additional condition we want the pattern to satisfy is that there is a walk from one corner to the opposite one and all the one-entries of the pattern are contained on the walk.
 \paragraph{Definition}
-A \textbf{walk} in a matrix is a sequence of some of its entries beginning in the top left corner and ending in the bottom right one. If an entry at the position $[i,j]$ is in the sequence, the next one is either $[i+1,j]$ or $[i,j+1]$. Therefore, the length of an arbitrary walk is equal to $w+h-1$.
+A \textbf{walk} in a matrix is a sequence of some of its entries beginning in the top left corner and ending in the bottom right one. If an entry at the position $[i,j]$ is in the sequence, the next one is either $[i+1,j]$ or $[i,j+1]$. Therefore, the length of an arbitrary walk is equal to $w+h-1$ and we denote elements of the sequence by $e_1,e_2,\cdots,e_{w+h-1}$.
 \begin{figure}[h!]
 \centering
-\includegraphics[width=100mm]{../img/walk.pdf}
+\includegraphics[width=90mm]{../img/walk.pdf}
 \caption{An example of a walk and the order of its entries.}
 \label{walk}
 \end{figure}
 %\centerline{\mbox{\includegraphics[width=75mm]{../img/walk.pdf}}}
 
-In Figure \ref{walk} you can see a matrix that is a walking pattern as all the one-entries are included in a walk. Not all entries of a walk need to be one-entries though.
+In Figure \ref{walk} matrix $M$ is a walking pattern as all the one-entries are included in a walk. We can also see that not all entries of a walk need to be one-entries.
 
-It can be shown a walking pattern with a walk is exactly a matrix avoiding a forbidden pattern
+It can be shown a walking pattern is exactly a matrix avoiding a forbidden pattern
 $$\left(\begin{array}{cc}
 0 & 1 \\
 1 & 0
 \end{array}\right)$$
 
 \section{Dynamic program}
-Now that we know what walking pattern is, we show an algorithm deciding whether such a pattern $P$ is contained in a big matrix $M$ or not.
+Next, we show an algorithm deciding whether a \textbf{walking} pattern $P$ is contained in a big matrix $M$ or not.
 
-The pattern $P$ is a walking pattern so there is a walk containing all the one-entries of the pattern. We choose one such walk arbitrarily and index its entries $e_1,e_2,\dots,e_{h+w-1}$ starting from the beginning of the walk. For each entry of the walk we remember whether its value is one or zero and whether the walk continues from the entry vertically, in which case we call it a \textbf{vertical entry} or horizontally, calling it a \textbf{horizontal entry}.
-
+The pattern $P$ is a walking pattern, so there is a walk containing all the one-entries of $P$. We choose one such walk arbitrarily. For each entry of the walk we remember whether its value in $P$ is one or zero and whether the walk continues from the entry vertically, in which case we call it a \emph{vertical entry} or horizontally, calling it a \emph{horizontal entry}.
+\begin{defn}
 For an element $e$ of $M$ at the position $[i,j]$, the matrix $M_{\leq e}$ is a $(i+1)\times(j+1)$ submatrix of $M$ consisting of rows with the index smaller than or equal to $i$ and columns with the index smaller than or equal to $j$. The element $e$ then lies in the bottom right corner. Similarly, $M_{\geq e}$ is a $(n-i)\times(n-j)$ submatrix of $M$ consisting of rows with the index greater than or equal to $i$ and columns with index greater then or equal to $j$. The element $e$ is its first element.
+\end{defn}
+To determine whether $P$ is contained in $M$ we find out for each element $e$ of $M$ what is the longest part of $P$ that can be found in $M_{\leq e}$. If there is an element for which we manage to find the whole pattern, $P$ is contained in $M$; otherwise, it is avoided.
 
-To determine whether $P$ is contained in $M$ we find out for each element $e$ of $M$ what is the longest part of the pattern that can be found in $M_{\leq e}$. If there is an element for which we manage to find the last entry of the pattern, the pattern is contained in the matrix; otherwise, it is avoided.
-
-For each element $e$ of $M$ at the position $[i,j]$ we remember two numbers. The number $c_v(e)$ says what is the longest part of the walk in $M_{\leq e}$ with the last entry in $j$-th column and being a vertical entry. The number $c_h(e)$, symmetrically, says what is the longest part of the walk in $M_{\leq e}$ with the last entry in $i$-th row and and being a horizontal entry.
-
-An observation we make is that if we have a fixed element $e$ of $M$ and any other element $e'$ above $e$ in the same column then $c_v(e')$ is less than or equal to $c_v(e)$. This means that for $e$ we can find the maximum part of the pattern ending in the column of $e$ and continuing vertically by looking only to elements in that column above $e$ and since this is true for all of them, it is sufficient to only check the value of the element right above $e$ (at the position $[i-1,j]$). Similarly the argument goes for the value of $c_h$ in horizontal way.
-
-The algorithm iterates through diagonals. A diagonal in this matter of speaking is a subset of elements of $M$, such that all elements have the same sum of their coordinates. For example, zero diagonal only consists of an element $[0,0]$, the first diagonal contains elements $[0,1]$ and $[1,0]$, and so on.
-
-For simplicity, in the pseudo-code below we do not deal with elements outside $M$ (like $-1,0$) explicitly. Instead for those elements we just assume the values of $c_v$ and $c_h$ are always equal to zero.
+\subsection{Inner structures}
+To run properly, the algorithm needs two structures. The first one is a description of the walk, which is an array of the values of its entries (zero or one) and the information whether the entry is vertical or horizontal. The second structure is a matrix of the same size as $M$. For each element $e$ of $M$ at the position $[i,j]$ we remember two numbers. The number $c_v(e)$ says what is the longest part of the walk in $M_{\leq e}$ with the last entry in $j$-th column and being a vertical entry. The number $c_h(e)$, symmetrically, says what is the longest part of the walk in $M_{\leq e}$ with the last entry in $i$-th row and and being a horizontal entry.
 
 \subsection{The algorithm}
+An observation we make is that if we have an element $e$ of $M$ and any element $e'$ above $e$ in the same column, then $c_v(e')$ is less than or equal to $c_v(e)$. This means that we can always copy to value from the value of the element right above $e$ (at the position $[i-1,j]$) to get a lower bound of actual $c_v(e)$. Similarly the argument goes for the value of $c_h(e)$ in horizontal way.
+
+The algorithm iterates through diagonals. 
+\begin{defn}
+A \emph{diagonal} of matrix $M$ is a subset of elements of $M$, such that all elements have the same sum of their coordinates.
+\end{defn}
+For example, zero diagonal only consists of an element $[0,0]$, the first diagonal contains elements $[0,1]$ and $[1,0]$, and so on.
+\begin{figure}[h!]
+\centering
+\includegraphics[width=60mm]{../img/walking_alg.pdf}
+\caption{Diagonals of an matrix and the order in which the algorithm for walking pattern iterates through them.}
+\end{figure}
+%\centerline{\mbox{\includegraphics[width=60mm]{../img/walking_alg.pdf}}}
+
+For simplicity, in the pseudo-code below we do not deal with elements outside $M$ (like $-1,0$) explicitly. Instead, for those elements, we assume the values of $c_v$ and $c_h$ are always equal to zero.
+
+The algorithm goes as follows:
 \begin{enumerate}
 \item For $d=0,\cdots,w+h-1$
 \item \hspace{5mm} For $e$ element of $d$-th diagonal at the position $[i,j]$
@@ -63,13 +75,10 @@ For simplicity, in the pseudo-code below we do not deal with elements outside $M
 \item \hspace{2cm} $c_h(e):=max\{c_h(e),c_h(e)+1\}$
 \end{enumerate}
 
-\centerline{\mbox{\includegraphics[width=60mm]{../img/walking_alg.pdf}}}
-
-\subsection{Inner structure}
-To run properly the algorithm needs two structures. The first one is a description of the walk, which is just an array of the values of its entries as well as the information whether the entry is vertical or horizontal. The second structure is a matrix of the values $c_v$ and $c_h$ as described above.
-
 \subsection{Correctness}
-We need to show that the values of $c_v$ and $c_h$ are always correct for the recomputed elements after at the end of the function. We proceed by induction.
+Note that the function can terminate before recomputing all elements and we have no guarantee about the state of elements, which have not been recomputed. If the function finds the pattern ending in entry $e$, it stops computing at that point, but to prove correctness it is enough to prove the values are correct in $M_{\leq e}$. If the function does not find the pattern, it recomputes the whole structure.
+
+We need to show that the values of $c_v$ and $c_h$ are always correct for the recomputed elements at the end of the function. We proceed by induction.
 
 For the first element it is definitely true since there can be only the first entry of the pattern mapped and we check just that.
 
