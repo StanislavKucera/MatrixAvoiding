@@ -1,9 +1,17 @@
 \chapter{User documentation}
 \label{chap:udoc}
-In the last chapter of the thesis we show how to make the program generate random matrices or to test whether a certain matrix avoids a given forbidden pattern. In the first section we find out how to set a configuration file. After that we go through necessary input and output files and see how they are formatted.
+In the last chapter of the thesis we first describe how to install the program and then show how to make the program generate random matrices or to test whether a certain matrix avoids a given forbidden pattern.
+
+\section{Installation}
+The program is written in C++ and should be compilable on any standard platform. To install it, you either just use an executable file (Windows) or build the program using C++ compiler.
+
+\subsection{Windows}
+Windows user can run the application using an executable file ``matrix-win.exe'' either directly, in which case the default configuration file will be used, or using command line with an optional parameter specifying the configuration file.
+
+\subsection{Unix, Linux, iOS}
+Users on other platforms than Windows can build the solution using command line easily by running ``./build.sh'', which uses G++ compiler. Compiler can be switched by rewriting g++ to some other variant (for example clang) in build.sh file. This leads to creating a an executable file ``matrix.exe'' which can be run with an optional parameter specifying the configuration file.
 
 \section{Configuration file}
-
 In order to modify what the program computes, we use a configuration file. There is only one command line options to be used and that is a relative path to the configuration file. If no path is inserted then the configuration file is expected to be located in the same directory as the executable file and its name is ``config.txt''.
 
 The file is a standard text file which can be modified by any text editor and is structured into four sections:
@@ -56,7 +64,7 @@ Default value: & ``zero''
 
 \begin{tabular}{ll}
 Possible value: & ``serial'' \\
-& ``mcmc'' - more in \autoref{sect:parallel} \\
+& ``mcmc'' - more in Section \ref{sect:parallel} \\
 %& ``map'' - more partial mappings are being extended in parallel \\
 Default value: & ``serial''
 \end{tabular}
@@ -84,7 +92,7 @@ Default value: & ``pattern/input.txt''
 
 \begin{tabular}{ll}
 Possible value: & ``general'' \\
-& ``walking'' - see \autoref{chap:walking} \\
+& ``walking'' - see Chapter \ref{chap:walking} \\
 & ``slow'' - brute force algorithm for a general pattern \\
 Default value: & ``general''
 \end{tabular}
@@ -92,7 +100,7 @@ Default value: & ``general''
 
 The next options are only useful if the general pattern type is chosen. It specifies how the mappings are stored as well as what the map function tests.
 
-First we can decide what mapping approaches to use. More about them in \autoref{sect:approaches}.
+First we can decide what mapping approaches to use. More about them in Section \ref{sect:approaches}.
 \begin{itemize}
 \item map\_one\_entries: If set to ``yes'', the map function  tests whether there is enough one-entries in between already mapped lines.
 
@@ -129,7 +137,7 @@ Possible value: & ``set'' - std::set (red-black tree) \\
 Default value: & ``hash''
 \end{tabular}
 
-\item line\_order: Choose the order in which the lines are being added to the partial mapping. See \autoref{sect:order}.
+\item line\_order: Choose the order in which the lines are being added to the partial mapping. See Section \ref{sect:order}.
 
 \begin{tabular}{ll}
 Possible value: & ``max'' \\
@@ -155,7 +163,7 @@ Possible value: & ``console'' \\
 Default value: & ``no''
 \end{tabular}
 
-\item performance\_stats: If the serial computation or the map parallelism is chosen, the program can output a statistics like the percentage of avoid call success, how long did one call take on average and what was the average size of structures. Note that this is not very useful as a matrix statistics, see the next section for that. If more patterns are set, the statistics may get misleading as it also counts the cases when the first pattern is contained in the matrix and the other patterns are not tested at all.
+\item performance\_stats: If the serial computation is chosen, the program can output a statistics like the percentage of avoid call success, how long did one call take on average and what was the average size of structures. If more patterns are chosen at the same time, the statistics may get misleading as they also count the cases when the first pattern is contained in the matrix and the other patterns are not tested at all.
 
 \begin{tabular}{ll}
 Possible value: & ``console'' \\

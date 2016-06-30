@@ -1,6 +1,32 @@
 \chapter{Technical documentation}
 \label{chap:tdoc}
-In this chapter, we cover those parts of the algorithm that may be hard to understand just from the code. This only means functions that are technically hard - functions with unexpected dependencies, side effects and so on. Algorithmic difficult tasks are explained in \autoref{chap:imp}.
+In this chapter, we cover those parts of the algorithm that may be hard to understand just from the code. This only means functions that are technically hard - functions with unexpected dependencies, side effects and so on. Algorithmic difficult tasks are explained in Chapter \ref{chap:imp}.
+
+\section{Classes and API}
+First we list important classes of the program and explain their purpose.
+
+\subsection{Matrix}
+A minimalistic template container for storing and accessing matrices.
+
+\subsection{Pattern}
+An abstract class defining the interface of patterns. Three classes inherit from the class:
+\begin{itemize}
+\item \emph{General pattern} -- more in Chapter \ref{chap:general}
+\item \emph{Walking pattern} -- more in Chapter \ref{chap:walking}
+\item \emph{Slow pattern} -- a class using a brute force algorithm to test pattern avoidance.
+\end{itemize}
+
+For the case multiple patterns are chosen at the same time, every such Pattern in stored in a container called Patterns, which is a class creating an interface between Pattern and MCMCgenerator.
+
+\subsection{MCMCgenerator}
+A class that for given Patterns and given matrix repeats MCMC process described in Section \ref{sect:mmcmc} using given number of iterations.
+
+\subsection{Statistics}
+To acquire, store and output statistics of the generating process, we use classes in the file Statistics.hpp. There are two kinds of classes:
+\begin{itemize}
+\item \emph{Matrix statistics} -- these statistics store information about the structure of all matrices that have been generated throughout the MCMC process. An example of that is a histogram of occurrences of one-entries at all positions of the matrix.
+\item \emph{Performance statistics} -- this is what we use to count how many changes were successful and how long did it take to test a change.
+\end{itemize}
 
 \section{General pattern}
 The general pattern class contains a lot of function. Most of them are easy to follow and they all should be commented enough in the code. The only part which deserves more attention is the constructor.
@@ -9,13 +35,13 @@ The general pattern class contains a lot of function. Most of them are easy to f
 In the constructor of a general pattern, there are a few function that are easy in nature but as they somehow use each other it is hard not to lose track of their dependencies and results. In order to make this part of the code, which is a very important part indeed, more understandable, we go through the constructor and explain all that is happening in the order it is happening in.
 
 \subsubsection{Storing the pattern}
-The first thing, which is done right after initialization of variable, is storing the pattern. Instead of storing the pattern in a Matrix$<$bool$>$, I decided to use to store lines into a number, where in the binary coding a one-entry in the position $i$ means there is a one-entry in the line at the intersection with $i$-th orthogonal line. This comes handy when computing lines orders. At the same time we also find those lines that are empty (more in \autoref{chap:imp}) and remember them, because we do not have to map them at all.
+The first thing, which is done right after initialization of variable, is storing the pattern. Instead of storing the pattern in a Matrix$<$bool$>$, I decided to use to store lines into a number, where in the binary coding a one-entry in the position $i$ means there is a one-entry in the line at the intersection with $i$-th orthogonal line. This comes handy when computing lines orders. At the same time we also find those lines that are empty (more in Chapter \ref{chap:imp}) and remember them, because we do not have to map them at all.
 
 \subsubsection{Choosing the line order}
-After that we need to choose the right line order (again more in \autoref{chap:imp}). To compute MAX or SUM order we just use a brute force algorithm that checks sequences of line adding and for each it computes how many lines are unimportant. Then it just chooses the order which is the best in chosen metric.
+After that we need to choose the right line order (again more in Chapter \ref{chap:imp}). To compute MAX or SUM order we just use a brute force algorithm that checks sequences of line adding and for each it computes how many lines are unimportant. Then it just chooses the order which is the best in chosen metric.
 
 \subsubsection{What to remember}
-In the next step, we find what do we need to remember in each level of partial mappings with respect to chosen order. As mention earlier, for MAX or SUM order it is already computed when finding the order, but for other variants of orders it is not, so we just compute it every time. What to remember is based on the equivalence introduced in \autoref{chap:general} and the decision not to remember unimportant lines (which we explained in \autoref{chap:imp}).
+In the next step, we find what do we need to remember in each level of partial mappings with respect to chosen order. As mention earlier, for MAX or SUM order it is already computed when finding the order, but for other variants of orders it is not, so we just compute it every time. What to remember is based on the equivalence introduced in Chapter \ref{chap:general} and the decision not to remember unimportant lines (which we explained in Chapter \ref{chap:imp}).
 
 \subsubsection{Parallel bound indices}
 Now comes the hardest to follow part - precomputing the indices for searching for parallel bounds. The idea behind is simple. When we are adding a new line and we already have a partial mapping, it restricts to where we can add the line. For example, if there are three rows in the pattern and the rows 1 and 3 are mapped, the second one need to be mapped in between those two. The question is, where are those two lines mapped to? First we add in a chosen order and second we do not remember all lines, as some are unimportant. What do we want is to have a instant access to the index of the line, which bounds added line, in the partial mapping so we do not need to compute the index over and over again. That is exactly what gets computed when the function ``find\_parralel\_bound\_indices'' is called. The series of other function calls follows just because we compute the indices for all added lines in the order in which they are going to be added.
@@ -26,7 +52,7 @@ The last function, ``find\_extending\_order'' just specifies how the next partia
 \section{Parallel computing}
 
 \subsection{MCMC parallelism}
-While the idea behind MCMC parallelism is described in \autoref{sect:parallel} and the code is heavily commented, the work done by the main thread may still be hard to understand.
+While the idea behind MCMC parallelism is described in Section \ref{sect:parallel} and the code is heavily commented, the work done by the main thread may still be hard to understand.
 
 Let $I$ be the ID the process is currently waiting for, that is, the lowest ID of a task that is being tested by a worker. In a structure called ``queue'' (which is std::vector$<$std::deque$>$) each worker has a queue of tasks related to it. In the queue, there are tasks that are either being computed or have been computed. The history of tasks is needed to allow reverting changes that should have not happen when the main thread encounters a different successful task with lower ID. There is no need to have a complete history of all tasks computed. There are only those tasks, that have higher ID than $I$ or have lower ID, but those are going to be removed from the ``queue'' as soon as possible. The name ``queue'' is not random, it describes the order in which the tasks are being stored - the tasks with lower ID have been inserted earlier and therefore they are at the bottom.
 
