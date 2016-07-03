@@ -1,18 +1,18 @@
 \chapter{User documentation}
 \label{chap:udoc}
-In the last chapter of the thesis we first describe how to install the program and then show how to make the program generate random matrices or to test whether a certain matrix avoids a given forbidden pattern.
+In the last chapter of the thesis, we first describe how to install the program and then show how to make the program generate random matrices or to test whether a certain matrix avoids a given forbidden pattern.
 
 \section{Installation}
-The program is written in C++ and should be compilable on any standard platform. To install it, you either just use an executable file (Windows) or build the program using C++ compiler.
+The program is written in C++ and should be compilable on any standard platform. To use it, you either just use an executable file (Windows) or build the program using C++ compiler.
 
 \subsection{Windows}
-Windows user can run the application using an executable file ``matrix-win.exe'' either directly, in which case the default configuration file will be used, or using command line with an optional parameter specifying the configuration file.
+Windows users can run the application using an executable file ``matrix-win.exe'' either directly, in which case the default configuration file will be used, or using command line with an optional parameter specifying the configuration file.
 
 \subsection{Unix, Linux, iOS}
 Users on other platforms than Windows can build the solution using command line easily by running ``./build.sh'', which uses G++ compiler. Compiler can be switched by rewriting g++ to some other variant (for example clang) in build.sh file. This leads to creating a an executable file ``matrix.exe'' which can be run with an optional parameter specifying the configuration file.
 
 \section{Configuration file}
-In order to modify what the program computes, we use a configuration file. There is only one command line options to be used and that is a relative path to the configuration file. If no path is inserted then the configuration file is expected to be located in the same directory as the executable file and its name is ``config.txt''.
+In order to modify what the program computes, we use a configuration file. The configuration file can be chosen when running the program in command line and relative path to it is the first (and only) option. If no path is inserted then the configuration file is expected to be located in the same directory as the executable file and its name is ``config.txt''.
 
 The file is a standard text file which can be modified by any text editor and is structured into four sections:
 \begin{itemize}
@@ -21,14 +21,14 @@ The file is a standard text file which can be modified by any text editor and is
 \item output
 \item statistics
 \end{itemize}
-The order of the sections is not fixed and there can be additional empty lines for better readability. In each section there is a list of values that can be set either to arbitrary value or to a specific one. There is at most one command of format ``option=value'' per line and there might be additional white spaces surrounding the ``='' sign.
+The order of the sections is not fixed and there can be additional empty lines for better readability. In each section, there is a list of values that can be set either to arbitrary value or to a specific one. There is at most one command of format ``option=value'' per line and there might be additional white spaces surrounding the ``='' sign.
 
 If an option is set more than once, the latter value is always used. If, on the other hand, an option is not set at all, the default value is used. If there is a line encountered that sets a wrong option, for instance when the user mistypes a valid option, the line is skipped and the user gets a warning in the standard error output.
 
 Let us provide a list of all options for each section together with their default values.
 
 \subsection{Input}
-In the first section of the configuration file we set the generating process.
+In the first section of the configuration file, we set the generating process.
 \begin{itemize}
 \item size: The size of the generated matrix. Results in $M\in\{0,1\}^{size\times size}$.
 
@@ -41,6 +41,7 @@ Default value: & 100
 
 \begin{tabular}{ll}
 Possible value: & $i\in\mathbb{N}$ \\
+& -1 - tests avoidance of the initial pattern \\
 Default value: & 10,000
 \end{tabular}
 

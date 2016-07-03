@@ -37,6 +37,7 @@ int main(int argc, char **argv)
 		if (!test)
 		{
 			std::cerr << "Cannot open configuration file \"" << config_file << "\". Please check that all directories are created and accessible.\n";
+			std::cout << "Press ENTER to exit." << std::endl;
 			getchar();
 			return 1;
 		}
@@ -75,7 +76,17 @@ int main(int argc, char **argv)
 		throw my_exception("Initial matrix is not of correct size.");
 	}
 
-	set_patterns(patterns, pattern_info, result, init_matrix != "zero", N, threads_count);
+	try
+	{
+		set_patterns(patterns, pattern_info, result, init_matrix != "zero", N, threads_count);
+	}
+	catch (my_exception& e)
+	{
+		std::cerr << e.what() << std::endl;
+		std::cout << "Press ENTER to exit." << std::endl;
+		getchar();
+		return 1;
+	}
 
 	Matrix_Statistics matrix_stats(hist_from, (hist_to == -1) ? iter : hist_to, N, (hist_files.empty()) ? 0 : hist_freq, !max_ones_files.empty());
 	Performance_Statistics perf_stats(5, iter);
@@ -83,7 +94,15 @@ int main(int argc, char **argv)
 	//////////////////////////////////////////////////////
 	start = std::chrono::system_clock::now();
 
-	if (parallel_mode == MCMC)
+	if (iter == -1)
+	{
+		std::vector<std::vector<Counter> > sizes;
+		if (patterns.avoid(result, -1, -1, sizes))
+			std::cout << "Initial big matrix avoids the pattern." << std::endl;
+		else
+			std::cout << "Initial big matrix contains the pattern." << std::endl;
+	}
+	else if (parallel_mode == MCMC)
 		parallelMCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, threads_count - 1, random_seed);
 	else if (parallel_mode == MCMC2)
 		parallelMCMCgenerator2(iter, patterns, result, perf_stats, matrix_stats, threads_count, random_seed);

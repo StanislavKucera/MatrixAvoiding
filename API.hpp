@@ -191,7 +191,7 @@ Pattern* create_new_pattern(Matrix<bool>&& pattern, const Type type, const Map m
 		Walking_pattern* wp = new Walking_pattern(pattern, N);
 
 		if (!wp->initial_avoid(result))
-			throw my_exception("Initial big matrix does not avoid the pattern");
+			throw my_exception("Initial big matrix does not avoid the pattern.");
 
 		return wp;
 	}
@@ -214,21 +214,21 @@ Pattern* create_new_pattern(Matrix<bool>&& pattern, const Type type, const Map m
 			General_pattern<std::vector<std::vector<int> > > gpSUM(pattern, threads_count - 1, SUM, map);
 			start = std::chrono::system_clock::now();
 			if (!gpSUM.avoid((initialized ? result : init), -1, -1, sizes))
-				throw my_exception("Initial big matrix does not avoid the pattern");
+				throw my_exception("Initial big matrix does not avoid the pattern.");
 			end = std::chrono::system_clock::now();
 			auto sum_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
 			General_pattern<std::vector<std::vector<int> > > gpMAX(pattern, threads_count - 1, MAX, map);
 			start = std::chrono::system_clock::now();
 			if (!gpMAX.avoid((initialized ? result : init), -1, -1, sizes))
-				throw my_exception("Initial big matrix does not avoid the pattern");
+				throw my_exception("Initial big matrix does not avoid the pattern.");
 			end = std::chrono::system_clock::now();
 			auto max_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
 			General_pattern<std::vector<std::vector<int> > > gpDESC(pattern, threads_count - 1, DESC, map);
 			start = std::chrono::system_clock::now();
 			if (!gpDESC.avoid((initialized ? result : init), -1, -1, sizes))
-				throw my_exception("Initial big matrix does not avoid the pattern");
+				throw my_exception("Initial big matrix does not avoid the pattern.");
 			end = std::chrono::system_clock::now();
 			auto desc_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
@@ -259,21 +259,21 @@ Pattern* create_new_pattern(Matrix<bool>&& pattern, const Type type, const Map m
 			General_pattern<std::set<std::vector<int> > > gpSUM(pattern, threads_count - 1, SUM, map);
 			start = std::chrono::system_clock::now();
 			if (!gpSUM.avoid((initialized ? result : init), -1, -1, sizes))
-				throw my_exception("Initial big matrix does not avoid the pattern");
+				throw my_exception("Initial big matrix does not avoid the pattern.");
 			end = std::chrono::system_clock::now();
 			auto sum_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
 			General_pattern<std::set<std::vector<int> > > gpMAX(pattern, threads_count - 1, MAX, map);
 			start = std::chrono::system_clock::now();
 			if (!gpMAX.avoid((initialized ? result : init), -1, -1, sizes))
-				throw my_exception("Initial big matrix does not avoid the pattern");
+				throw my_exception("Initial big matrix does not avoid the pattern.");
 			end = std::chrono::system_clock::now();
 			auto max_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
 			General_pattern<std::set<std::vector<int> > > gpDESC(pattern, threads_count - 1, DESC, map);
 			start = std::chrono::system_clock::now();
 			if (!gpDESC.avoid((initialized ? result : init), -1, -1, sizes))
-				throw my_exception("Initial big matrix does not avoid the pattern");
+				throw my_exception("Initial big matrix does not avoid the pattern.");
 			end = std::chrono::system_clock::now();
 			auto desc_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
@@ -304,21 +304,21 @@ Pattern* create_new_pattern(Matrix<bool>&& pattern, const Type type, const Map m
 			General_pattern<std::unordered_set<std::vector<int>, int_vector_hasher> > gpSUM(pattern, threads_count - 1, SUM, map);
 			start = std::chrono::system_clock::now();
 			if (!gpSUM.avoid((initialized ? result : init), -1, -1, sizes))
-				throw my_exception("Initial big matrix does not avoid the pattern");
+				throw my_exception("Initial big matrix does not avoid the pattern.");
 			end = std::chrono::system_clock::now();
 			auto sum_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
 			General_pattern<std::unordered_set<std::vector<int>, int_vector_hasher> > gpMAX(pattern, threads_count - 1, MAX, map);
 			start = std::chrono::system_clock::now();
 			if (!gpMAX.avoid((initialized ? result : init), -1, -1, sizes))
-				throw my_exception("Initial big matrix does not avoid the pattern");
+				throw my_exception("Initial big matrix does not avoid the pattern.");
 			end = std::chrono::system_clock::now();
 			auto max_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 
 			General_pattern<std::unordered_set<std::vector<int>, int_vector_hasher> > gpDESC(pattern, threads_count - 1, DESC, map);
 			start = std::chrono::system_clock::now();
 			if (!gpDESC.avoid((initialized ? result : init), -1, -1, sizes))
-				throw my_exception("Initial big matrix does not avoid the pattern");
+				throw my_exception("Initial big matrix does not avoid the pattern.");
 			end = std::chrono::system_clock::now();
 			auto desc_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
 

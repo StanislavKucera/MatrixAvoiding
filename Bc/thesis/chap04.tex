@@ -6,9 +6,9 @@ In this chapter we improve algorithms presented in previous chapters and introdu
 We start by improving the brute force algorithm from Chapter \ref{chap:general}.
 
 \subsection{Improving memory consumption}
-As the algorithm for testing avoidance of a general pattern was described, it creates all possible partial mappings and checks whether at least one can be extended to a full mapping (mapping all lines of the pattern). To compute all the partial mappings of some level $l$, it only uses mappings of level $l-1$; therefore, it is enough to only store partial mappings of two levels in memory at any time.
+The algorithm creates all possible partial mappings and checks whether at least one can be extended to a full mapping (mapping all lines of the pattern). To compute all the partial mappings of some level $l$, it only uses mappings of level $l-1$; therefore, it is enough to only store partial mappings of two levels in memory at any time.
 
-In Chapter \ref{chap:general} we also introduced the idea of (un)important lines for a partial mapping of level $l$ and equivalence based on not using unimportant lines at all - as they are fully bounded by other already mapped lines. When a line becomes unimportant it stays unimportant till the end of the run; as a result, we can forget where we mapped those lines to save memory.
+In Chapter \ref{chap:general} we also introduced the notion of (un)important lines and equivalence based on not using unimportant lines at all (they are fully bounded by other already mapped lines). When a line becomes unimportant, it stays unimportant till the end of the test; as a result, we can forget where we mapped those lines to save memory and only remember where we mapped important lines.
 
 \subsection{Not mapping empty lines}
 \begin{defn}
@@ -49,75 +49,71 @@ In the program a user can either choose their own custom order or one of four al
 The one thing the approaches we will introduce have in common is that they try to recognize those partial mappings that have no chance to be extended to a full mapping as early as possible.
 
 While the algorithm introduced in Chapter \ref{chap:general} finds out the partial mapping is invalid only at the time it maps two lines having a one-entry at their intersection to two lines having a zero-entry at the intersection, different approaches try to reveal the fact we would end up in the situation earlier by checking more conditions.
-
-Imaging this as the pattern, where $0,\cdots,8$ are indices of the lines:
 \begin{figure}[h!]
 \centering
 \includegraphics[width=60mm]{../img/approaches.pdf}
-\caption{TODO comment.}
+\caption{Pattern $P$ on which we demonstrate mapping approaches.}
 \label{approaches}
 \end{figure}
-%\centerline{\mbox{\includegraphics[width=60mm]{../img/approaches.pdf}}}
-
-We are in a situation when only lines 0, 3 and 7 are mapped and line 6 is currently being mapped. Here are some mapping approaches:
+Let $P$ from Figure \ref{approaches} be the forbidden pattern and imagine a situation, in which only lines 0, 3 and 7 are mapped and line 6 is currently being mapped. There are a few necessary conditions we can check:
 \subsubsection{Enough one-entries}
-In the situation above, we not only want to check there are one-entries at the intersections of line 6 with lines 0 and 3, but we also check if there are enough one-entries in lines between where lines 0 and 3 are mapped so that there is a hope we can map lines 1 and 2 there and if there is a one-entry below the line where line 3 is mapped so we can map line 4 there later.
 \begin{figure}[h!]
 \centering
 \includegraphics[width=60mm]{../img/enough_one-entries.pdf}
-\caption{TODO comment.}
+\caption{Checking whether there is enough one-entries. Bold lines are mapped or being mapped and in circles are the positions where we look for one-entries.}
 \label{enough}
 \end{figure}
-%\centerline{\mbox{\includegraphics[width=60mm]{../img/enough_one-entries.pdf}}}
+The first condition is that there is enough one-entries in between mapped lines, which is schematically shown in Figure \ref{enough}. We check whether there is enough one-entries on lines in between those lines, where lines 0 and 3 are mapped, so that there is a hope we can map lines 1 and 2 there. Similarly, we check whether there is a one-entry below the line, where line 3 is mapped so we can map line 4 there later.
 \subsubsection{Recursive mapping}
-While we were only testing whether there are enough one-entries in between already mapped lines in the previous approach, this time, we also check whether those one-entries can be used for the lines that are intended to be mapped there. For example, when we check there is a one-entry to be used for line 1 later, we also check the line 1 can be mapped to that row, which in this situation means to also check there is a one-entry at the intersection with the line to which the line 7 is mapped.
 \begin{figure}[h!]
 \centering
 \includegraphics[width=60mm]{../img/recursive.pdf}
-\caption{TODO comment.}
+\caption{Checking whether crossed non-mapped lines can be mapped anywhere. Bold lines are mapped or being mapped, in rectangles are the line we check and in circles are the positions where we look for one-entries.}
 \label{recursive}
 \end{figure}
-%\centerline{\mbox{\includegraphics[width=60mm]{../img/recursive.pdf}}}
+While we were only testing whether there are enough one-entries in between already mapped lines in the previous approach, as you can see in Figure \ref(recursive), this time we also check whether those one-entries can be used for the lines that are intended to be mapped there. For example, when we check there is a one-entry to be used for line 1 later, we also check the line 1 can be mapped to the row with one-entry, which in this situation means to also check there is a one-entry at the intersection with the line to which the line 7 is mapped.
 \subsubsection{Orthogonal bounds}
-When adding line 6, we check whether there are enough one-entries on the already mapped lines orthogonal to line 6, in between line 6 and the closest mapped lines next to line 6. The same idea as in ``Enough one-entries'', but checking different lines.
 \begin{figure}[h!]
 \centering
 \includegraphics[width=60mm]{../img/orthogonal.pdf}
-\caption{TODO comment.}
+\caption{Checking whether there is enough one-entries on the orthogonal lines. Bold lines are mapped or being mapped and in circles are the positions where we look for one-entries.}
 \label{orthogonal}
 \end{figure}
-%\centerline{\mbox{\includegraphics[width=60mm]{../img/orthogonal.pdf}}}
+As shown in Figure \ref{orthogonal}, when we are adding line 6, we check whether there is enough one-entries on the already mapped lines orthogonal to line 6 between line 6 and the closest mapped lines next to line 6. The idea is same as in ``Enough one-entries'', but we check different lines.
 \subsubsection{Usage}
-These restrictions on the added lines are not a fixed part of the program. A user can decide which approaches they want to use in the configuration file. This is due to the fact that there is no right path to choose.
+These restrictions on the added lines are not a fixed part of the program. A user can decide which approaches they want to use in the configuration file.
 
-In the testing that was done for a fixed pattern, we found out it is useful to use all the mentioned restrictions when generating a matrix of size $100\times100$, as it turned out to be much faster than without the restrictions. On the other hand, in the same test for a generated matrix of size $500\times500$, it was much better not to use any of those restrictions.
+When testing that was done for a fixed pattern, we found out it is useful to use all the mentioned restrictions when generating a matrix of size $100\times100$, as it turned out to be much faster than without the restrictions. On the other hand, in the same test for a generated matrix of size $500\times500$, it was much better not to use any of those restrictions.
+$$++$$
+TODO add chart and change text above
+$$++$$
 
 \subsection{Using the whole structure in the next iteration}
-It may seem like a good idea to remember all the partial mappings, to propagate them to the next iteration of the MCMC process and alter them depending upon the change.
+It may seem like a good idea to store all the partial mappings. In the next iteration, instead of finding all the partial mapping again, we only alter the mappings we remember. Let $i$ be the number of the iteration we are in, and $e$ be the element.
 
-This really can be done. If the change is from zero-entry to one-entry, for each partial mapping we already have we want to try to extend it by the line that just changed and if we manage to do that we then try to extend it to a full mapping in all possible ways if it is a new mapping or do nothing if it is equivalent with a partial mapping of higher level. This can be easily done by means already used in the standard algorithm and may lead to a better performing one.
+If the element $e$ is changed from zero-entry to one-entry, for each partial mapping we have stored in previous iterations, we want to try to extend it only by the line that just changed. If we manage to extend a partial mapping, we then try to extend it to a full mapping in all possible ways (not only by using changed lines). When the new line in such a mapping becomes unimportant, we can stop looking for all possible extensions if the mapping is equivalent with a different one, which comes from previous iterations. This can be easily done by means already used in the standard algorithm.
 
-However, if the element gets changed from one-entry to zero-entry we need to go through the partial mappings and delete those that used the currently changed one-entry. This gets a bit messy as we can no longer forget unimportant lines and moreover for each partial mapping we need to remember how many partial mappings of the previous level can be extended to that one, to delete that mapping from the list if there are no longer any mappings extensible to that one.
+However, if the element $e$ gets changed from one-entry to zero-entry we need to go through the partial mappings and delete all those that use $e$. This complicates the algorithm as we can no longer forget unimportant lines. Moreover, for each partial mapping we need to remember how many partial mappings of the previous level can be extended to that one, to delete that mapping from the list if there are no longer any mappings extensible to it.
 
-This can all be done, but the whole thing comes with three huge inconveniences:
+This can all be done, but it comes with three huge inconveniences:
 \begin{itemize}
-\item Memory consumption - there can be a LOT of partial mappings and we need to remember them all. Of course we can still use the equivalence but we need to remember mappings of all levels.
+\item Memory consumption - there can be a lot of partial mappings and we need to remember them all. We need to remember mappings of all levels and while we can still use the equivalence when extending a mapping, we need to also store all equivalent mappings for the purposes of deleting.
 \item The change from one-entry to zero-entry is no longer for free. If this change is done, we already know the pattern is not contained in $M$, but we still need to do a lot of work to change the structure in order to use it in the next iteration.
-\item Reverting - if the change is unsuccessful (the pattern is contained) we need to revert the change which means to completely revert all changes we did to the list of partial mappings. This can be either done by making a backup copy of the whole structure and override the structure if needed, which again is very costly as the structure is huge, or we can remember what partial mappings are new and we go through all partial mappings and remove those new ones. This again means to iterate through the big structure one more time.
+\item Reverting - if the change is unsuccessful (the pattern is contained) we need to revert the change which means to completely revert all changes we did to the list of partial mappings. This can be either done by making a backup copy of the whole structure and override the structure if needed, which again is very costly as the structure is huge, or we can remember what partial mappings are new (or deleted) and we go through all partial mappings and remove (add) those. This means to iterate through the big structure one more time for every unsuccessful change.
 \end{itemize}
-After realizing these issues it no longer looks useful to me to implement this version of the algorithm.
+After realizing these issues it no longer looks useful to me and this version of the algorithm is not a part of the implementation.
 
 \section{MCMC parallelism}
 \label{sect:parallel}
-To speed up the computations, it is often possible to use parallelism. In this section, we show how to make the MCMC generator parallel, while still allowing both types of the pattern.
+To speed up computations, it is often possible to use parallelism. In this section, we show how to make the MCMC generator parallel, while still allowing both types of the pattern.
 
-While the serial MCMC generator in each iteration changes one element in the generated matrix and checks whether it still avoids forbidden patterns, the parallel one makes several iterations at once, one on each copy of the generated matrix. This means that while iteration $x$ is being computed by a thread, iteration $x+1$ can at the same time be computed by a different thread. The only issue is that iteration $x+1$ does not know what is going to be the state of the generated matrix at the time it should start. It expects iteration $x$ to fail - not change the generated matrix at all, counting on the fact at some point it is unlikely a change does not create a mapping of the pattern, and starts with the same matrix as iteration $x$. If iteration $x$ succeeds though, then the computed iteration $x+1$ is invalid and the iteration is going to be recomputed again, starting with the altered matrix.
+While the serial MCMC generator in each iteration changes one element in the generated matrix and checks whether it still avoids forbidden patterns, the parallel version makes several iterations at once, one on each copy of the generated matrix. This means that while iteration $x$ is being computed by a thread, iteration $x+1$ can at the same time be computed by a different thread. The issue is that the iteration $x+1$ does not know what is going to be the state of the generated matrix at the time it should start. It expects iteration $x$ to fail - not change the generated matrix at all, counting on the fact, it is unlikely a change does not create a mapping of the pattern, and starts with the same matrix as iteration $x$. If iteration $x$ succeeds, then the computed iteration $x+1$ is invalid and the iteration is going to be recomputed again, starting with the correct matrix.
 
 When the parallel version of MCMC generator is chosen and it is assigned $n$ threads, it creates $n-1$ private copies of the generated matrix and assigns one thread, called worker, to each of them. The last thread, which we call the main thread and which has exclusive access to the master copy of the generated matrix, makes one change of a bit in each private copy of the matrix and makes the corresponding worker check the avoidance.
 
-The job of a worker is only to check if its copy of the matrix still avoids the pattern when one bit is changed. On the other hand all synchronization is left to the main thread. As mentioned before, one iteration of the MCMC process can be recomputed several times. We still want the generator to satisfy the conditions we have for the Markov chain (more in Section \ref{sect:mmcmc}) in order to generate a random matrix. To achieve that, if a computed iteration $x$ succeeds (and changes the generated matrix), all the other computed iterations that would follow after the iteration $x$ become invalid and they all have to be recomputed. The process ends when all iterations get computed.
+The job of a worker is only to check if its copy of the matrix still avoids the pattern when one bit is changed. On the other hand, all synchronization is left to the main thread. As mentioned before, one iteration of the MCMC process can be recomputed several times. We still want the generator to satisfy the conditions we have for the Markov chain (more in Section \ref{sect:mmcmc}) in order to approximate a random matrix. To achieve that, if a computed iteration $x$ succeeds (and changes the generated matrix), all the other computed iterations that would follow after the iteration $x$ become invalid and they all have to be recomputed. The process ends when all iterations get computed.
 
-From now one, we won't be talking about iterations but about tasks. A task is basically one iteration of the MCMC process. The usefulness if this notation comes with an ID - a number, unique per task, assigned to each task, starting with 1 and always increasing. For a pair of consecutive iterations $x$ and $x+1$ it will always be the case that if task $a$ is the last task to compute iteration $x$ (which means the iteration does not get recomputed ever again after) and task $b$ is the last task to compute iteration $x+1$, then the ID of $a$ is lower then the ID of $b$. Also there is no point in which two different tasks would be computing the same iteration at the same time. If tasks with IDs $a<b$ computed the same iteration, it must have been the case an earlier iteration succeeded when task with ID $a$ was computed and after it got removed, task with ID $b$ was assigned to recompute.
+For the purposes of clarity, from now on, we won't be talking about iterations but about tasks. A task is basically one iteration of the MCMC process. The usefulness of this notation comes with an ID - a number, unique per task, assigned to each task, starting with 1 and always increasing. For a pair of consecutive iterations $x$ and $x+1$ it will always be the case that if task $a$ is the last task to compute iteration $x$ (which means the iteration does not get recomputed ever again after) and task $b$ is the last task to compute iteration $x+1$, then the ID of $a$ is lower then the ID of $b$. Also there is no point, in which two different tasks would be computing the same iteration at the same time. If tasks with IDs $a<b$ computed the same iteration, it must have been the case an earlier iteration succeeded when task with ID $a$ was computed and after it got removed, task with ID $b$ was assigned to recompute.
 
 At any point in time, we only consider those tasks, that are being computed or those that wait to be processed (not those that have been processed), which means the lowest ID of tasks we consider increases in time.
 
@@ -140,44 +136,47 @@ When a task ends and it has the lowest ID (we can always wait for the task with 
 At first, iterations $1$ to $n-1$ are assigned one to each worker as tasks with ID $1$ to $n-1$ with the same order as the order of iterations. If iteration $1$ is not successful (which all the other iterations count on), everything is alright. However, if the iteration (its task) is successful, all the results of other tasks (and some of them might have been already finished) are cleared and those iterations get recomputed in tasks $n$ to $2n-3$ and the worker that computed task with ID $1$ is assigned a new task with ID $2n-2$ - to compute iteration $n$. The result of the task gets propagated to the master copy of the generated matrix only if all the tasks $n$ to $2n-3$ fail, else is gets recomputed. This is what happens till the end.
 
 \subsection{Speculative computing}
-It may easily happen that a task not having the lowest ID ends first. In that case we could just wait until it has the lowest ID and process it later. This is not a very efficient approach. Instead we process the task immediately, but we don't propagate the changes to the master copy of the generated matrix until all tasks with lower ID fail and we do not stop the workers processing a task with lower ID. If the task succeeds we remove all the changes computed by tasks with higher ID and override their private copy of the generated matrix. Also it might happen a task with even lower ID succeeds as well. This leads to more and more overriding. Luckily this is the only precarious situation we may encounter and it is not that hard to deal with it, even without copying the possibly huge generated matrix all over the place.
+It may easily happen that a task not having the lowest ID ends first. In that case, we could just wait until it has the lowest ID and process it later. This is not a very efficient approach. Instead we process the task immediately, but we don't propagate the changes to the master copy of the generated matrix until all tasks with lower ID fail and we do not stop the workers processing tasks with lower ID. When a task succeeds we remove all the changes computed by tasks with higher ID and override their private copy of the generated matrix. Also it might happen a task with even lower ID succeeds as well. This leads to more and more overriding. Luckily this is the only precarious situation we may encounter and it can be dealt with, even without copying the possibly huge generated matrix.
 
 The way we deal with these inconveniences is described in Chapter \ref{chap:tdoc} and should be clear from the code itself.
 
 \subsection{Reverting and synchronizing in the main thread}
 The speculative computing discussed above is not the only improvement
-we can make. It turns out to be costly to wake a thread so it computes a trivial function, sets a few atomic variables and falls asleep again. This happens a lot in the MCMC process. Every time a task succeeds it makes other workers revert the changes they computed and synchronize the successful change, which are both trivial functions.
+we can make. It turns out to be costly to wake a thread to compute a trivial function, to set a few atomic variables and to fall asleep again. This happens a lot in the MCMC process. Every time a task succeeds it makes other workers revert the changes they computed and synchronize the successful change, which are both trivial functions.
 
-To workaround this problem we make a theoretically bad decision which has very nice practical results. All the reverts and synchronizations are computed by the main thread instead of by an appropriate worker. There is no problem with concurrency because the worker is always asleep when a task is to be assigned and using the fact those tasks are really trivial, it does not make the rest of threads wait for the main thread for too long while it computes changes.
+To workaround this problem we make a theoretically bad decision, which comes with very nice practical results. All the reverts and synchronizations are computed by the main thread instead of by an appropriate worker. There is no problem with concurrency because the worker is always asleep when a task is to be assigned and using the fact those tasks are really trivial, it does not make the rest of threads wait for the main thread for too long while it computes changes.
 
 \section{Walking pattern}
-While the brute force implementation of an avoid algorithm for a general pattern was improved heavily, the algorithm for a walking pattern is very fast in its nature and cannot be much better. Or can it be?
+While the brute force implementation of an avoid algorithm for a general pattern was improved heavily, the algorithm for a walking pattern (see Chapter \ref{chap:walking}) is very fast in its nature and cannot be improved. Or can it be?
 
 \subsection{Using the last changed position}
-As the MCMC process works it always changes one element of the big matrix and asks whether it still avoids the pattern. If it does not and we know that before the change it did, we are sure the changed element is a part of the pattern. Knowing that and using the same inductive proof as we did in the proof of correctness of the avoid algorithm (see Chapter \ref{chap:general}) it is sufficient to only recompute the part of the inner structure under the changed element and check if the last entry of the pattern can be found there.
+The MCMC process always changes one element $e$ of the big matrix and asks whether it still avoids the pattern. If it does not and we know that before the change it did, we are sure $e$ is a part of the pattern (a one-entry of the pattern is mapped to it). Knowing that and using the same inductive proof as we did in the proof of correctness of the avoid algorithm (see Chapter \ref{chap:general}) it is sufficient to only recompute the part of the inner structure under $e$ and check if the last entry of the pattern can be found there.
 
-Not only that. We also know, using the fact the structure was completely correct before the change, that if the values of both $c_v$ and $c_h$ of an element did not change, the element won't cause the element underneath it to change and we no longer have to recompute the other parts of the structure.
+Not only that. We also know, using the fact the structure was completely correct before the change, that if the values of both $c_v$ and $c_h$ of an element did not change, the element won't cause the element underneath it to change and we no longer have to recompute other parts of the structure.
 
-To use both these facts we replace the cycle through the diagonals by a simple queue, starting at the position of the last changed element and putting more positions in if the values of $c_v$ or $c_h$ are different than they were before. The function ends either when the pattern was discovered or when the queue becomes empty.
+To use both these facts we replace the cycle through the diagonals by a simple queue, starting at the position of the last changed element and putting more positions in if the values of $c_v$ or $c_h$ are different than they were before recomputing. The function ends either when the pattern is discovered or when the queue becomes empty.
 
 \subsection{Lazy avoid}
-Lazy avoid is a variant of avoid function used when the MCMC parallelism is chosen. While all the other types of patterns have a trivial implementation of revert function, when using the walking pattern the inner structure needs to be modified even when reverting. The MCMC parallelism turned out to work much better if the revert calls are handled by the main thread and it requires the function to run as fast as possible so the other threads are not blocked by the call for too long. That is a reason why functions lazy revert and lazy avoid were created.
+Lazy avoid is a variant of avoid function used when the MCMC parallelism (more in Section \ref{sect:parallel}) is chosen. While all the other types of patterns have a trivial implementation of revert function, when using the walking pattern, the inner structure needs to be modified even when reverting. The MCMC parallelism turned out to work much better if the revert calls are handled by the main thread and it requires the function to run as fast as possible so the other threads are not blocked by the call for too long. That is a reason why functions lazy revert and lazy avoid were created.
 
-The avoid function expects the inner structure of the walking pattern (see Chapter \ref{chap:walking}) to be in a valid state and that requires some effort. To make lazy revert the fastest possible, we postpone the work until the next call of lazy avoid, meaning that lazy avoid then needs to do more things at once. It is no longer sufficient to only compute the submatrix under the position changed last as we did above, but it needs to also compute changes in the positions changed in those lazy revert calls that are postponed.
+The avoid function expects the inner structure of the walking pattern to be in a valid state and that requires some effort. To make lazy revert the fastest possible, we postpone the work until the next call of lazy avoid, meaning that lazy avoid then needs to do more things at once. It is no longer sufficient to only compute the submatrix under the position changed last as we did above, but it needs to also compute changes in the positions changed in those lazy revert calls that are postponed.
 
-We discuss several approaches, starting with the easiest one and ending with the one that is fast and used in the final implementation.
+We discuss several approaches, starting with the simplest one and ending with the one that is fast and used in the final implementation.
 
 \subsubsection{Recompute the whole structure every time}
-The easiest way how to implement lazy avoid would be to always recompute the whole inner structure. In that case we do not worry which positions are correct and which are not, because every time we find the pattern, we recomputed all the entries that form it, so we know it really is there. On the other hand, if we manage to recompute the whole structure without finding the last entry of the pattern, it just is not there.
+The easiest way to implement lazy avoid is to always recompute the whole inner structure. In that case, we do not worry which positions are correct and which are not, because every time we find the pattern, we recomputed all the entries that form it, so we know it really is there.
 
-The issue is efficiency. If the whole structure was correct and there was a change of the last entry of the matrix it is sufficient to only recompute that one entry. Instead we recompute a possibly very big structure. This results in a very bad performance negating the advantage of parallel computation.
+The weakness is efficiency. If the whole structure was correct and there was a change of the last entry of the matrix it is sufficient to only recompute that one entry. Instead we recompute a possibly very big structure. This results in a very bad performance negating the advantage of parallel computation.
 \subsubsection{Recompute only a part of the structure diagonal by diagonal}
-A simple improvement would be to remember the changes done in previous calls of lazy revert and together with the change done in lazy avoid call only recompute the part of the structure that has possibly altered.
+A simple improvement is to remember the changes done in previous calls of lazy revert and together with the change done in lazy avoid call only recompute the part of the structure that has possibly changed.
 
-This gets a bit tricky when lazy avoid call actually discovers the pattern because we cannot be sure the rest of the structure is in a correct order. It is still possible to remember some horizontal, vertical and diagonal bounds and use them to restrict the recomputed part of the matrix. The improvement is not that significant though and we can do better.
+This gets more complicated when lazy avoid call discovers the pattern in $M_{\leq e}$, because we cannot be sure the rest of the structure (everything under the diagonal, where $e$ is present) is in a correct order. It is still possible to remember some horizontal, vertical and diagonal bounds and use them to restrict the recomputed part of the matrix. However, the improvement is not that significant and we can do better.
 \subsubsection{Queue of positions to recompute}
-A different approach is closer to the one used in a standard avoid function. Instead of going through diagonal one after another, we have a queue of entries-to-recompute. It is no longer sufficient to have a standard queue since in different calls of lazy revert/avoid we can possibly change an entry of different priority (the higher the more important) so we need to have some kind of a priority queue. That is exactly what I tried.
+A different approach is closer to the one used in a standard avoid function. Instead of going through diagonals one after another, we have a queue of entries-to-recompute. It is no longer sufficient to have a standard queue since in different calls of lazy revert/avoid we can possibly change an entry of different priority (the smaller diagonal the more important) so we need to have some kind of a priority queue. That is exactly what I tried.
 
-Using std::priority\_queue the function had no more problems with recomputing the entries that were not influenced by the changes and used all the benefits mentioned in the previous section. But the container does not come for free and in the end I found out the price I payed for the operations on the priority queue made the whole implementation comparably slow as in the previous attempt.
+Using std::priority\_queue, the function has no more problems with recomputing the entries that were not influenced by the changes and uses all the benefits mentioned in the previous section. But the container does not come for free and in the end it turns out the price we pay for the operations on the priority queue make the whole implementation comparably slow as in the previous attempts.
 \subsubsection{Two leveled queue of positions to recompute}
-The final solution comes with the same idea, but a different storage type. As the priority depends upon a diagonal (two entries on the same diagonal can be recomputed in any order) we only remember a priority queue of diagonals and an array of diagonals saying whether a diagonal is already a member of the priority queue. As far as the entries are concerned for every diagonal we have a std::vector of entries-to-recompute as well as an array saying whether an entry is already a member of the vector. So finally it is the case that the storage used is not only good theoretically but as the numbers say, also practically. [reference to a table of measurements or something]
+The final solution comes with the same idea, but a different storage. As the priority depends upon a diagonal (two entries on the same diagonal can be recomputed in any order) we only remember a priority queue of diagonals and an array of diagonals saying whether a diagonal is already a member of the priority queue. As far as the entries are concerned, for every diagonal we have a std::vector of entries-to-recompute as well as an array saying whether an entry is already a member of the vector. Finally, it is the case that the storage used is not only good theoretically but as the numbers say, also practically.
+$$++$$
+[reference to a table of measurements or something]
+$$++$$

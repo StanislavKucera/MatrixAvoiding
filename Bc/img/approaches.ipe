@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE ipe SYSTEM "ipe.dtd">
 <ipe version="70107" creator="Ipe 7.2.2">
-<info created="D:20160529224854" modified="D:20160529224854"/>
+<info created="D:20160529224854" modified="D:20160702201414"/>
 <ipestyle name="basic">
 <symbol name="arrow/arc(spx)">
 <path stroke="sym-stroke" fill="sym-stroke" pen="sym-pen">
@@ -220,13 +220,13 @@ h
 <dashstyle name="dash dotted" value="[4 2 1 2] 0"/>
 <dashstyle name="dash dot dotted" value="[4 2 1 2 1 2] 0"/>
 <textsize name="large" value="\large"/>
+<textsize name="small" value="\small"/>
+<textsize name="tiny" value="\tiny"/>
 <textsize name="Large" value="\Large"/>
 <textsize name="LARGE" value="\LARGE"/>
 <textsize name="huge" value="\huge"/>
 <textsize name="Huge" value="\Huge"/>
-<textsize name="small" value="\small"/>
 <textsize name="footnote" value="\footnotesize"/>
-<textsize name="tiny" value="\tiny"/>
 <textstyle name="center" begin="\begin{center}" end="\end{center}"/>
 <textstyle name="itemize" begin="\begin{itemize}" end="\end{itemize}"/>
 <textstyle name="item" begin="\begin{itemize}\item{}" end="\end{itemize}"/>
@@ -254,46 +254,47 @@ h
 <page>
 <layer name="alpha"/>
 <view layers="alpha" active="alpha"/>
-<text layer="alpha" matrix="1 0 0 1 4 0" transformations="translations" pos="0 816" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">0</text>
-<text matrix="1 0 0 1 4 0" transformations="translations" pos="0 800" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">1</text>
-<text matrix="1 0 0 1 4 0" transformations="translations" pos="0 784" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">2</text>
-<text matrix="1 0 0 1 4 0" transformations="translations" pos="0 768" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">3</text>
-<text matrix="1 0 0 1 4 0" transformations="translations" pos="0 752" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">4</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="32 816" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">5</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="48 816" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">6</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="64 816" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">7</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="80 816" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">8</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="32 800" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="48 800" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="64 800" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="80 800" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="48 784" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="64 784" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="48 768" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="32 768" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="48 752" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="32 736" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="48 736" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="64 736" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="80 752" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="80 784" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">0</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="80 768" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">0</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="64 768" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">0</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="64 752" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">0</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="80 736" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">0</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="32 752" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">0</text>
-<text matrix="1 0 0 1 -12 16" transformations="translations" pos="32 784" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">0</text>
-<path matrix="1 0 0 1 -10.3437 14.7578" stroke="black">
+<text layer="alpha" matrix="1 0 0 1 20 0" transformations="translations" pos="0 816" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">0</text>
+<text matrix="1 0 0 1 20 0" transformations="translations" pos="0 800" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">1</text>
+<text matrix="1 0 0 1 20 0" transformations="translations" pos="0 784" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">2</text>
+<text matrix="1 0 0 1 20 0" transformations="translations" pos="0 768" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">3</text>
+<text matrix="1 0 0 1 20 0" transformations="translations" pos="0 752" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">4</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="32 816" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">5</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="48 816" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">6</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="64 816" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">7</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="80 816" stroke="black" type="label" width="4.981" height="6.42" depth="0" valign="baseline">8</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="32 800" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="48 800" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="64 800" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="80 800" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="48 784" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="64 784" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="48 768" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="32 768" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="48 752" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="32 736" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="48 736" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="64 736" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="80 752" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">1</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="80 784" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">0</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="80 768" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">0</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="64 768" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">0</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="64 752" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">0</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="80 736" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">0</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="32 752" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">0</text>
+<text matrix="1 0 0 1 4 16" transformations="translations" pos="32 784" stroke="black" type="label" width="7.024" height="9.245" depth="0" valign="baseline" size="Large">0</text>
+<path matrix="1 0 0 1 5.6563 14.7578" stroke="black">
 28 736 m
 24 752
 24 796
 28 812 c
 </path>
-<path matrix="1 0 0 1 -10.3437 14.7578" stroke="black">
+<path matrix="1 0 0 1 5.6563 14.7578" stroke="black">
 88 736 m
 92 752
 92 796
 88 812 c
 </path>
+<text matrix="1 0 0 1 -4 4" transformations="translations" pos="4 780" stroke="black" type="label" width="15.529" height="6.808" depth="0" valign="baseline">$P$=</text>
 </page>
 </ipe>

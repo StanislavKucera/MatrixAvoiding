@@ -36,25 +36,22 @@
 \contentsline {subsection}{\numberline {4.3.1}Using the last changed position}{22}{subsection.4.3.1}
 \contentsline {subsection}{\numberline {4.3.2}Lazy avoid}{23}{subsection.4.3.2}
 \contentsline {subsubsection}{Recompute the whole structure every time}{23}{section*.13}
-\contentsline {subsubsection}{Recompute only a part of the structure diagonal by diagonal}{23}{section*.14}
+\contentsline {subsubsection}{Recompute only a part of the structure diagonal by diagonal}{24}{section*.14}
 \contentsline {subsubsection}{Queue of positions to recompute}{24}{section*.15}
 \contentsline {subsubsection}{Two leveled queue of positions to recompute}{24}{section*.16}
 \contentsline {chapter}{\numberline {5}Technical documentation}{25}{chapter.5}
 \contentsline {section}{\numberline {5.1}Classes and API}{25}{section.5.1}
 \contentsline {subsection}{\numberline {5.1.1}Matrix}{25}{subsection.5.1.1}
 \contentsline {subsection}{\numberline {5.1.2}Pattern}{25}{subsection.5.1.2}
-\contentsline {subsection}{\numberline {5.1.3}MCMCgenerator}{25}{subsection.5.1.3}
-\contentsline {subsection}{\numberline {5.1.4}Statistics}{25}{subsection.5.1.4}
-\contentsline {section}{\numberline {5.2}General pattern}{26}{section.5.2}
+\contentsline {subsection}{\numberline {5.1.3}Statistics}{25}{subsection.5.1.3}
+\contentsline {section}{\numberline {5.2}General\_pattern}{25}{section.5.2}
 \contentsline {subsection}{\numberline {5.2.1}Construction}{26}{subsection.5.2.1}
 \contentsline {subsubsection}{Storing the pattern}{26}{section*.17}
 \contentsline {subsubsection}{Choosing the line order}{26}{section*.18}
 \contentsline {subsubsection}{What to remember}{26}{section*.19}
 \contentsline {subsubsection}{Parallel bound indices}{26}{section*.20}
 \contentsline {subsubsection}{Extending order}{27}{section*.21}
-\contentsline {section}{\numberline {5.3}Parallel computing}{27}{section.5.3}
-\contentsline {subsection}{\numberline {5.3.1}MCMC parallelism}{27}{subsection.5.3.1}
-\contentsline {section}{\numberline {5.4}Library interface}{28}{section.5.4}
+\contentsline {section}{\numberline {5.3}MCMC parallelism}{27}{section.5.3}
 \contentsline {chapter}{\numberline {6}User documentation}{29}{chapter.6}
 \contentsline {section}{\numberline {6.1}Installation}{29}{section.6.1}
 \contentsline {subsection}{\numberline {6.1.1}Windows}{29}{subsection.6.1.1}
