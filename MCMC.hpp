@@ -32,8 +32,8 @@ inline void MCMCgenerator(const int iter, Patterns& patterns, Matrix<bool>& big_
 	int r, c;
 
 	// initialize and run threads if parallel computation is requested
-	if (threads_count > 1)
-		patterns.construct_threads(big_matrix);
+	//if (threads_count > 1)
+	//	patterns.construct_threads(big_matrix);
 
 	// this is gonna be here for now
 	std::vector<std::vector<Counter> > sizes;
@@ -62,17 +62,17 @@ inline void MCMCgenerator(const int iter, Patterns& patterns, Matrix<bool>& big_
 		start = std::chrono::system_clock::now();
 
 		// test if the changed matrix still avoids the pattern
-		if ((threads_count <= 1 && !patterns.avoid(big_matrix, r, c, sizes)) ||
-			(threads_count > 1 && !patterns.parallel_avoid(big_matrix, r, c, sizes, threads_count)))
+		if (/*(threads_count <= 1 &&*/ !patterns.avoid(big_matrix, r, c, sizes))// ||
+			//(threads_count > 1 && !patterns.parallel_avoid(big_matrix, r, c, sizes, threads_count)))
 		{
 			success = false;
 			// if not return to the previous matrix
 			big_matrix.at(r, c) = big_matrix.at(r, c) ? (--ones, 0) : (++ones, 1);
 			// and recalculate used structures if needed
-			if (threads_count <= 1)
+		//	if (threads_count <= 1)
 				patterns.revert(big_matrix, r, c);
-			else
-				patterns.parallel_revert(big_matrix, r, c, threads_count);
+		//	else
+		//		patterns.parallel_revert(big_matrix, r, c, threads_count);
 		}
 
 		end = std::chrono::system_clock::now();
@@ -94,8 +94,8 @@ inline void MCMCgenerator(const int iter, Patterns& patterns, Matrix<bool>& big_
 	}
 
 	// destruct the threads if parallel computation was requested
-	if (threads_count > 1)
-		patterns.destruct_threads();
+	//if (threads_count > 1)
+	//	patterns.destruct_threads();
 }
 
 struct worker_state
@@ -451,6 +451,7 @@ inline void parallelMCMCgenerator(const int iter, Patterns& patterns, Matrix<boo
 	// since the patterns is sent by l-value reference (not sure yet whether it is a good thing), I'm not the only owner
 }
 
+/*
 inline void get_sync(std::deque<std::pair<int, Job> >& sync, std::queue<std::pair<int, Job> >& new_syncs, std::mutex& new_syncs_mutex, std::atomic<bool>& synchronize, int revert = 0)
 {
 	// first throw away synchronizations that has been reverted
@@ -675,17 +676,17 @@ void parallel_avoid2(const int my_index, Patterns patterns, Matrix<bool>& big_ma
 		last_job_id[my_index] = my_id;
 		queue.back().returned = patterns.avoid(r, c, sizes, forced_ends[my_index]);
 		ar << my_index << ": avoid [" << r << "," << c << "] : " << queue.back().returned << " - " << my_id << " - " << current_id << std::endl;
-		/*
-		if (queue.size() > 1000)
-		{
-			end = true;
+		
+		//if (queue.size() > 1000)
+		//{
+		//	end = true;
 
-			for (size_t i = 0; i != forced_ends.size(); ++i)
-				forced_ends[i] = true;
+		//	for (size_t i = 0; i != forced_ends.size(); ++i)
+		//		forced_ends[i] = true;
 
 			// breaking here means current_id won't get changed and this is the last worker to access matrix_stats as well as big_matrix
-			break;
-		}*/
+		//	break;
+		//}
 
 		// call of the avoid succeeded
 		if (queue.back().returned)
@@ -821,5 +822,6 @@ inline void parallelMCMCgenerator2(const int iter, Patterns& patterns, Matrix<bo
 	oFile.close();
 	ar.close();
 }
+*/
 
 #endif

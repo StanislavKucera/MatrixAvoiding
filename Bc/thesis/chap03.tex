@@ -7,7 +7,7 @@ In the previous chapter, we have seen an algorithm for a general forbidden patte
 A \emph{walk} in a matrix $P$ is a sequence of some of its entries, beginning in the top left corner and ending in the bottom right one. If an entry at the position $[i,j]$ is in the sequence, the next one is either $[i+1,j]$ or $[i,j+1]$. Let $w$ denote the width of $P$ and $h$ denote its height, the length of an arbitrary walk is equal to $w+h-1$ and we denote elements of the sequence by $w_1,w_2,\cdots,w_{w+h-1}$.
 \end{defn}
 \begin{defn}
-We call a binary matrix $P$ a walking pattern if there is a walk in $P$ such that all the one-entries of $P$ are contained on the walk.
+We call a binary matrix $P$ a \emph{walking pattern} if there is a walk in $P$ such that all the one-entries of $P$ are contained on the walk.
 \end{defn}
 \begin{figure}[h!]
 \centering
@@ -89,7 +89,7 @@ We can already see $cor\geq com$ because it holds after setting $c_v(e)$ on line
 
 To prove $cor\leq com$ we proceed by contradiction. Let us assume $cor>com$. It means there is a mapping of $P_{\leq w_{cor}}$ to $M_{\leq e}$ we have never found. Every such mapping has to map $w_{cor}$ to $e$, because if it did not, the mapping would be possible even for diagonal $d-1$, which is recomputed correctly and the value $cor$ would be copied to $com$ on line 5. Let us assume that $w_{cor-1}$ is a vertical entry (else we proceed analogously). If $P_{\leq w_{cor}}$ can be mapped to $M_{\leq e}$ and $w_{cor-1}$ is a vertical entry, then $P_{\leq w_{cor-1}}$ can be mapped to $M_{\leq e_v}$ and $w_{cor-1}$ must be mapped to the same column as $e$. That means that $c_v(e_v)\geq cor-1$. If $c_v(e_v)=cor-1$ and from knowing $w_{cor}$ can be mapped to $e$, $com\geq c_v(e)\geq c_v(e_v)+1=cor$ because of line 11. Otherwise $c_v(e_v)>cor-1$, but then even from line 5 we get $com\geq cor$, resulting in contradiction.
 
-To prove $c_h(e)$ has a correct value, we proceed symmetrically.
+To prove $c_h(e)$ has the correct value, we proceed symmetrically.
 
 \subsection{Generalization}
 The algorithm, with a few minor changes, can be also used for a pattern where all one-entries are contained on a walk from the top right corner to the bottom left one. The program supports both rotations of a walk and when walking pattern is chosen it automatically decides which variant to use.

@@ -99,12 +99,12 @@ inline Parallel_mode get_parallel_mode(const std::string& mode)
 		return SERIAL;
 	else if (mode == "mcmc")
 		return MCMC;
-	else if (mode == "mcmc2")
-		return MCMC2;
-	else if (mode == "map")
-		return MAP;
+	//else if (mode == "mcmc2")
+	//	return MCMC2;
+	//else if (mode == "map")
+	//	return MAP;
 	else {
-		std::cerr << "Parallel mode \"" << mode << "\" not supported. Choose SERIAL, MCMC or MAP." << std::endl;
+		std::cerr << "Parallel mode \"" << mode << "\" not supported. Choose SERIAL or MCMC." << std::endl;
 		return SERIAL;
 	}
 }
@@ -338,6 +338,7 @@ Pattern* create_new_pattern(Matrix<bool>&& pattern, const Type type, const Map m
 	return new General_pattern<std::vector<std::vector<int> > >(pattern, threads_count - 1, order, map, std::move(custom_order));
 }
 
+// reads from input stream config, parses it and assigns value to variables - input reading
 std::vector<Pattern_info> parse_config(std::istream& config, int& N, int& iter, int& random_seed, int& hist_from, int& hist_to, int& hist_freq,
 	std::vector<Console_output>& console_outputs, std::vector<std::string>& output_files, std::vector<std::string>& hist_files,
 	std::vector<std::string>& max_ones_files, std::vector<std::string>& csv_files, std::vector<std::string>& perf_files, std::string& init_matrix,
@@ -500,6 +501,7 @@ std::vector<Pattern_info> parse_config(std::istream& config, int& N, int& iter, 
 	return patterns;
 }
 
+// reads patterns from input files and creates proper Pattern class instances for them
 void set_patterns(Patterns& patterns, const std::vector<Pattern_info>& pattern_info, const Matrix<bool>& init_matrix, const bool initialized, const int N, const int threads_count)
 {
 	for (const auto& pattern : pattern_info)

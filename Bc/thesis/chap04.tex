@@ -21,7 +21,7 @@ The MCMC process always changes one element of the big matrix and asks whether i
 
 What we can do is to enforce that neither the $r$-th line nor the $n+c$-th one ($c$-th column) get skipped. We only look at the restriction for rows as the restrictions for columns are symmetrical. There are three situations we want to avoid:
 \begin{itemize}
-\item The first row of $P$ is mapped under the $r$-th row. This prevents any other row to be mapped to $r$-th one and we don't want that.
+\item The first row of $P$ is mapped under the $r$-th row. This prevents any other row to be mapped to $r$-th one and we do not want that.
 \item The last row of $P$ is mapped above the $r$-th row. This again prevents any other row to be mapped to $r$-th one.
 \item Two adjacent rows $l,l+1$ of $P$ are mapped to $L<L'$ respectively and $L<r<L'$ which leaves no other row to be mapped to $r$.
 \end{itemize}
@@ -35,7 +35,7 @@ We choose line order to hopefully enforce two things:
 \item Make as many unimportant lines as possible. This really allows the equivalence based improvements to kick in. The more lines are unimportant the more mappings become equivalent and the faster it is to iterate through all of them.
 \item Recognize hopeless partial mappings as soon as possible. A partial mapping gets extended if the line does not break the rule that there is a one-entry where it needs to be. If we map all the rows first, the rule will get broken only after we start to map columns and we probably want to find out sooner.\\
 \end{itemize}
-In the program a user can either choose their own custom order or one of four algorithms with different main purposes:
+In the program a user can either choose their own custom order or one of five algorithms with different main purposes:
 \begin{itemize}
 \item AUTO - this one tries the other three line orders and chooses the one which shows the best performance over some iterations on a matrix. While this may sound like a good thing to use, it is only so if an initial matrix is chosen and it takes a lot of time since a lot of iterations need to be made in order to make a good sample. I would recommend not to use AUTO order at all and instead to try all the line orders by hand with a number of iterations depending on the pattern and a good initial matrix; for instance, generated with a smaller number of iterations on the same pattern and with any line order.
 \item DESC - the lines are ordered in descending order depending on the number of one-entries. This follows the idea to start with the lines that are the hardest to map. Note that this algorithm does poorly if there are a lot of lines with the same number of one-entries (for example an identity matrix).
@@ -60,7 +60,7 @@ Let $P$ from Figure \ref{approaches} be the forbidden pattern and imagine a situ
 \begin{figure}[h!]
 \centering
 \includegraphics[width=60mm]{../img/enough_one-entries.pdf}
-\caption{Checking whether there is enough one-entries. Bold lines are mapped or being mapped and in circles are the positions where we look for one-entries.}
+\caption{Checking whether there is enough one-entries. Bold lines in the picture are mapped and in circles are the positions where we look for one-entries.}
 \label{enough}
 \end{figure}
 The first condition is that there is enough one-entries in between mapped lines, which is schematically shown in Figure \ref{enough}. We check whether there is enough one-entries on lines in between those lines, where lines 0 and 3 are mapped, so that there is a hope we can map lines 1 and 2 there. Similarly, we check whether there is a one-entry below the line, where line 3 is mapped so we can map line 4 there later.
@@ -68,10 +68,10 @@ The first condition is that there is enough one-entries in between mapped lines,
 \begin{figure}[h!]
 \centering
 \includegraphics[width=60mm]{../img/recursive.pdf}
-\caption{Checking whether crossed non-mapped lines can be mapped anywhere. Bold lines are mapped or being mapped, in rectangles are the line we check and in circles are the positions where we look for one-entries.}
+\caption{Checking whether crossed non-mapped lines can be mapped anywhere. Bold lines are mapped or being mapped, in rectangles are the lines we check and in circles are the positions where we look for one-entries.}
 \label{recursive}
 \end{figure}
-While we were only testing whether there are enough one-entries in between already mapped lines in the previous approach, as you can see in Figure \ref(recursive), this time we also check whether those one-entries can be used for the lines that are intended to be mapped there. For example, when we check there is a one-entry to be used for line 1 later, we also check the line 1 can be mapped to the row with one-entry, which in this situation means to also check there is a one-entry at the intersection with the line to which the line 7 is mapped.
+While we were only testing whether there are enough one-entries in between already mapped lines in the previous approach, as you can see in Figure \ref{recursive}, this time we also check whether those one-entries can be used for the lines that are intended to be mapped there. For example, when we check there is a one-entry to be used for line 1 later, we also check the line 1 can be mapped to the row with one-entry, which in this situation means to also check there is a one-entry at the intersection with the line to which the line 7 is mapped.
 \subsubsection{Orthogonal bounds}
 \begin{figure}[h!]
 \centering
@@ -80,15 +80,32 @@ While we were only testing whether there are enough one-entries in between alrea
 \label{orthogonal}
 \end{figure}
 As shown in Figure \ref{orthogonal}, when we are adding line 6, we check whether there is enough one-entries on the already mapped lines orthogonal to line 6 between line 6 and the closest mapped lines next to line 6. The idea is same as in ``Enough one-entries'', but we check different lines.
+
 \subsubsection{Usage}
 These restrictions on the added lines are not a fixed part of the program. A user can decide which approaches they want to use in the configuration file.
 
-When testing that was done for a fixed pattern, we found out it is useful to use all the mentioned restrictions when generating a matrix of size $100\times100$, as it turned out to be much faster than without the restrictions. On the other hand, in the same test for a generated matrix of size $500\times500$, it was much better not to use any of those restrictions.
-$$++$$
-TODO add chart and change text above
-$$++$$
+When testing that was done for a fixed pattern, we found out it is useful to use all the mentioned restrictions when generating a matrix of size $100\times100$, as it turned out to be much faster than without the restrictions. On the other hand, in the same test for a generated matrix of size $500\times500$, it was much better not to use any of those restrictions, which you can see in Table \ref{approachestable}.
+\begin{table}[]
+\centering
+\begin{tabular}{|ccc|c|c|c|c|c|c|c|}
+\hline
+\multicolumn{3}{|c|}{\textbf{Pattern}} & \textbf{n} & \textbf{\#iterations} & \textbf{one} & \textbf{rec} & \textbf{orth} & \textbf{time (sec)} & \textbf{memory} \\ \hline
+1 & 1 & 1 & 100 & 100 000 & yes & yes & yes & 1 512.56 & 3 268 B \\ \cline{4-10} 
+1 & 1 & 1 & 100 & 100 000 & yes & yes & no & 1 504.46 & 3 268 B \\ \cline{4-10} 
+1 & 1 & 1 & 100 & 100 000 & no & no & no & 672.63 & 3 268 B \\ \cline{4-10} 
+1 & 1 & 1 & 50 & 100 000 & yes & yes & yes & 186.367 & 1 480 B \\ \cline{4-10} 
+1 & 1 & 1 & 50 & 100 000 & no & no & no & 99.1557 & 3 004 B \\ \cline{4-10} 
+1 & 1 & 1 & 50 & 100 000 & yes & yes & yes & 186.367 & 3 680 B \\ \cline{4-10} 
+1 & 1 & 1 & 50 & 100 000 & no & no & no & 99.1557 & 3 680 B \\ \cline{4-10} 
+1 & 0 & 0 & 500 & 10 000 & yes & yes & yes & 10276.6 & 9 128 B \\ \cline{4-10} 
+ &  &  & 500 & 10 000 & no & no & no & 6756.96 & 15 972 B \\ \hline
+\end{tabular}
+\caption{My caption}
+\label{approachestable}
+\end{table}
 
 \subsection{Using the whole structure in the next iteration}
+\label{wholestructure}
 It may seem like a good idea to store all the partial mappings. In the next iteration, instead of finding all the partial mapping again, we only alter the mappings we remember. Let $i$ be the number of the iteration we are in, and $e$ be the element.
 
 If the element $e$ is changed from zero-entry to one-entry, for each partial mapping we have stored in previous iterations, we want to try to extend it only by the line that just changed. If we manage to extend a partial mapping, we then try to extend it to a full mapping in all possible ways (not only by using changed lines). When the new line in such a mapping becomes unimportant, we can stop looking for all possible extensions if the mapping is equivalent with a different one, which comes from previous iterations. This can be easily done by means already used in the standard algorithm.
@@ -113,7 +130,7 @@ When the parallel version of MCMC generator is chosen and it is assigned $n$ thr
 
 The job of a worker is only to check if its copy of the matrix still avoids the pattern when one bit is changed. On the other hand, all synchronization is left to the main thread. As mentioned before, one iteration of the MCMC process can be recomputed several times. We still want the generator to satisfy the conditions we have for the Markov chain (more in Section \ref{sect:mmcmc}) in order to approximate a random matrix. To achieve that, if a computed iteration $x$ succeeds (and changes the generated matrix), all the other computed iterations that would follow after the iteration $x$ become invalid and they all have to be recomputed. The process ends when all iterations get computed.
 
-For the purposes of clarity, from now on, we won't be talking about iterations but about tasks. A task is basically one iteration of the MCMC process. The usefulness of this notation comes with an ID - a number, unique per task, assigned to each task, starting with 1 and always increasing. For a pair of consecutive iterations $x$ and $x+1$ it will always be the case that if task $a$ is the last task to compute iteration $x$ (which means the iteration does not get recomputed ever again after) and task $b$ is the last task to compute iteration $x+1$, then the ID of $a$ is lower then the ID of $b$. Also there is no point, in which two different tasks would be computing the same iteration at the same time. If tasks with IDs $a<b$ computed the same iteration, it must have been the case an earlier iteration succeeded when task with ID $a$ was computed and after it got removed, task with ID $b$ was assigned to recompute.
+For the sake of clarity, from now on, we will not be talking about iterations but about tasks. A task is basically one iteration of the MCMC process. The usefulness of this notation comes with an ID - a number, unique per task, assigned to each task, starting with 1 and always increasing. For a pair of consecutive iterations $x$ and $x+1$ it will always be the case that if task $a$ is the last task to compute iteration $x$ (which means the iteration does not get recomputed ever again after) and task $b$ is the last task to compute iteration $x+1$, then the ID of $a$ is lower then the ID of $b$. Also there is no point, in which two different tasks would be computing the same iteration at the same time. If tasks with IDs $a<b$ computed the same iteration, it must have been the case an earlier iteration succeeded when task with ID $a$ was computed and after it got removed, task with ID $b$ was assigned to recompute.
 
 At any point in time, we only consider those tasks, that are being computed or those that wait to be processed (not those that have been processed), which means the lowest ID of tasks we consider increases in time.
 
@@ -136,7 +153,7 @@ When a task ends and it has the lowest ID (we can always wait for the task with 
 At first, iterations $1$ to $n-1$ are assigned one to each worker as tasks with ID $1$ to $n-1$ with the same order as the order of iterations. If iteration $1$ is not successful (which all the other iterations count on), everything is alright. However, if the iteration (its task) is successful, all the results of other tasks (and some of them might have been already finished) are cleared and those iterations get recomputed in tasks $n$ to $2n-3$ and the worker that computed task with ID $1$ is assigned a new task with ID $2n-2$ - to compute iteration $n$. The result of the task gets propagated to the master copy of the generated matrix only if all the tasks $n$ to $2n-3$ fail, else is gets recomputed. This is what happens till the end.
 
 \subsection{Speculative computing}
-It may easily happen that a task not having the lowest ID ends first. In that case, we could just wait until it has the lowest ID and process it later. This is not a very efficient approach. Instead we process the task immediately, but we don't propagate the changes to the master copy of the generated matrix until all tasks with lower ID fail and we do not stop the workers processing tasks with lower ID. When a task succeeds we remove all the changes computed by tasks with higher ID and override their private copy of the generated matrix. Also it might happen a task with even lower ID succeeds as well. This leads to more and more overriding. Luckily this is the only precarious situation we may encounter and it can be dealt with, even without copying the possibly huge generated matrix.
+It may easily happen that a task not having the lowest ID ends first. In that case, we could just wait until it has the lowest ID and process it later. This is not a very efficient approach. Instead we process the task immediately, but we do not propagate the changes to the master copy of the generated matrix until all tasks with lower ID fail and we do not stop the workers processing tasks with lower ID. When a task succeeds we remove all the changes computed by tasks with higher ID and override their private copy of the generated matrix. Also it might happen a task with even lower ID succeeds as well. This leads to more and more overriding. Luckily this is the only precarious situation we may encounter and it can be dealt with, even without copying the possibly huge generated matrix.
 
 The way we deal with these inconveniences is described in Chapter \ref{chap:tdoc} and should be clear from the code itself.
 
@@ -152,7 +169,7 @@ While the brute force implementation of an avoid algorithm for a general pattern
 \subsection{Using the last changed position}
 The MCMC process always changes one element $e$ of the big matrix and asks whether it still avoids the pattern. If it does not and we know that before the change it did, we are sure $e$ is a part of the pattern (a one-entry of the pattern is mapped to it). Knowing that and using the same inductive proof as we did in the proof of correctness of the avoid algorithm (see Chapter \ref{chap:general}) it is sufficient to only recompute the part of the inner structure under $e$ and check if the last entry of the pattern can be found there.
 
-Not only that. We also know, using the fact the structure was completely correct before the change, that if the values of both $c_v$ and $c_h$ of an element did not change, the element won't cause the element underneath it to change and we no longer have to recompute other parts of the structure.
+Not only that. We also know, using the fact the structure was completely correct before the change, that if the values of both $c_v$ and $c_h$ of an element did not change, the element will not cause the element underneath it to change and we no longer have to recompute other parts of the structure.
 
 To use both these facts we replace the cycle through the diagonals by a simple queue, starting at the position of the last changed element and putting more positions in if the values of $c_v$ or $c_h$ are different than they were before recomputing. The function ends either when the pattern is discovered or when the queue becomes empty.
 
@@ -177,6 +194,53 @@ A different approach is closer to the one used in a standard avoid function. Ins
 Using std::priority\_queue, the function has no more problems with recomputing the entries that were not influenced by the changes and uses all the benefits mentioned in the previous section. But the container does not come for free and in the end it turns out the price we pay for the operations on the priority queue make the whole implementation comparably slow as in the previous attempts.
 \subsubsection{Two leveled queue of positions to recompute}
 The final solution comes with the same idea, but a different storage. As the priority depends upon a diagonal (two entries on the same diagonal can be recomputed in any order) we only remember a priority queue of diagonals and an array of diagonals saying whether a diagonal is already a member of the priority queue. As far as the entries are concerned, for every diagonal we have a std::vector of entries-to-recompute as well as an array saying whether an entry is already a member of the vector. Finally, it is the case that the storage used is not only good theoretically but as the numbers say, also practically.
-$$++$$
-[reference to a table of measurements or something]
-$$++$$
+
+\section{Comparison of all methods}
+We have improved all algorithms and added a parallel version of the MCMC process. The question is, whether our improvements were useful in terms of performance and memory consuming. I have done a few tests and in Table \ref{measurements1}, Table \ref{measurements2} and Table \ref{measurements3}, you can see that at least in some cases walking pattern does much better than general pattern and that parallel computation was not added without a good reason. We always generate a matrix of size $n\times n$ and if there is one thread, we use the serial variant of MCMC process; otherwise, we use the parallel one.
+\begin{table}[]
+\centering
+\begin{tabular}{|ccc|c|c|c|c|c|c|}
+\hline
+\multicolumn{3}{|c|}{\textbf{Pattern}} & \textbf{n} & \textbf{\#iterations} & \textbf{type} & \textbf{threads} & \textbf{time (sec)} & \textbf{memory} \\ \hline
+1 & 1 & 1 & 100 & 100 000 & general & 1 & 1486.61 & $<100$ KB \\ \cline{4-9} 
+1 & 1 & 1 & 100 & 100 000 & general & 9 & 381.565 & 602 MB \\ \cline{4-9} 
+1 & 0 & 0 & 100 & 100 000 & general & 17 & 332.465 & 1173 MB \\ \hline
+\end{tabular}
+\caption{A table showing the difference between using parallel and serial MCMC process.}
+\label{measurements1}
+\end{table}
+
+\begin{table}[]
+\centering
+\begin{tabular}{|ccccc|c|c|c|c|c|c|}
+\hline
+\multicolumn{5}{|c|}{\textbf{Pattern}} & \textbf{$n$} & \textbf{\#iter} & \textbf{type} & \textbf{\#th} & \textbf{time (sec)} & \textbf{memory} \\ \hline
+0 & 0 & 0 & 0 & 1 & 100 & 100 000 & general & 1 & 3187.17 & 3.9 MB \\ \cline{6-11} 
+0 & 0 & 0 & 1 & 0 & 100 & 100 000 & general & 9 & 569.237 & 24.3 MB \\ \cline{6-11} 
+0 & 0 & 1 & 0 & 0 & 100 & 100 000 & general & 17 & 336.781 & 39.9 MB \\ \cline{6-11} 
+0 & 1 & 0 & 0 & 0 & 100 & 100 000 & walking & 1 & 5.30831 & 2.9 MB \\ \cline{6-11} 
+1 & 0 & 0 & 0 & 0 & 100 & 100 000 & walking & 9 & 2.06325 & 4.2 MB \\ \cline{6-11} 
+ &  &  &  &  & 100 & 100 000 & walking & 17 & 1.91516 & 5.1 MB \\ \hline
+\end{tabular}
+\caption{A table comparing general and walking pattern performance on the same pattern.}
+\label{measurements2}
+\end{table}
+
+\begin{table}[]
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+\textbf{Pattern} & \textbf{$n$} & \textbf{\#iterations} & \textbf{type} & \textbf{\#th} & \textbf{time (sec)} & \textbf{memory} \\ \hline
+\multirow{9}{*}{$I_{10}$} & 100 & 100 000 & general & 1 & 1486.61 & $<100$ KB \\ \cline{2-7} 
+ & 100 & 100 000 & general & 9 & 381.565 & 602 MB \\ \cline{2-7} 
+ & 100 & 100 000 & general & 17 & 332,465 & 1173 MB \\ \cline{2-7} 
+ & 500 & 100 000 & walking & 1 & 137.74 & 19 KB \\ \cline{2-7} 
+ & 500 & 100 000 & walking & 9 & 38.8501 & 614 MB \\ \cline{2-7} 
+ & 500 & 100 000 & walking & 17 & 31.4098 & 1210 MB \\ \cline{2-7} 
+ & 5 000 & 10 000 & walking & 1 & 3588.79 & 467 MB \\ \cline{2-7} 
+ & 5 000 & 10 000 & walking & 9 & 1105.49 & 5025 MB \\ \cline{2-7} 
+ & 5 000 & 10 000 & walking & 17 & 685.041 & 9174 MB \\ \hline
+\end{tabular}
+\caption{A table comparing general pattern and walking pattern, as well as usage of parallel version of MCMC process.}
+\label{measurements3}
+\end{table}

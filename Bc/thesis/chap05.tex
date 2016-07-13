@@ -25,6 +25,8 @@ To acquire, store and output statistics of the generating process, we use classe
 \item \emph{Performance statistics} -- this is what we use to count how many changes were successful and how long did it take to test a change.
 \end{itemize}
 
+If user wants to define their own statistics, they can add variables into the class, alter ``add\_data'' function to allow storing the desired data and change function ``print\_$\cdots$'' to define the output.
+
 \section{General\_pattern}
 The general pattern class contains a lot of function. Most of them are easy to follow and they all should be commented enough in the code. The only part which deserves more attention is the constructor.
 
@@ -53,14 +55,14 @@ While the idea behind MCMC parallelism is described in Section \ref{sect:paralle
 
 Let $I$ be the ID the process is currently waiting for, that is, the lowest ID of a task that is being tested by a worker. In a structure called ``queue'' (which is std::vector$<$std::deque$>$) each worker has a queue of tasks assigned to it. In the queue, there are tasks that are either being computed or have been computed. The history of tasks is needed to allow reverting changes that should have not happen when the main thread encounters a different successful task with lower ID. There is no need to have a complete history of all tasks computed. There are only those tasks, that have higher ID than $I$ or have lower ID, but those are going to be removed from the ``queue'' as soon as possible. The name ``queue'' is not random, it describes the order, in which the tasks are being stored -- the tasks with lower ID have been inserted earlier and therefore they are at the bottom.
 
-Now that we know the most important structure let's see how the main thread works with it. This is a list of operations changing ``queue'' and the situations, in which we perform them:
+Now that we know the most important structure let us see how the main thread works with it. This is a list of operations changing ``queue'' and the situations, in which we perform them:
 \begin{itemize}
 \item pop\_front: The main thread deletes the first task (the one with the lowest ID) if one of two things happen:
 \begin{itemize}
 \item The ID of the task being deleted is equal to $I$. That means the change computed by the task is being propagated to the generated matrix and there is no need to remember the task anymore. This also increases $I$, not necessarily by one.
 \item The ID of the task being deleted is less than $I$. This situation happens due to synchronization. The worker was supposed to synchronize a task computed by a different worker that did not have the lowest ID at the time. Therefore, the task needs to be in the list of tasks so we can revert it later, if needed. If there is no need to revert it and the lowest ID gets greater or equal to the ID of the task, we can just delete it from the ``queue''.
 \end{itemize}
-\item pop\_back: There is only one reason to delete tasks from the end of the ``queue'' and that is reverting. Imagine there is a task with id $J$ at the end of the ``queue''. A different worker computes a task with lower ID and finds out the change is successful. This means the task $J$ won't propagate to the generated matrix and there in no use for it. If it is still being computed, we cannot do much about it, so we tell the worker to stop computing and deal with it later. If the task is finished, we need to revert it, but only in case the task was successful, because if it was not, it had already been reverted by the worker. So we revert the task if needed and we can just delete it from ``queue'' as it will never be used.
+\item pop\_back: There is only one reason to delete tasks from the end of the ``queue'' and that is reverting. Imagine there is a task with id $J$ at the end of the ``queue''. A different worker computes a task with lower ID and finds out the change is successful. This means the task $J$ will not propagate to the generated matrix and there in no use for it. If it is still being computed, we cannot do much about it, so we tell the worker to stop computing and deal with it later. If the task is finished, we need to revert it, but only in case the task was successful, because if it was not, it had already been reverted by the worker. So we revert the task if needed and we can just delete it from ``queue'' as it will never be used.
 \item emplace\_back: The main thread only inserts new tasks to the end of the ``queue'' and there are two reasons to insert:
 \begin{itemize}
 \item Worker is assigned a completely new task to check the avoidance. In this situation, the task is given a new, globally highest ID and we add the task at the end of the ``queue''.

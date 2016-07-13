@@ -74,7 +74,7 @@ std::vector<std::vector<int> > Patterns::get_order() const
 	std::vector<std::vector<int> > orders(patterns_.size());
 
 	for (size_t i = 0; i < patterns_.size(); ++i)
-		orders[i] = std::move(patterns_[i]->get_order());
+		orders[i] = patterns_[i]->get_order();
 
 	return orders;
 }
@@ -83,7 +83,6 @@ bool Patterns::avoid(const int r, const int c, std::vector<std::vector<Counter> 
 {
 	big_matrix_.flip(r, c);
 
-	//////////////////////// why don't I use changed_?
 	int changed = -1;
 
 	sizes.resize(patterns_.size());

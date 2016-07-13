@@ -8,13 +8,13 @@ The program is written in C++ and should be compilable on any standard platform.
 \subsection{Windows}
 Windows users can run the application using an executable file ``matrix-win.exe'' either directly, in which case the default configuration file will be used, or using command line with an optional parameter specifying the configuration file.
 
-\subsection{Unix, Linux, iOS}
+\subsection{Unix, Linux, MacOS}
 Users on other platforms than Windows can build the solution using command line easily by running ``./build.sh'', which uses G++ compiler. Compiler can be switched by rewriting g++ to some other variant (for example clang) in build.sh file. This leads to creating a an executable file ``matrix.exe'' which can be run with an optional parameter specifying the configuration file.
 
 \section{Configuration file}
-In order to modify what the program computes, we use a configuration file. The configuration file can be chosen when running the program in command line and relative path to it is the first (and only) option. If no path is inserted then the configuration file is expected to be located in the same directory as the executable file and its name is ``config.txt''.
+In order to modify what the program computes, we use a configuration file. The configuration file can be chosen when running the program in command line and relative path to it is the first (and only) option. If no path is inserted, the configuration file is expected to be located in the same directory as the executable file and its name is ``config.txt''.
 
-The file is a standard text file which can be modified by any text editor and is structured into four sections:
+The file is a standard text file, which can be modified by any text editor, and is structured into four sections:
 \begin{itemize}
 \item input
 \item pattern
@@ -70,7 +70,7 @@ Possible value: & ``serial'' \\
 Default value: & ``serial''
 \end{tabular}
 
-\item threads\_count: The number of threads if a parallel mode is chosen.
+\item threads\_count: The number of threads used if a parallel mode is chosen.
 
 \begin{tabular}{ll}
 Possible value: & $t\in\mathbb{N}$ \\
@@ -80,7 +80,7 @@ Default value: & 1
 \end{itemize}
 
 \subsection{Pattern}
-In this section we set the options that matter the most -- matrix patterns. As we are allowed to generate a matrix which avoids more than just one pattern, the section \textbf{[pattern]} can be used multiple times, specifying one pattern for each occurrence.
+In this section, we set the options that matter the most -- matrix patterns. As we are allowed to generate a matrix which avoids more than just one pattern, the section \textbf{[pattern]} can be used multiple times, specifying one pattern for each occurrence.
 \begin{itemize}
 \item pattern\_file: A relative path to a input matrix file - the pattern.
 
@@ -138,7 +138,7 @@ Possible value: & ``set'' - std::set (red-black tree) \\
 Default value: & ``hash''
 \end{tabular}
 
-\item line\_order: Choose the order in which the lines are being added to the partial mapping. See Section \ref{sect:order}.
+\item line\_order: Chooses the order in which the lines are being added to the partial mapping. See Section \ref{sect:order}.
 
 \begin{tabular}{ll}
 Possible value: & ``max'' \\
@@ -146,13 +146,13 @@ Possible value: & ``max'' \\
 & ``sum'' \\
 & ``desc'' \\
 & ``auto'' \\
-& ``order file path'' \\
+& \textit{order file path} \\
 Default value: & ``max''
 \end{tabular}
 
 \end{itemize}
 \subsection{Output}
-In this section we specify, where to output the generated matrix or statistics files. As the matrix can be output to console, a text file or a bmp file, each option in the section can be set more than once and every line will make a new output.
+In this section, we specify, where to output the generated matrix or statistics files. As the matrix can be output to console, a text file or a bmp file, each option in the section can be set more than once and every occurrence will make a new output.
 \begin{itemize}
 \item matrix\_output: The generated matrix can be output as a bmp file in which one-entries are black pixels and zero-entries white. To do that, the file path has to have a pattern ``$\ast$.bmp''. If a different path is given the file is stored as a matrix text file. It can also be output into a console if ``console'' is set. In that case it has the text format.
 

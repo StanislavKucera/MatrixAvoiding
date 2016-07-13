@@ -2,10 +2,10 @@
 \label{chap:general}
 In this chapter and Chapter \ref{chap:walking} we show algorithms for testing whether a pattern $P$ is contained in a square binary matrix $M$.
 
-We begin with a very basic algorithm, which we then improve a lot to get a fast algorithm for testing avoidance of a general pattern.
+We begin with a very basic algorithm, which we then improve a lot to get a fast algorithm for testing the avoidance of a general pattern.
 
 \section{Sketch of a brute force algorithm}
-Let $L=(l_1,l_2,\cdots,l_{w+h-1})$ be a permutation of lines (rows and columns) of the pattern $P$ and $k\in[w+h-1]$. \emph{Partial mapping of level $k$} of lines of $P$ is a function $f$ from $L':=\{l_1,l_2,\cdots,l_k\}\subseteq L$ to lines of the big matrix $M$ satisfying three conditions: 
+Let $L=(l_1,l_2,\cdots,l_{w+h})$ be a permutation of lines (rows and columns) of the pattern $P$ and $k\in[w+h]$. \emph{Partial mapping of level $k$} of lines of $P$ is a function $f$ from $L':=\{l_1,l_2,\cdots,l_k\}\subseteq L$ to lines of the big matrix $M$ satisfying three conditions: 
 %The basic algorithm we use goes as follows. It takes a line $l$ (row or column) of the pattern and for each line $L$ of the big matrix it decides whether the pattern can be mapped there. It can, if three conditions are all met at once:
 \begin{itemize}
 %\item Both $l$ and $L$ are rows or they are both columns.
@@ -15,7 +15,7 @@ Let $L=(l_1,l_2,\cdots,l_{w+h-1})$ be a permutation of lines (rows and columns) 
 \item If $l'\in L'$ and $l''\in L'$ are both rows or columns and $l'<l''$, then $f(l')<f(l'')$. This means partial mapping keeps the order of the lines.
 \item If $l'\in L'$ is a row of $P$ and $l''\in L'$ is a column of $P$ and there is a one-entry at the intersection of $l'$ and $l''$, then there is a one-entry at the intersection of $f(l')$ and $f(l'')$.
 \end{itemize}
-The basic algorithm we use goes as follows. First it maps $l_1$ to all possible lines of $M$, creating partial mappings of $\{l_1\}\subseteq L$. For $k=2,\cdots,w+h-1$ it takes each partial mapping from the previous iteration and extends it by adding line $l_k$ to the partial mapping in all possible ways. If we manage to map all the lines of $P$, then $M$ does not avoid it and if at some point there are no partial mappings to extend it means $M$ avoids $P$.
+The basic algorithm we use goes as follows. First it maps $l_1$ to all possible lines of $M$, creating partial mappings of $\{l_1\}\subseteq L$. For $k=2,\cdots,w+h$ it takes each partial mapping from the previous iteration and extends it by adding line $l_k$ to the partial mapping in all possible ways. If we manage to map all the lines of $P$, then $M$ does not avoid it and if at some point there are no partial mappings to extend it means $M$ avoids $P$.
 
 The algorithm can be improved in two ways. Firstly, we can try to recognize unextendable partial mappings earlier than at the moment a line can no longer be mapped, for example by counting whether there is enough one-entries in between already mapped lines (more in Section \ref{sect:approaches}). Secondly, which is going to be fundamental for us, we can try not to remember more copies of different mappings that can be extended in the same way.
 

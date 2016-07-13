@@ -104,9 +104,9 @@ int main(int argc, char **argv)
 	}
 	else if (parallel_mode == MCMC)
 		parallelMCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, threads_count - 1, random_seed);
-	else if (parallel_mode == MCMC2)
-		parallelMCMCgenerator2(iter, patterns, result, perf_stats, matrix_stats, threads_count, random_seed);
-	else //if (parallel_mode == MAP)
+	//else if (parallel_mode == MCMC2)
+	//	parallelMCMCgenerator2(iter, patterns, result, perf_stats, matrix_stats, threads_count, random_seed);
+	else
 		MCMCgenerator(iter, patterns, result, perf_stats, matrix_stats, (parallel_mode == SERIAL ? 1 : threads_count), random_seed);
 
 	end = std::chrono::system_clock::now();
