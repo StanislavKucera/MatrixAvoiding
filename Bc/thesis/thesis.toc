@@ -26,13 +26,13 @@
 \contentsline {subsubsection}{Enough one-entries}{18}{section*.9}
 \contentsline {subsubsection}{Recursive mapping}{18}{section*.10}
 \contentsline {subsubsection}{Orthogonal bounds}{19}{section*.11}
-\contentsline {subsubsection}{Usage}{20}{section*.12}
+\contentsline {subsubsection}{Usage}{19}{section*.12}
 \contentsline {subsection}{\numberline {4.1.6}Using the whole structure in the next iteration}{20}{subsection.4.1.6}
 \contentsline {section}{\numberline {4.2}MCMC parallelism}{21}{section.4.2}
 \contentsline {subsection}{\numberline {4.2.1}Example of the MCMC process for $n$ threads}{23}{subsection.4.2.1}
 \contentsline {subsection}{\numberline {4.2.2}Speculative computing}{23}{subsection.4.2.2}
 \contentsline {subsection}{\numberline {4.2.3}Reverting and synchronizing in the main thread}{23}{subsection.4.2.3}
-\contentsline {section}{\numberline {4.3}Walking pattern}{24}{section.4.3}
+\contentsline {section}{\numberline {4.3}Walking pattern}{23}{section.4.3}
 \contentsline {subsection}{\numberline {4.3.1}Using the last changed position}{24}{subsection.4.3.1}
 \contentsline {subsection}{\numberline {4.3.2}Lazy avoid}{24}{subsection.4.3.2}
 \contentsline {subsubsection}{Recompute the whole structure every time}{24}{section*.13}

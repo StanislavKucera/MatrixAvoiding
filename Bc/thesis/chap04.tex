@@ -59,7 +59,7 @@ Let $P$ from Figure \ref{approaches} be the forbidden pattern and imagine a situ
 \subsubsection{Enough one-entries}
 \begin{figure}[h!]
 \centering
-\includegraphics[width=60mm]{../img/enough_one-entries.pdf}
+\includegraphics[width=55mm]{../img/enough_one-entries.pdf}
 \caption{Checking whether there is enough one-entries. Bold lines in the picture are mapped and in circles are the positions where we look for one-entries.}
 \label{enough}
 \end{figure}
@@ -67,7 +67,7 @@ The first condition is that there is enough one-entries in between mapped lines,
 \subsubsection{Recursive mapping}
 \begin{figure}[h!]
 \centering
-\includegraphics[width=60mm]{../img/recursive.pdf}
+\includegraphics[width=55mm]{../img/recursive.pdf}
 \caption{Checking whether crossed non-mapped lines can be mapped anywhere. Bold lines are mapped or being mapped, in rectangles are the lines we check and in circles are the positions where we look for one-entries.}
 \label{recursive}
 \end{figure}
@@ -75,7 +75,7 @@ While we were only testing whether there are enough one-entries in between alrea
 \subsubsection{Orthogonal bounds}
 \begin{figure}[h!]
 \centering
-\includegraphics[width=60mm]{../img/orthogonal.pdf}
+\includegraphics[width=55mm]{../img/orthogonal.pdf}
 \caption{Checking whether there is enough one-entries on the orthogonal lines. Bold lines are mapped or being mapped and in circles are the positions where we look for one-entries.}
 \label{orthogonal}
 \end{figure}
@@ -84,23 +84,22 @@ As shown in Figure \ref{orthogonal}, when we are adding line 6, we check whether
 \subsubsection{Usage}
 These restrictions on the added lines are not a fixed part of the program. A user can decide which approaches they want to use in the configuration file.
 
-When testing that was done for a fixed pattern, we found out it is useful to use all the mentioned restrictions when generating a matrix of size $100\times100$, as it turned out to be much faster than without the restrictions. On the other hand, in the same test for a generated matrix of size $500\times500$, it was much better not to use any of those restrictions, which you can see in Table \ref{approachestable}.
+When testing that was done for a fixed pattern, we found out it is useful to use all the mentioned restrictions when generating a matrix avoiding some patterns while it was much better not to use any of those restrictions for different pattern, which you can see in Table \ref{approachestable}. For some patterns it also happened that using additional restrictions was useful for matrix of size $100\times100$ and for the same patterns it was better not to use them for generating a $500\times500$ matrix.
 \begin{table}[]
 \centering
-\begin{tabular}{|ccc|c|c|c|c|c|c|c|}
+\begin{tabular}{|ccc|c|r|c|c|c|r|r|}
 \hline
 \multicolumn{3}{|c|}{\textbf{Pattern}} & \textbf{n} & \textbf{\#iterations} & \textbf{one} & \textbf{rec} & \textbf{orth} & \textbf{time (sec)} & \textbf{memory} \\ \hline
-1 & 1 & 1 & 100 & 100 000 & yes & yes & yes & 1 512.56 & 3 268 B \\ \cline{4-10} 
-1 & 1 & 1 & 100 & 100 000 & yes & yes & no & 1 504.46 & 3 268 B \\ \cline{4-10} 
-1 & 1 & 1 & 100 & 100 000 & no & no & no & 672.63 & 3 268 B \\ \cline{4-10} 
-1 & 1 & 1 & 50 & 100 000 & yes & yes & yes & 186.367 & 1 480 B \\ \cline{4-10} 
-1 & 1 & 1 & 50 & 100 000 & no & no & no & 99.1557 & 3 004 B \\ \cline{4-10} 
-1 & 1 & 1 & 50 & 100 000 & yes & yes & yes & 186.367 & 3 680 B \\ \cline{4-10} 
-1 & 1 & 1 & 50 & 100 000 & no & no & no & 99.1557 & 3 680 B \\ \cline{4-10} 
-1 & 0 & 0 & 500 & 10 000 & yes & yes & yes & 10276.6 & 9 128 B \\ \cline{4-10} 
- &  &  & 500 & 10 000 & no & no & no & 6756.96 & 15 972 B \\ \hline
+1 & 0 & 0 & 100 & 100,000 & yes & yes & yes & 122.24 & 3,004 B \\ \cline{4-10} 
+1 & 1 & 1 & 100 & 100,000 & no & no & no & 248.65 & 3,268 B \\ \cline{4-10} 
+0 & 0 & 1 & 500 & 10,000 & yes & yes & yes & 1,072.53 & 5,380 B \\ \cline{4-10} 
+  &   &   & 500 & 10,000 & no & no & no & 2,631.73 & 15,976 B \\ \hline
+1 & 1 & 1 & 100 & 100,000 & yes & yes & yes & 1,512.56 & 3,268 B \\ \cline{4-10}
+1 & 1 & 1 & 100 & 100,000 & no & no & no & 672.63 & 3,268 B \\ \cline{4-10} 
+1 & 0 & 0 & 500 & 10,000 & yes & yes & yes & 10,276.60 & 9,128 B \\ \cline{4-10} 
+  &   &   & 500 & 10,000 & no & no & no & 6,756.96 & 15,972 B \\ \hline
 \end{tabular}
-\caption{My caption}
+\caption{Testing additional restrictions of the generated matrix is useful in some cases but it comes with a performance drop in different cases.}
 \label{approachestable}
 \end{table}
 
@@ -199,12 +198,12 @@ The final solution comes with the same idea, but a different storage. As the pri
 We have improved all algorithms and added a parallel version of the MCMC process. The question is, whether our improvements were useful in terms of performance and memory consuming. I have done a few tests and in Table \ref{measurements1}, Table \ref{measurements2} and Table \ref{measurements3}, you can see that at least in some cases walking pattern does much better than general pattern and that parallel computation was not added without a good reason. We always generate a matrix of size $n\times n$ and if there is one thread, we use the serial variant of MCMC process; otherwise, we use the parallel one.
 \begin{table}[]
 \centering
-\begin{tabular}{|ccc|c|c|c|c|c|c|}
+\begin{tabular}{|ccc|c|r|c|c|r|r|}
 \hline
 \multicolumn{3}{|c|}{\textbf{Pattern}} & \textbf{n} & \textbf{\#iterations} & \textbf{type} & \textbf{threads} & \textbf{time (sec)} & \textbf{memory} \\ \hline
-1 & 1 & 1 & 100 & 100 000 & general & 1 & 1486.61 & $<100$ KB \\ \cline{4-9} 
-1 & 1 & 1 & 100 & 100 000 & general & 9 & 381.565 & 602 MB \\ \cline{4-9} 
-1 & 0 & 0 & 100 & 100 000 & general & 17 & 332.465 & 1173 MB \\ \hline
+1 & 1 & 1 & 100 & 100,000 & general & 1 & 1,486.61 & $<100$ KB \\ \cline{4-9} 
+1 & 1 & 1 & 100 & 100,000 & general & 9 & 381.56 & 602 MB \\ \cline{4-9} 
+1 & 0 & 0 & 100 & 100,000 & general & 17 & 332.46 & 1,173 MB \\ \hline
 \end{tabular}
 \caption{A table showing the difference between using parallel and serial MCMC process.}
 \label{measurements1}
@@ -212,15 +211,15 @@ We have improved all algorithms and added a parallel version of the MCMC process
 
 \begin{table}[]
 \centering
-\begin{tabular}{|ccccc|c|c|c|c|c|c|}
+\begin{tabular}{|ccccc|c|r|c|c|r|r|}
 \hline
 \multicolumn{5}{|c|}{\textbf{Pattern}} & \textbf{$n$} & \textbf{\#iter} & \textbf{type} & \textbf{\#th} & \textbf{time (sec)} & \textbf{memory} \\ \hline
-0 & 0 & 0 & 0 & 1 & 100 & 100 000 & general & 1 & 3187.17 & 3.9 MB \\ \cline{6-11} 
-0 & 0 & 0 & 1 & 0 & 100 & 100 000 & general & 9 & 569.237 & 24.3 MB \\ \cline{6-11} 
-0 & 0 & 1 & 0 & 0 & 100 & 100 000 & general & 17 & 336.781 & 39.9 MB \\ \cline{6-11} 
-0 & 1 & 0 & 0 & 0 & 100 & 100 000 & walking & 1 & 5.30831 & 2.9 MB \\ \cline{6-11} 
-1 & 0 & 0 & 0 & 0 & 100 & 100 000 & walking & 9 & 2.06325 & 4.2 MB \\ \cline{6-11} 
- &  &  &  &  & 100 & 100 000 & walking & 17 & 1.91516 & 5.1 MB \\ \hline
+0 & 0 & 0 & 0 & 1 & 100 & 100,000 & general & 1 & 3187.17 & 3.9 MB \\ \cline{6-11} 
+0 & 0 & 0 & 1 & 0 & 100 & 100,000 & general & 9 & 569.23 & 24.3 MB \\ \cline{6-11} 
+0 & 0 & 1 & 0 & 0 & 100 & 100,000 & general & 17 & 336.78 & 39.9 MB \\ \cline{6-11} 
+0 & 1 & 0 & 0 & 0 & 100 & 100,000 & walking & 1 & 5.31 & 2.9 MB \\ \cline{6-11} 
+1 & 0 & 0 & 0 & 0 & 100 & 100,000 & walking & 9 & 2.06 & 4.2 MB \\ \cline{6-11} 
+  &   &   &   &   & 100 & 100,000 & walking & 17 & 1.91 & 5.1 MB \\ \hline
 \end{tabular}
 \caption{A table comparing general and walking pattern performance on the same pattern.}
 \label{measurements2}
@@ -228,18 +227,19 @@ We have improved all algorithms and added a parallel version of the MCMC process
 
 \begin{table}[]
 \centering
-\begin{tabular}{|c|c|c|c|c|c|c|}
+\begin{tabular}{|c|c|r|c|c|r|r|}
 \hline
 \textbf{Pattern} & \textbf{$n$} & \textbf{\#iterations} & \textbf{type} & \textbf{\#th} & \textbf{time (sec)} & \textbf{memory} \\ \hline
-\multirow{9}{*}{$I_{10}$} & 100 & 100 000 & general & 1 & 1486.61 & $<100$ KB \\ \cline{2-7} 
- & 100 & 100 000 & general & 9 & 381.565 & 602 MB \\ \cline{2-7} 
- & 100 & 100 000 & general & 17 & 332,465 & 1173 MB \\ \cline{2-7} 
- & 500 & 100 000 & walking & 1 & 137.74 & 19 KB \\ \cline{2-7} 
- & 500 & 100 000 & walking & 9 & 38.8501 & 614 MB \\ \cline{2-7} 
- & 500 & 100 000 & walking & 17 & 31.4098 & 1210 MB \\ \cline{2-7} 
- & 5 000 & 10 000 & walking & 1 & 3588.79 & 467 MB \\ \cline{2-7} 
- & 5 000 & 10 000 & walking & 9 & 1105.49 & 5025 MB \\ \cline{2-7} 
- & 5 000 & 10 000 & walking & 17 & 685.041 & 9174 MB \\ \hline
+\multirow{9}{*}{$I_{10}$}
+ & 100 & 100,000 & general & 1 & 1,486.61 & $<100$ KB \\ \cline{2-7} 
+ & 100 & 100,000 & general & 9 & 381.56 & 602 MB \\ \cline{2-7} 
+ & 100 & 100,000 & general & 17 & 332.46 & 1,173 MB \\ \cline{2-7} 
+ & 500 & 100,000 & walking & 1 & 137.74 & 19 KB \\ \cline{2-7} 
+ & 500 & 100,000 & walking & 9 & 38.85 & 614 MB \\ \cline{2-7} 
+ & 500 & 100,000 & walking & 17 & 31.41 & 1,210 MB \\ \cline{2-7} 
+ & 5,000 & 10,000 & walking & 1 & 3,588.79 & 467 MB \\ \cline{2-7} 
+ & 5,000 & 10,000 & walking & 9 & 1,105.49 & 5,025 MB \\ \cline{2-7} 
+ & 5,000 & 10,000 & walking & 17 & 685.04 & 9,174 MB \\ \hline
 \end{tabular}
 \caption{A table comparing general pattern and walking pattern, as well as usage of parallel version of MCMC process.}
 \label{measurements3}

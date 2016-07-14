@@ -1174,8 +1174,8 @@ bool General_pattern<T>::check_orthogonal_bounds(const int line, const int big_l
 		// and "line" is a row
 		if (line < row_)
 		{
-			to = row_ - 1;
-			current = big_matrix_rows - 1;
+			to = big_matrix_rows - 1;
+			current = row_ - 1;
 		}
 		// "line" is a column
 		else
