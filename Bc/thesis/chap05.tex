@@ -11,12 +11,21 @@ A minimalistic template container for storing and accessing matrices.
 \subsection{Pattern}
 An abstract class defining the interface of patterns. Three classes inherit from the class:
 \begin{itemize}
-\item \emph{General\_pattern} -- more in Chapter \ref{chap:general}
-\item \emph{Walking\_pattern} -- more in Chapter \ref{chap:walking}
+\item \emph{General\_pattern} -- more in Chapter~\ref{chap:general}
+\item \emph{Walking\_pattern} -- more in Chapter~\ref{chap:walking}
 \item \emph{Slow\_pattern} -- a class using a brute force algorithm to test pattern avoidance.
 \end{itemize}
+\label{patternapi}
+Besides others, the class declares two important functions:
+\begin{itemize}
+\item \emph{Avoid} -- tests whether a given pattern is avoided by a given matrix.
+\item \emph{Revert} -- it is used to revert changes of pattern's inner structures after a call of Avoid function which is unsuccessful.
+\end{itemize}
 
-For the case multiple patterns are chosen at the same time, every such Pattern in stored in a container called Patterns, which is a class creating an interface between Pattern and MCMCgenerator.
+\subsection{Patterns}
+To create an interface between Pattern and MCMCgenerator we use a class called Patterns. It is a container of Pattern instances and allows the user to generate matrices avoiding more than just one forbidden pattern.
+
+It follows the API of Pattern and a call of a function on the class can be imagined as a call of the same function on each element of the container. This is not necessarily what happens, because for instance when we test avoidance of all patterns in Patterns, as soon as we find a pattern which is contained in a given matrix we can stop testing and return false, instead of testing the rest of patterns and still returning false.
 
 \subsection{Statistics}
 To acquire, store and output statistics of the generating process, we use classes in the file Statistics.hpp. There are two kinds of classes:
@@ -25,30 +34,35 @@ To acquire, store and output statistics of the generating process, we use classe
 \item \emph{Performance statistics} -- this is what we use to count how many changes were successful and how long did it take to test a change.
 \end{itemize}
 
-If user wants to define their own statistics, they can add variables into the class, alter ``add\_data'' function to allow storing the desired data and change function ``print\_$\cdots$'' to define the output.
+To get data from the MCMC process, a method called ``add\_data'' is used. If the user wants to define their own statistics, they can add variables into the class, alter ``add\_data'' function to allow storing the desired data and change functions ``print\_$\cdots$'' to redefine the output.
+
+\subsection{MCMCgenerator}
+MCMCgenerator is a method that for a given number of iterations and a given instance of Patterns approximates a uniformly random matrix avoiding that pattern, following MCMC algorithm shown in~Section~\ref{sect:mmcmc}. It also takes instances of Statistics classes as arguments to produce more data if requested by the user.
 
 \section{General\_pattern}
-The general pattern class contains a lot of function. Most of them are easy to follow and they all should be commented enough in the code. The only part which deserves more attention is the constructor.
+The general pattern class contains a lot of methods. Most of them are easy to follow and they all should be commented enough in the code. The only part which deserves more attention is the constructor.
 
 \subsection{Construction}
-In the constructor of a general pattern, there are a few function that are easy in nature but as they somehow use each other it is hard not to lose track of their dependencies and results. In order to make this part of the code, which is very important, more understandable, we go through the constructor and explain all that is happening in the order it is happening in.
+In the constructor of a general pattern, there are several methods that are easy in nature but as they somehow use each other it is hard not to lose track of their dependencies and results. In order to make this part of the code, which is very important, more understandable, we go through the constructor and explain all that is happening in the order it is happening in.
 
 \subsubsection{Storing the pattern}
 The first thing, which is done right after initialization of variables, is storing the pattern. Instead of storing the pattern in a Matrix$<$bool$>$, I decided to store lines into a number, where in the binary coding a one-entry in the position $i$ means there is a one-entry in the line at the intersection with $i$-th orthogonal line. This comes handy when computing line orders. At the same time we also find those lines that are empty (more in Chapter \ref{chap:imp}) and remember them, because we do not have to map them at all.
 
 \subsubsection{Choosing the line order}
-After that, we need to choose the right line order (again more in Chapter \ref{chap:imp}). To compute MAX, SUM or TWO order we use a brute force algorithm that checks sequences of line adding and for each it computes how many lines are unimportant. Then it just chooses the order which is the best in chosen metric. To compute DESC order, we sort the lines according to the number of one-entries.
+After that, we need to choose the right line order (again more in Chapter \ref{chap:imp}). Exactly one algorithm to determine the order is chosen by the user.
 
-\subsubsection{What to remember}
-In the next step, we find which lines are important in each level of partial mappings with respect to chosen order, because what to remember is based on the equivalence introduced in Chapter \ref{chap:general} and the decision not to remember unimportant lines, which we explained in Chapter \ref{chap:imp}.
+To compute MAX, SUM or TWO order we use a brute force algorithm that checks sequences of line adding and for each it computes how many lines are unimportant. Then it just chooses the order which is the best in chosen metric. To compute DESC order, we sort the lines according to the number of one-entries.
+
+\subsubsection{Identifying important lines}
+In the next step, we find which lines are important at each level with respect to chosen order. What to remember is based on the equivalence introduced in~Chapter~\ref{chap:general} and the decision not to remember unimportant lines, which we explained in Chapter \ref{chap:imp}.
 
 \subsubsection{Parallel bound indices}
-Now comes the hardest to follow part -- precomputing the indices for searching for parallel bounds. The idea is simple. When we are adding a new line and we already have a partial mapping, it restricts to where we can add the line. For example, if there are three rows in the pattern and the rows 1 and 3 are mapped, then line 2 needs to be mapped in between those two. The question is, where are those two lines mapped to?
+Now comes the hardest part to follow -- precomputing the indices for searching for parallel bounds. The idea is simple. When we are adding a new line and we already have a partial mapping, it restricts to where we can add the line. For example, if there are three rows in the pattern and the rows 1 and 3 are mapped, then line 2 needs to be mapped in between those two. The question is, where are those two lines mapped to?
 
-First, we add in a chosen order and second we do not remember all lines, as some are unimportant. What do we want is to have an instant access to indices of lines, which bounds added line in the partial mapping, so we do not need to compute the index over and over again. That is exactly what gets computed when the function ``find\_parralel\_bound\_indices'' is called. The series of other function calls follows just because we compute the indices for all added lines in the order in which they are going to be added.
+First, we add lines in a chosen order and second, we do not remember all lines, as some are unimportant. What we want is to have an instant access to the indices of the lines that bound the currently added line in the partial mapping, so we do not need to compute the index over and over again. That is exactly what gets computed when the function ``find\_parralel\_bound\_indices'' is called. The series of other function calls follows just because we compute the indices for all added lines in the order in which they are going to be added.
 
 \subsubsection{Extending order}
-The last function, ``find\_extending\_order'' specifies how we store an extended partial mapping. Again, unimportant lines play their role here and it may easily be the case from a partial mapping storing $k$ lines, after mapping one more line, we end up with a partial mapping only storing $k-1$ lines, because two lines become unimportant by adding the line. This means we not only copy the previous mapping and add the new mapped line but also remove unimportant lines. This function precomputes which values are going to be copied and which are going to be skipped.
+The last function, ``find\_extending\_order'' specifies how we store an extended partial mapping. Again, unimportant lines play their role here and it may easily happen that from a partial mapping storing $k$ lines, after mapping one more line, we end up with a partial mapping only storing $k-1$ lines, because two lines become unimportant by adding the line. This means we not only copy the previous mapping and add the new mapped line but also remove unimportant lines. This function precomputes which values are going to be copied and which are going to be skipped.
 
 \section{MCMC parallelism}
 While the idea behind MCMC parallelism is described in Section \ref{sect:parallel} and the code is heavily commented, the work done by the main thread may still be hard to understand.
@@ -69,3 +83,6 @@ Now that we know the most important structure let us see how the main thread wor
 \item The second reason to insert into ``queue'' are synchronizations. The situation is the same as it was in the case, when we pop\_back -- after we revert all the tasks in the list, we need to synchronize changes that forced reverting and if their ID is not lower or equal to $I$, we need to add them to the list so they can be reverted if needed.
 \end{itemize}
 \end{itemize}
+
+\section{BMP generating}
+To generate output in a BMP format, I use an open source C++ library called EasyBMP. More information about the library and the author can be found in \cite{EasyBMP}.

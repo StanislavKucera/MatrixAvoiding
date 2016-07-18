@@ -1,36 +1,23 @@
 \chapter{Markov chain Monte Carlo}
 \label{chap:mcmc}
-Our goal to generate $M\in_R\mathcal{M}(\mathcal{P})$ heavily depends on the theory of Markov chains. We only define useful terms and state two important theorems. If you are interested in more details, see \cite{Madras}.
+Our goal to generate $M\in_R\mathcal{M}(\mathcal{P})$ heavily depends on the theory of Markov chains. We only define useful terms and state two important theorems. If you are interested in more details, see \cite{Madras} or \cite{Karlin}.
 
 \section{Markov chains}
 \begin{defn}
-%We shall consider discrete-time \emph{Markov chain} $X_0,X_l,\dots$, where $X_i\in\mathcal{S}$, for a finite state space $\mathcal{S}$ and every $i$ (number of steps). The $k$-step transition probabilities are:
-%$$p_{i,j}^{(k)}=Pr(X_{t+k}=j|X_t=i) \hspace{1cm} (i,j\in\mathcal{S})$$
-Let $\mathcal{S}$ be a finite set of states and for every $i,j\in\mathcal{S}$ $p_{i,j}$ prescribed probability of a change of state from $i$ to $j$. Also let $X_0$ be a random variable with values from $\mathcal{S}$. We call a sequence $X_0,X_l,\dots$, where $X_i\in\mathcal{S}$ for every $i$ a \emph{Markov chain} if
+Let $\mathcal{S}$ be a finite set of states and for every $i,j\in\mathcal{S}$, let $p_{i,j}$ be a prescribed probability of a change of state from $i$ to $j$. Also let $X_0$ be a random variable with values from $\mathcal{S}$. We call a sequence $X_0,X_1,\dots$, where $X_i\in\mathcal{S}$ for every $i$ a \emph{Markov chain} if
 $$Pr(X_{t+1}=j|X_t=i)=p_{i,j} \hspace{1cm} (i,j\in\mathcal{S})$$
 \end{defn}
 \begin{defn}
-%A Markov chain is said to be \emph{symmetric} if $p_{i,j}^{(1)}=p_{j,i}^{(1)}$ for every pair of states $i$ and $j$.
 A Markov chain is said to be \emph{symmetric} if $p_{i,j}=p_{j,i}$ for every pair of states $i$ and $j$.
 \end{defn}
 \begin{defn}
-%A Markov chain is \emph{irreducible} if the chain can eventually get from each state to every other state, that is, for every $i,j\in\mathcal{S}$ there exists a $k\geq0$ (depending on $i$ and $j$) such that $p_{i,j}^{(k)}>0$.
 A Markov chain is \emph{irreducible} if the chain can eventually get from each state to every other state, that is, for every $i,j\in\mathcal{S}$ there exists a $k\geq0$ (depending on $i$ and $j$) such that $Pr(X_k=j|X_0=i)>0$.
 \end{defn}
 \begin{defn}
-%An irreducible chain has \emph{period} $D$ if $D$ is the greatest common divisor of $\{k\geq1|p_{i,i}^{(k)}>0\}$ for some $i\in\mathcal{S}$ (equivalently, for all $i\in S$). A chain is called \emph{aperiodic} if its period is 1. In particular, if an irreducible chain has $p_{i,i}^{(1)}>0$ for some $i$, then it is aperiodic.
-If an irreducible chain has $p_{i,i}>0$ for some $i$, then it is \emph{aperiodic}.
+Let $p_{i,j}^{(k)}=Pr(X_{t+k}=j|X_t=i)$ denote the $k$-step transition probabilities for $k=0,1,\cdots$ and $i,j\in\mathcal{S}$. An irreducible Markov chain has \emph{period}~$D$ if $D$ is the greatest common divisor of $\{k\geq1|p_{i,i}^{(k)}>0\}$ for some $i\in\mathcal{S}$ (equivalently, for all $i\in S$). A chain is called \emph{aperiodic} if its period is 1. In particular, if an irreducible chain has $p_{i,i}^{(1)}>0$ for some $i$, then it is aperiodic.
 \end{defn}
-Let $p_{i,j}^{(k)}=Pr(X_{t+k}=j|X_t=i)$ denote the $k$-step transition probabilities for $k=0,1,\cdots$ and $i,j\in\mathcal{S}$. The transition probability matrix is $P=(p_{i,j})$.
 
-Next we state two theorems allowing us to expect Markov chains to converge to a uniformly random state in $\mathcal{S}$ even if the initial state $X_0$ is not random. Both theorems can be found in \cite{Madras}.
-\begin{thm}
-Consider an aperiodic irreducible Markov chain with finite state space $\mathcal{S}$. For every $i,j\in S$, the limit $\lim_{k\rightarrow\infty}p_{i,j}^{(k)}$ exists and is independent of $i$; call it $\pi_j$. Furthermore, $$\sum\limits_{j\in\mathcal{S}}\pi_j=1\hspace{5mm}\wedge\hspace{5mm}\sum\limits_{i\in\mathcal{S}}\pi_ip_{i,j}^{(1)}=\pi_j$$
-for every $j\in\mathcal{S}$.
-\end{thm}
-\begin{thm}
-Suppose that an irreducible Markov chain on the finite state space $\mathcal{S}$ is symmetric. Then the equilibrium distribution is uniform on $\mathcal{S}$.
-\end{thm}
+If $X_0,X_1,\dots$ is an irreducible, symmetric and aperiodic Markov chain on state space $\mathcal{S}$ then $\lim\limits_{k\rightarrow\infty}X_k\in_R\mathcal{S}$ independent of the choice of $X_0$.
 
 \section{Markov chain for pattern-avoiding binary matrices}
 \label{sect:mmcmc}
@@ -46,7 +33,7 @@ To generate a binary matrix $M\in\{0,1\}^{n\times n}$ avoiding patterns in $\mat
 
 If the process starts with a matrix $X_0$ that avoids $\mathcal{P}$, then after every step it still avoids $\mathcal{P}$. Note that an iteration does not change the matrix if the condition 6 is satisfied. We need to show the Markov chain we presented meets all the conditions of both theorems:
 \subsubsection{Symmetry}
-Imagine a sequence of bits flipping that changes the $i$-th matrix to the $j$-th one. The reversed order of the same sequence changes the $j$-th matrix to the $i$-th one.
+If $i$ and $j$ differ in more that one bit, we will never get one from the other by flipping one bit; therefore, both $p_{i,j}=p_{j,i}=0$. If $i$ and $j$ differ in exactly one bit, we have $p_{i,j}=p_{j,i}=\frac{1}{n^2}$, because we need to change exactly that one bit to succeed. Otherwise, $i=j$ and we have $p_{i,i}=p_{i,i}$.
 \subsubsection{Irreducibility}
 As the steps go, it is easy to see we can with non-zero probability create any matrix $M_1\in\mathcal{M}_n(\mathcal{P})$ from the zero matrix $0_n=0^{n\times n}$ by choosing the one-entries of $M_1$. When we can get from $0_n$ to $M_2$ by a sequence of flip changes, the reversed sequence is a sequence of steps from $M_2\in\mathcal{M}_n(\mathcal{P})$ to $0_n$. Thus, with non-zero probability we can always reach $M_2$ from $M_1$; therefore, the Markov chain is irreducible.
 \subsubsection{Aperiodicity}

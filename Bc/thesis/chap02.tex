@@ -12,7 +12,7 @@ Let $L=(l_1,l_2,\cdots,l_{w+h})$ be a permutation of lines (rows and columns) of
 %\item If $l'$ is a line of $P$ parallel to $l$ that has been mapped previously to line $L'$, we want $l<l'\Leftrightarrow L<L'$. This means we want the mapped lines to be in the same order as they were in the pattern.
 %\item If $l'$ is a line of the pattern orthogonal to $l$ that has been mapped previously to line $L'$ and there is a one-entry at the intersection of $l$ and $l'$, there has to be one-entry at the intersection of $L$ and $L'$.
 \item Both $l'\in L'$ and $f(l')$ are rows or they are both columns.
-\item If $l'\in L'$ and $l''\in L'$ are both rows or columns and $l'<l''$, then $f(l')<f(l'')$. This means partial mapping keeps the order of the lines.
+\item If $l'\in L'$ and $l''\in L'$ are both rows or columns and $l'<l''$, then $f(l')<f(l'')$. This means the partial mapping keeps the order of the lines.
 \item If $l'\in L'$ is a row of $P$ and $l''\in L'$ is a column of $P$ and there is a one-entry at the intersection of $l'$ and $l''$, then there is a one-entry at the intersection of $f(l')$ and $f(l'')$.
 \end{itemize}
 The basic algorithm we use goes as follows. First it maps $l_1$ to all possible lines of $M$, creating partial mappings of $\{l_1\}\subseteq L$. For $k=2,\cdots,w+h$ it takes each partial mapping from the previous iteration and extends it by adding line $l_k$ to the partial mapping in all possible ways. If we manage to map all the lines of $P$, then $M$ does not avoid it and if at some point there are no partial mappings to extend it means $M$ avoids $P$.
@@ -22,18 +22,18 @@ The algorithm can be improved in two ways. Firstly, we can try to recognize unex
 \section{Equivalent mappings}
 There is no need to remember two different partial mappings of the same level if they can be both extended exactly the same way, because our function is only supposed to check whether a pattern can be mapped to a big matrix not to find all such mappings.
 \begin{defn}
-We call a line $l$ of a pattern $P$ \emph{important} for chosen permutation of lines of $P$, if one of the conditions is met:
+We call a line $l$ of a pattern $P$ \emph{important at~level~$k$}, with respect to a given permutation $(l_1,\dots,l_{w+h})$, if one of the conditions is met:
 \begin{itemize}
-\item An adjacent line of the pattern has not been mapped yet.
-\item There is a one-entry on the line $l$ at the intersection with line $l'$ that has not been mapped yet.
-\end{itemize}.
-Otherwise the line is \emph{unimportant} for the permutation.
+\item An adjacent line of the pattern is not in $(l_1,\dots,l_k)$.
+\item There is a one-entry on the line $l$ at the intersection with line $l'$ that is not in $(l_1,\dots,l_k)$.
+\end{itemize}
+Otherwise the line is \emph{unimportant at~level~$k$} for the permutation.
 \end{defn}
-Whether a line is important or not only depends on the permutation, so if we have a line unimportant in a partial mapping of level $k$, it is unimportant in every partial mapping of level $k$.
+Whether a line is important or not only depends on the permutation, so if we have a line unimportant at level $k$, it is unimportant in every partial mapping of level $k$.
 
-At the beginning, when no line is mapped, all lines are important. After some lines get mapped, a line can become unimportant in the partial mapping as all lines that bound it are in the mapping as well. If a line is unimportant in a partial mapping of some level, it will stay unimportant in all extensions of the mapping we can find.
+At the beginning, all lines are important. After $k$ lines get mapped, a line can become unimportant at level $k$ as all lines that bound it are in $(l_1,\dots,l_k)$. If a line is unimportant at some level, it stays unimportant at any higher level.
 \begin{defn}
-We say two partial mappings of the same level are \emph{equivalent} if all important lines in the mapping of that level are mapped to the same lines of the big matrix in both mappings.
+We say two partial mappings of the same level~$l$ are \emph{equivalent} if all important lines at~level~$l$ are mapped to the same lines of the big matrix in both mappings.
 \end{defn}
 \begin{figure}[h!]
 \centering

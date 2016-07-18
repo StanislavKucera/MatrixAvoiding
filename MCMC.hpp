@@ -21,7 +21,7 @@
 #include <fstream>
 
 // Generates random-ish matrix of given size, which is avoiding given walking pattern. Uses iter iterations on markov chain.
-inline void MCMCgenerator(const int iter, Patterns& patterns, Matrix<bool>& big_matrix, Performance_Statistics& perf_stats, Matrix_Statistics& matrix_stats, const int threads_count, const int random_seed)
+inline void MCMCgenerator(const int iter, Patterns& patterns, Matrix<bool>& big_matrix, Performance_Statistics& perf_stats, Matrix_Statistics& matrix_stats, const int /*threads_count*/, const int random_seed)
 {
 	// random generator from uniform distribution [0, n-1]
 	std::random_device rd;

@@ -45,7 +45,6 @@ Temporary Items
 # VS things
 Debug/
 Release/
-*.vcxproj*
 
 # TeX files
 *.aux

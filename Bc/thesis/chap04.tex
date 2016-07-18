@@ -63,7 +63,7 @@ Let $P$ from Figure \ref{approaches} be the forbidden pattern and imagine a situ
 \caption{Checking whether there is enough one-entries. Bold lines in the picture are mapped and in circles are the positions where we look for one-entries.}
 \label{enough}
 \end{figure}
-The first condition is that there is enough one-entries in between mapped lines, which is schematically shown in Figure \ref{enough}. We check whether there is enough one-entries on lines in between those lines, where lines 0 and 3 are mapped, so that there is a hope we can map lines 1 and 2 there. Similarly, we check whether there is a one-entry below the line, where line 3 is mapped so we can map line 4 there later.
+The first condition is that there are enough one-entries in between mapped lines, which is schematically shown in Figure \ref{enough}. We check whether there is enough one-entries on lines in between those lines, where lines 0 and 3 are mapped, so that there is a hope we can map lines 1 and 2 there. Similarly, we check whether there is a one-entry below the line where line 3 is mapped so we can map line 4 there later.
 \subsubsection{Recursive mapping}
 \begin{figure}[h!]
 \centering
@@ -105,7 +105,7 @@ When testing that was done for a fixed pattern, we found out it is useful to use
 
 \subsection{Using the whole structure in the next iteration}
 \label{wholestructure}
-It may seem like a good idea to store all the partial mappings. In the next iteration, instead of finding all the partial mapping again, we only alter the mappings we remember. Let $i$ be the number of the iteration we are in, and $e$ be the element.
+It may seem like a good idea to store all the partial mappings. In the next iteration of MCMC, instead of finding all the partial mappings again, we only alter the mappings we remember. Let $i$ be the number of the iteration we are in, and $e$ be the element.
 
 If the element $e$ is changed from zero-entry to one-entry, for each partial mapping we have stored in previous iterations, we want to try to extend it only by the line that just changed. If we manage to extend a partial mapping, we then try to extend it to a full mapping in all possible ways (not only by using changed lines). When the new line in such a mapping becomes unimportant, we can stop looking for all possible extensions if the mapping is equivalent with a different one, which comes from previous iterations. This can be easily done by means already used in the standard algorithm.
 
@@ -125,7 +125,7 @@ To speed up computations, it is often possible to use parallelism. In this secti
 
 While the serial MCMC generator in each iteration changes one element in the generated matrix and checks whether it still avoids forbidden patterns, the parallel version makes several iterations at once, one on each copy of the generated matrix. This means that while iteration $x$ is being computed by a thread, iteration $x+1$ can at the same time be computed by a different thread. The issue is that the iteration $x+1$ does not know what is going to be the state of the generated matrix at the time it should start. It expects iteration $x$ to fail - not change the generated matrix at all, counting on the fact, it is unlikely a change does not create a mapping of the pattern, and starts with the same matrix as iteration $x$. If iteration $x$ succeeds, then the computed iteration $x+1$ is invalid and the iteration is going to be recomputed again, starting with the correct matrix.
 
-When the parallel version of MCMC generator is chosen and it is assigned $n$ threads, it creates $n-1$ private copies of the generated matrix and assigns one thread, called worker, to each of them. The last thread, which we call the main thread and which has exclusive access to the master copy of the generated matrix, makes one change of a bit in each private copy of the matrix and makes the corresponding worker check the avoidance.
+When the parallel version of MCMC generator is chosen and it is assigned $n$ threads, it creates $n-1$ private copies of the generated matrix and $n-1$ private copies of patterns class. For $i=1,\dots,n-1$ it assigns $i$-th thread, called worker, to a pair of $i$-th copy of the matrix and $i$-th copy of patterns. The last thread, which we call the main thread and which has exclusive access to the master copy of the generated matrix, makes one change of a bit in each private copy of the matrix and makes the corresponding worker check the avoidance.
 
 The job of a worker is only to check if its copy of the matrix still avoids the pattern when one bit is changed. On the other hand, all synchronization is left to the main thread. As mentioned before, one iteration of the MCMC process can be recomputed several times. We still want the generator to satisfy the conditions we have for the Markov chain (more in Section \ref{sect:mmcmc}) in order to approximate a random matrix. To achieve that, if a computed iteration $x$ succeeds (and changes the generated matrix), all the other computed iterations that would follow after the iteration $x$ become invalid and they all have to be recomputed. The process ends when all iterations get computed.
 
@@ -143,7 +143,7 @@ When a task ends and it has the lowest ID (we can always wait for the task with 
 \item if it succeeds: 
 \begin{itemize}
 \item The main thread propagates the change tested by the task to the master copy of the generated matrix.
-\item All the rest of the task get removed as they all had a higher ID - computed iterations that follow after the one just computed and they expected the task to fail, which it did not.
+\item All the other tasks get removed as they all had a higher ID -- they computed iterations that follow after the one just computed and they expected the task to fail, which it did not.
 \item This increases the lowest ID by more then one, because there are tasks that got removed and one that got processed.
 \end{itemize}
 \end{itemize}
@@ -160,22 +160,22 @@ The way we deal with these inconveniences is described in Chapter \ref{chap:tdoc
 The speculative computing discussed above is not the only improvement
 we can make. It turns out to be costly to wake a thread to compute a trivial function, to set a few atomic variables and to fall asleep again. This happens a lot in the MCMC process. Every time a task succeeds it makes other workers revert the changes they computed and synchronize the successful change, which are both trivial functions.
 
-To workaround this problem we make a theoretically bad decision, which comes with very nice practical results. All the reverts and synchronizations are computed by the main thread instead of by an appropriate worker. There is no problem with concurrency because the worker is always asleep when a task is to be assigned and using the fact those tasks are really trivial, it does not make the rest of threads wait for the main thread for too long while it computes changes.
+To work around this problem we make a inelegant decision, which comes with very nice practical results. All the reverts and synchronizations are computed by the main thread instead of by an appropriate worker. There is no problem with concurrency because the worker is always asleep when a task is to be assigned and using the fact those tasks are really trivial, it does not make the rest of threads wait for the main thread for too long while it computes changes.
 
 \section{Walking pattern}
-While the brute force implementation of an avoid algorithm for a general pattern was improved heavily, the algorithm for a walking pattern (see Chapter \ref{chap:walking}) is very fast in its nature and cannot be improved. Or can it be?
+While the brute force implementation of an avoid algorithm for a general pattern was improved heavily, the algorithm for a walking pattern (see Chapter~\ref{chap:walking}) is very fast in its nature and cannot be improved. Or can it?
 
 \subsection{Using the last changed position}
-The MCMC process always changes one element $e$ of the big matrix and asks whether it still avoids the pattern. If it does not and we know that before the change it did, we are sure $e$ is a part of the pattern (a one-entry of the pattern is mapped to it). Knowing that and using the same inductive proof as we did in the proof of correctness of the avoid algorithm (see Chapter \ref{chap:general}) it is sufficient to only recompute the part of the inner structure under $e$ and check if the last entry of the pattern can be found there.
+The MCMC process always changes one element $e$ of the big matrix and asks whether it still avoids the pattern. If it does not and we know that before the change it did, we are sure $e$ is a part of the pattern (a one-entry of the pattern is mapped to it). Knowing that and using the same inductive proof as we did in the proof of correctness of the avoid algorithm (see Chapter~\ref{chap:general}) it is sufficient to only recompute the part of the inner structure (table of $c_v$ and $c_h$) under $e$ and check if the last entry of the pattern can be found there.
 
 Not only that. We also know, using the fact the structure was completely correct before the change, that if the values of both $c_v$ and $c_h$ of an element did not change, the element will not cause the element underneath it to change and we no longer have to recompute other parts of the structure.
 
 To use both these facts we replace the cycle through the diagonals by a simple queue, starting at the position of the last changed element and putting more positions in if the values of $c_v$ or $c_h$ are different than they were before recomputing. The function ends either when the pattern is discovered or when the queue becomes empty.
 
-\subsection{Lazy avoid}
-Lazy avoid is a variant of avoid function used when the MCMC parallelism (more in Section \ref{sect:parallel}) is chosen. While all the other types of patterns have a trivial implementation of revert function, when using the walking pattern, the inner structure needs to be modified even when reverting. The MCMC parallelism turned out to work much better if the revert calls are handled by the main thread and it requires the function to run as fast as possible so the other threads are not blocked by the call for too long. That is a reason why functions lazy revert and lazy avoid were created.
+\subsection{Lazy implementation}
+Lazy implementation of avoid and revert functions (see Section~\ref{patternapi}) is used when the MCMC parallelism (more in Section \ref{sect:parallel}) is chosen. While all the other types of patterns have a trivial implementation of revert function, when using the walking pattern, the inner structure needs to be modified even when reverting. The MCMC parallelism turned out to work much better if the revert calls are handled by the main thread and it requires the function to run as fast as possible so the other threads are not blocked by the call for too long. That is a reason why functions lazy revert and lazy avoid were created. A different, but not less significant reason is that because of concurrency, usually there are several revert calls after one avoid call; therefore, it is better to improve revert calls even with a downside of making avoid calls slightly slower.
 
-The avoid function expects the inner structure of the walking pattern to be in a valid state and that requires some effort. To make lazy revert the fastest possible, we postpone the work until the next call of lazy avoid, meaning that lazy avoid then needs to do more things at once. It is no longer sufficient to only compute the submatrix under the position changed last as we did above, but it needs to also compute changes in the positions changed in those lazy revert calls that are postponed.
+The avoid function expects the inner structure of the walking pattern to be in a valid state and that requires some effort. To make lazy revert as fast as possible, we postpone the work until the next call of lazy avoid, meaning that lazy avoid then needs to do more things at once. It is no longer sufficient to only compute the submatrix under the position changed last as we did above, but it is necessary to also compute changes in the positions changed in those lazy revert calls that are postponed.
 
 We discuss several approaches, starting with the simplest one and ending with the one that is fast and used in the final implementation.
 
@@ -186,7 +186,7 @@ The weakness is efficiency. If the whole structure was correct and there was a c
 \subsubsection{Recompute only a part of the structure diagonal by diagonal}
 A simple improvement is to remember the changes done in previous calls of lazy revert and together with the change done in lazy avoid call only recompute the part of the structure that has possibly changed.
 
-This gets more complicated when lazy avoid call discovers the pattern in $M_{\leq e}$, because we cannot be sure the rest of the structure (everything under the diagonal, where $e$ is present) is in a correct order. It is still possible to remember some horizontal, vertical and diagonal bounds and use them to restrict the recomputed part of the matrix. However, the improvement is not that significant and we can do better.
+This gets more complicated when an avoid call in the lazy implementation discovers the pattern in $M_{\leq e}$, because the avoid call returns as soon as the pattern is discovered, without recomputing the whole inner structure. It is still possible to remember some horizontal, vertical and diagonal bounds and use them to restrict the recomputed part of the matrix. However, the improvement is not that significant and we can do better.
 \subsubsection{Queue of positions to recompute}
 A different approach is closer to the one used in a standard avoid function. Instead of going through diagonals one after another, we have a queue of entries-to-recompute. It is no longer sufficient to have a standard queue since in different calls of lazy revert/avoid we can possibly change an entry of different priority (the smaller diagonal the more important) so we need to have some kind of a priority queue. That is exactly what I tried.
 
