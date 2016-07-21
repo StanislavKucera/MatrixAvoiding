@@ -63,7 +63,7 @@ First, we add lines in a chosen order and second, we do not remember all lines, 
 
 \subsubsection{Extending order}
 The last function, ``find\_extending\_order'' specifies how we store an extended partial mapping. Again, unimportant lines play their role here and it may easily happen that from a partial mapping storing $k$ lines, after mapping one more line, we end up with a partial mapping only storing $k-1$ lines, because two lines become unimportant by adding the line. This means we not only copy the previous mapping and add the new mapped line but also remove unimportant lines. This function precomputes which values are going to be copied and which are going to be skipped.
-
+\pagebreak
 \section{MCMC parallelism}
 While the idea behind MCMC parallelism is described in Section \ref{sect:parallel} and the code (\cite{program}) is heavily commented, the work done by the main thread may still be hard to understand.
 

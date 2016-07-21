@@ -51,7 +51,7 @@ The one thing the approaches we will introduce have in common is that they try t
 While the algorithm introduced in Chapter \ref{chap:general} finds out the partial mapping is invalid only at the time it maps two lines having a one-entry at their intersection to two lines having a zero-entry at the intersection, different approaches try to reveal the fact we would end up in the situation earlier by checking more conditions.
 \begin{figure}[h!]
 \centering
-\includegraphics[width=60mm]{../img/approaches.pdf}
+\includegraphics[width=50mm]{../img/approaches.pdf}
 \caption{Pattern~$P$ on which we demonstrate mapping approaches.}
 \label{approaches}
 \end{figure}
@@ -161,7 +161,7 @@ The speculative computing discussed above is not the only improvement
 we can make. It turns out to be costly to wake a thread to compute a trivial function, to set a few atomic variables and to fall asleep again. This happens a lot in the MCMC process. Every time a task succeeds it makes other workers revert the changes they computed and synchronize the successful change, which are both trivial functions.
 
 To work around this problem we make a inelegant decision, which comes with very nice practical results. All the reverts and synchronizations are computed by the main thread instead of by an appropriate worker. There is no problem with concurrency because the worker is always asleep when a task is to be assigned and using the fact those tasks are really trivial, it does not make the rest of threads wait for the main thread for too long while it computes changes.
-
+\pagebreak
 \section{Walking pattern}
 While the brute force implementation of an avoid algorithm for a general pattern was improved heavily, the algorithm for a walking pattern (see Chapter~\ref{chap:walking}) is very fast in its nature and cannot be improved. Or can it?
 

@@ -54,7 +54,7 @@
 \contentsline {subsubsection}{Identifying important lines}{28}{section*.19}
 \contentsline {subsubsection}{Parallel bound indices}{28}{section*.20}
 \contentsline {subsubsection}{Extending order}{28}{section*.21}
-\contentsline {section}{\numberline {5.3}MCMC parallelism}{28}{section.5.3}
+\contentsline {section}{\numberline {5.3}MCMC parallelism}{29}{section.5.3}
 \contentsline {section}{\numberline {5.4}BMP generating}{30}{section.5.4}
 \contentsline {chapter}{\numberline {6}User documentation}{31}{chapter.6}
 \contentsline {section}{\numberline {6.1}Installation}{31}{section.6.1}
@@ -71,7 +71,6 @@
 \contentsline {subsection}{\numberline {6.3.2}Matrix bmp file}{36}{subsection.6.3.2}
 \contentsline {subsection}{\numberline {6.3.3}Order file}{36}{subsection.6.3.3}
 \contentsline {section}{\numberline {6.4}Examples of output}{36}{section.6.4}
-\contentsline {chapter}{Conclusion}{38}{chapter*.23}
-\contentsline {chapter}{Bibliography}{39}{chapter*.24}
-\contentsline {chapter}{List of Figures}{40}{chapter*.25}
-\contentsline {chapter}{List of Tables}{41}{chapter*.26}
+\contentsline {chapter}{Bibliography}{38}{chapter*.23}
+\contentsline {chapter}{List of Figures}{39}{chapter*.24}
+\contentsline {chapter}{List of Tables}{40}{chapter*.25}
