@@ -56,3 +56,10 @@ Release/
 *.gz
 *.bbl
 *.blg
+
+# my files
+*.ipe
+*.png
+*.tex
+*.bib
+*.toc
