@@ -16,12 +16,18 @@ A Markov chain is \emph{irreducible} if the chain can eventually get from each s
 \begin{defn}
 Let $p_{i,j}^{(k)}=Pr(X_{t+k}=j|X_t=i)$ denote the $k$-step transition probabilities for $k=0,1,\cdots$ and $i,j\in\mathcal{S}$. An irreducible Markov chain has \emph{period}~$D$ if $D$ is the greatest common divisor of $\{k\geq1|p_{i,i}^{(k)}>0\}$ for some $i\in\mathcal{S}$ (equivalently, for all $i\in S$). A chain is called \emph{aperiodic} if its period is 1. In particular, if an irreducible chain has $p_{i,i}^{(1)}>0$ for some $i$, then it is aperiodic.
 \end{defn}
-
-If $X_0,X_1,\dots$ is an irreducible, symmetric and aperiodic Markov chain on state space $\mathcal{S}$ then $\lim\limits_{k\rightarrow\infty}X_k\in_R\mathcal{S}$ independent of the choice of $X_0$.
-
+Next we state two theorems allowing us to expect Markov chains to converge to a uniformly random state in $\mathcal{S}$ even if the initial state $X_0$ is not random. Both theorems can be found in \cite{Madras}.
+\begin{thm}
+Consider an aperiodic irreducible Markov chain with finite state space $\mathcal{S}$. For every $i,j\in S$, the limit $\lim_{k\rightarrow\infty}p_{i,j}^{(k)}$ exists and is independent of $i$; call it \emph{equilibrium distribution}~$\pi_j$. Furthermore, $$\sum\limits_{j\in\mathcal{S}}\pi_j=1\hspace{5mm}\wedge\hspace{5mm}\sum\limits_{i\in\mathcal{S}}\pi_ip_{i,j}^{(1)}=\pi_j$$
+for every $j\in\mathcal{S}$.
+\end{thm}
+\begin{thm}
+Suppose that an aperiodic irreducible Markov chain on the finite state space $\mathcal{S}$ is symmetric. Then the equilibrium distribution is uniform on $\mathcal{S}$.
+\end{thm}
+\pagebreak
 \section{Markov chain for pattern-avoiding binary matrices}
 \label{sect:mmcmc}
-To generate a binary matrix $M\in\{0,1\}^{n\times n}$ avoiding patterns in $\mathcal{P}$, we create a Markov chain, whose states space is $\mathcal{M}_n(\mathcal{P})$. After sufficiently many iterations ($m$) of MCMC process we set $M:=X_m\in\mathcal{M}_n(\mathcal{P})$. We always begin with an initial matrix $X_0$ and the process looks like this:
+To generate a binary matrix $M\in\{0,1\}^{n\times n}$ avoiding patterns in $\mathcal{P}$, we create a Markov chain, whose states space is $\mathcal{M}_n(\mathcal{P})$. After sufficiently many iterations ($m$) of MCMC process we set $M:=X_m\in\mathcal{M}_n(\mathcal{P})$. We always begin with an initial matrix~$X_0$ and the process looks like this:
 \begin{enumerate}
 \item For $i:=1,2,\cdots,m$:
 \item \hspace{5mm} Set $X_{i}:=X_{i-1}$.
@@ -31,7 +37,7 @@ To generate a binary matrix $M\in\{0,1\}^{n\times n}$ avoiding patterns in $\mat
 \item \hspace{5mm} If $X_{i}$ contains $\mathcal{P}$, flip the bit back.
 \end{enumerate}
 
-If the process starts with a matrix $X_0$ that avoids $\mathcal{P}$, then after every step it still avoids $\mathcal{P}$. Note that an iteration does not change the matrix if the condition 6 is satisfied. We need to show the Markov chain we presented meets all the conditions of both theorems:
+If the process starts with a matrix~$X_0$ that avoids $\mathcal{P}$, then after every step it still avoids $\mathcal{P}$. Note that an iteration does not change the matrix if the condition 6 is satisfied. We need to show the Markov chain we presented meets all the conditions of both theorems:
 \subsubsection{Symmetry}
 If $i$ and $j$ differ in more that one bit, we will never get one from the other by flipping one bit; therefore, both $p_{i,j}=p_{j,i}=0$. If $i$ and $j$ differ in exactly one bit, we have $p_{i,j}=p_{j,i}=\frac{1}{n^2}$, because we need to change exactly that one bit to succeed. Otherwise, $i=j$ and we have $p_{i,i}=p_{i,i}$.
 \subsubsection{Irreducibility}

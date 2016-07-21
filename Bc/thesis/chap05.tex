@@ -1,6 +1,6 @@
 \chapter{Technical documentation}
 \label{chap:tdoc}
-In this chapter, we cover those parts of the algorithm that may be hard to understand just from the code. This only means functions that are technically hard, for example functions with unexpected dependencies, side effects and so on. Algorithmic difficult tasks are explained in Chapter \ref{chap:imp}.
+In this chapter, we cover those parts of the algorithm that may be hard to understand just from the code (\cite{program}). This only means functions that are technically hard, for example functions with unexpected dependencies, side effects and so on. Algorithmic difficult tasks are explained in Chapter~\ref{chap:imp}.
 
 \section{Classes and API}
 First we list important classes of the program and explain their purpose.
@@ -37,16 +37,16 @@ To acquire, store and output statistics of the generating process, we use classe
 To get data from the MCMC process, a method called ``add\_data'' is used. If the user wants to define their own statistics, they can add variables into the class, alter ``add\_data'' function to allow storing the desired data and change functions ``print\_$\cdots$'' to redefine the output.
 
 \subsection{MCMCgenerator}
-MCMCgenerator is a method that for a given number of iterations and a given instance of Patterns approximates a uniformly random matrix avoiding that pattern, following MCMC algorithm shown in~Section~\ref{sect:mmcmc}. It also takes instances of Statistics classes as arguments to produce more data if requested by the user.
+MCMCgenerator is a method that for a given number of iterations and a given instance of Patterns approximates a uniformly random matrix avoiding that pattern, following MCMC algorithm shown in Section~\ref{sect:mmcmc}. It also takes instances of Statistics classes as arguments to produce more data if requested by the user.
 
 \section{General\_pattern}
-The general pattern class contains a lot of methods. Most of them are easy to follow and they all should be commented enough in the code. The only part which deserves more attention is the constructor.
+The general pattern class contains a lot of methods. Most of them are easy to follow and they all should be commented enough in the code (\cite{program}). The only part which deserves more attention is the constructor.
 
 \subsection{Construction}
 In the constructor of a general pattern, there are several methods that are easy in nature but as they somehow use each other it is hard not to lose track of their dependencies and results. In order to make this part of the code, which is very important, more understandable, we go through the constructor and explain all that is happening in the order it is happening in.
 
 \subsubsection{Storing the pattern}
-The first thing, which is done right after initialization of variables, is storing the pattern. Instead of storing the pattern in a Matrix$<$bool$>$, I decided to store lines into a number, where in the binary coding a one-entry in the position $i$ means there is a one-entry in the line at the intersection with $i$-th orthogonal line. This comes handy when computing line orders. At the same time we also find those lines that are empty (more in Chapter \ref{chap:imp}) and remember them, because we do not have to map them at all.
+The first thing, which is done right after initialization of variables, is storing the pattern. Instead of storing the pattern in a Matrix$<$bool$>$, I decided to store lines into a number, where in the binary coding a one-entry in the position~$i$ means there is a one-entry in the line at the intersection with $i$-th orthogonal line. This comes handy when computing line orders. At the same time we also find those lines that are empty (more in Chapter~\ref{chap:imp}) and remember them, because we do not have to map them at all.
 
 \subsubsection{Choosing the line order}
 After that, we need to choose the right line order (again more in Chapter \ref{chap:imp}). Exactly one algorithm to determine the order is chosen by the user.
@@ -54,10 +54,10 @@ After that, we need to choose the right line order (again more in Chapter \ref{c
 To compute MAX, SUM or TWO order we use a brute force algorithm that checks sequences of line adding and for each it computes how many lines are unimportant. Then it just chooses the order which is the best in chosen metric. To compute DESC order, we sort the lines according to the number of one-entries.
 
 \subsubsection{Identifying important lines}
-In the next step, we find which lines are important at each level with respect to chosen order. What to remember is based on the equivalence introduced in~Chapter~\ref{chap:general} and the decision not to remember unimportant lines, which we explained in Chapter \ref{chap:imp}.
+In the next step, we find which lines are important at each level with respect to chosen order. What to remember is based on the equivalence introduced in Chapter~\ref{chap:general} and the decision not to remember unimportant lines, which we explained in Chapter~\ref{chap:imp}.
 
 \subsubsection{Parallel bound indices}
-Now comes the hardest part to follow -- precomputing the indices for searching for parallel bounds. The idea is simple. When we are adding a new line and we already have a partial mapping, it restricts to where we can add the line. For example, if there are three rows in the pattern and the rows 1 and 3 are mapped, then line 2 needs to be mapped in between those two. The question is, where are those two lines mapped to?
+Now comes the hardest part to follow -- precomputing the indices for searching for parallel bounds. The idea is simple. When we are adding a new line and we already have a partial mapping, it restricts to where we can add the line. For example, if there are three rows in the pattern and the rows $1$ and $3$ are mapped, then line~$2$ needs to be mapped in between those two. The question is, where are those two lines mapped to?
 
 First, we add lines in a chosen order and second, we do not remember all lines, as some are unimportant. What we want is to have an instant access to the indices of the lines that bound the currently added line in the partial mapping, so we do not need to compute the index over and over again. That is exactly what gets computed when the function ``find\_parralel\_bound\_indices'' is called. The series of other function calls follows just because we compute the indices for all added lines in the order in which they are going to be added.
 
@@ -65,7 +65,7 @@ First, we add lines in a chosen order and second, we do not remember all lines, 
 The last function, ``find\_extending\_order'' specifies how we store an extended partial mapping. Again, unimportant lines play their role here and it may easily happen that from a partial mapping storing $k$ lines, after mapping one more line, we end up with a partial mapping only storing $k-1$ lines, because two lines become unimportant by adding the line. This means we not only copy the previous mapping and add the new mapped line but also remove unimportant lines. This function precomputes which values are going to be copied and which are going to be skipped.
 
 \section{MCMC parallelism}
-While the idea behind MCMC parallelism is described in Section \ref{sect:parallel} and the code is heavily commented, the work done by the main thread may still be hard to understand.
+While the idea behind MCMC parallelism is described in Section \ref{sect:parallel} and the code (\cite{program}) is heavily commented, the work done by the main thread may still be hard to understand.
 
 Let $I$ be the ID the process is currently waiting for, that is, the lowest ID of a task that is being tested by a worker. In a structure called ``queue'' (which is std::vector$<$std::deque$>$) each worker has a queue of tasks assigned to it. In the queue, there are tasks that are either being computed or have been computed. The history of tasks is needed to allow reverting changes that should have not happen when the main thread encounters a different successful task with lower ID. There is no need to have a complete history of all tasks computed. There are only those tasks, that have higher ID than $I$ or have lower ID, but those are going to be removed from the ``queue'' as soon as possible. The name ``queue'' is not random, it describes the order, in which the tasks are being stored -- the tasks with lower ID have been inserted earlier and therefore they are at the bottom.
 
@@ -76,7 +76,7 @@ Now that we know the most important structure let us see how the main thread wor
 \item The ID of the task being deleted is equal to $I$. That means the change computed by the task is being propagated to the generated matrix and there is no need to remember the task anymore. This also increases $I$, not necessarily by one.
 \item The ID of the task being deleted is less than $I$. This situation happens due to synchronization. The worker was supposed to synchronize a task computed by a different worker that did not have the lowest ID at the time. Therefore, the task needs to be in the list of tasks so we can revert it later, if needed. If there is no need to revert it and the lowest ID gets greater or equal to the ID of the task, we can just delete it from the ``queue''.
 \end{itemize}
-\item pop\_back: There is only one reason to delete tasks from the end of the ``queue'' and that is reverting. Imagine there is a task with id $J$ at the end of the ``queue''. A different worker computes a task with lower ID and finds out the change is successful. This means the task $J$ will not propagate to the generated matrix and there in no use for it. If it is still being computed, we cannot do much about it, so we tell the worker to stop computing and deal with it later. If the task is finished, we need to revert it, but only in case the task was successful, because if it was not, it had already been reverted by the worker. So we revert the task if needed and we can just delete it from ``queue'' as it will never be used.
+\item pop\_back: There is only one reason to delete tasks from the end of the ``queue'' and that is reverting. Imagine there is a task with ID~$J$ at the end of the ``queue''. A different worker computes a task with lower ID and finds out the change is successful. This means the task with ID~$J$ will not propagate to the generated matrix and there in no use for it. If it is still being computed, we cannot do much about it, so we tell the worker to stop computing and deal with it later. If the task is finished, we need to revert it, but only in case the task was successful, because if it was not, it had already been reverted by the worker. So we revert the task if needed and we can just delete it from ``queue'' as it will never be used.
 \item emplace\_back: The main thread only inserts new tasks to the end of the ``queue'' and there are two reasons to insert:
 \begin{itemize}
 \item Worker is assigned a completely new task to check the avoidance. In this situation, the task is given a new, globally highest ID and we add the task at the end of the ``queue''.

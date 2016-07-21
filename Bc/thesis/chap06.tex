@@ -8,7 +8,7 @@ The program is written in C++, using the C++11 standard and is independent of an
 \subsection{Windows}
 Windows users can run the application using an executable file ``matrix-win.exe'' either directly, in which case the default configuration file will be used, or using command line with an optional parameter specifying the configuration file.
 
-For those who want to alter the code or recompile the program in Visual Studio, Project File is also added.
+For those who want to alter the code (\cite{program}) or recompile the program in Visual Studio, Project File is also added.
 
 \subsection{Unix, Linux, MacOS}
 Users on other platforms than Windows can build the solution using command line easily by running ``./build.sh'', which uses the g++ compiler. Compiler can be switched by rewriting ``g++'' to some other variant (for example clang) in build.sh file. This leads to creating a an executable file ``matrix.exe'' which can be run with an optional parameter specifying the configuration file.
@@ -55,7 +55,7 @@ Possible value: & $s\in\mathbb{N}$ \\
 Default value: & ``random''
 \end{tabular}
 
-\item init\_matrix: A \textit{size}$\times$\textit{size} matrix the MCMC process starts with.
+\item init\_matrix: A \textit{size} by \textit{size} matrix the MCMC process starts with.
 
 \begin{tabular}{ll}
 Possible value: & \textit{matrix text file path} (\ref{mtf}) \\
@@ -67,7 +67,7 @@ Default value: & ``zero''
 
 \begin{tabular}{ll}
 Possible value: & ``serial'' \\
-& ``mcmc'' - more in Section \ref{sect:parallel} \\
+& ``mcmc'' - more in Section~\ref{sect:parallel} \\
 %& ``map'' - more partial mappings are being extended in parallel \\
 Default value: & ``serial''
 \end{tabular}
@@ -82,7 +82,7 @@ Default value: & 1
 \end{itemize}
 
 \subsection{Pattern}
-In this section, we set the options that matter the most -- matrix patterns. As we are allowed to generate a matrix which avoids more than just one pattern, the section \textbf{[pattern]} can be used multiple times, specifying one pattern for each occurrence.
+In this section, we set the options that matter the most -- matrix patterns. As we are allowed to generate a matrix which avoids more than just one pattern, the section~\textbf{[pattern]} can be used multiple times, specifying one pattern for each occurrence.
 \begin{itemize}
 \item pattern\_file: A relative path to an input matrix file - the pattern.
 
@@ -95,7 +95,7 @@ Default value: & ``pattern/input.txt''
 
 \begin{tabular}{ll}
 Possible value: & ``general'' \\
-& ``walking'' - see Chapter \ref{chap:walking} \\
+& ``walking'' - see Chapter~\ref{chap:walking} \\
 & ``slow'' - brute force algorithm for a general pattern \\
 Default value: & ``general''
 \end{tabular}
@@ -103,7 +103,7 @@ Default value: & ``general''
 
 The next options are only useful if the general pattern type is chosen. It specifies how the mappings are stored as well as what the map function tests.
 
-First we can decide what mapping approaches to use. More about them in Section \ref{sect:approaches}.
+First we can decide what mapping approaches to use. More about them in Section~\ref{sect:approaches}.
 \begin{itemize}
 \item map\_one\_entries: If set to ``yes'', the map function tests whether there are enough one-entries in between already mapped lines.
 
@@ -140,7 +140,7 @@ Possible value: & ``set'' - std::set (red-black tree) \\
 Default value: & ``hash''
 \end{tabular}
 
-\item line\_order: Chooses the order in which the lines are being added to the partial mapping. See Section \ref{sect:order}.
+\item line\_order: Chooses the order in which the lines are being added to the partial mapping. See Section~\ref{sect:order}.
 
 \begin{tabular}{ll}
 Possible value: & ``max'' \\
@@ -240,7 +240,7 @@ Default value: & ``no''
 
 \begin{tabular}{ll}
 Possible value: & \textit{matrix bmp file path} (\ref{mbf}) \\
-& \textit{matrix text file path} (\ref{mtf}h \\
+& \textit{matrix text file path} (\ref{mtf}) \\
 & ``console'' \\
 & ``no'' \\
 Default value: & ``no''
@@ -254,8 +254,8 @@ In this section, we describe the format of both input and output files.
 \label{mtf}
 A matrix file is a standard text file having the format as follows:
 \begin{itemize}
-\item 2 natural numbers specifying the number of rows and columns in this order.
-\item a sequence of zeros and ones of length rows$\times$columns specifying the matrix from the top left corner one row after another.
+\item two natural numbers specifying the number of rows and columns in this order.
+\item a sequence of zeros and ones of length rows times columns specifying the matrix from the top left corner one row after another.
 \end{itemize}
 \paragraph{Example:}
 $\begin{array}{ccc}
@@ -266,7 +266,7 @@ $\begin{array}{ccc}
 
 \subsection{Matrix bmp file}
 \label{mbf}
-For an $n\times n$ matrix, the standard bmp file contains $n\times n$ pixels. Black colored pixel stand for a one-entry and white colored pixels for a zero-entry. If the histogram is output as a bmp file, the pixels are greyscaled and the darker a pixel is the more often the entry was a one-entry during the MCMC process.
+For an $n\times n$ matrix, the standard bmp file contains $n\times n$ pixels. Black colored pixel stand for a one-entry and white colored pixels for a zero-entry. If the histogram is output as a bmp file, the pixels are grayscaled and the darker a pixel is the more often the entry was a one-entry during the MCMC process.
 
 \subsection{Order file}
 \label{of}
@@ -274,25 +274,42 @@ If you want to choose the order, in which the lines are going to be mapped when 
 
 Now that the user has been warned, the format of the custom order file is simple. It consist of the indices of the lines of the pattern numbered starting with 0 and starting from the top row and ending with the right column.
 
-One possible order for the matrix given as an example in Subsection \ref{mtf} is this file:
+One possible order for the matrix given as an example in Subsection~\ref{mtf} is this file:
 \begin{center}
 2 1 0 3 4
 \end{center}
 It first maps the left column, the second and first row after that and finishes the mapping with the middle column and the right one.
-
 \section{Examples of output}
-In this section, we show a few histogram that the program generated. Is is here to show that random matrices avoiding forbidden patterns may have a nice structure as well as to finish my thesis with beautiful pictures.
+In this section, we show a few histograms that the program generated. It is here to show that random matrices avoiding forbidden patterns may have a nice structure as well as to finish my thesis with beautiful pictures.
 
+We use two walking patterns:
+$$P_1=\left(\begin{array}{ccccccc}
+1 & 1 & 0 & 0 & 0 & 0 & 0 \\
+0 & 1 & 1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 1 & 1 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 1 & 0 \\
+0 & 0 & 0 & 0 & 0 & 1 & 1
+\end{array}\right)\hspace{1cm}
+P_2=\left(\begin{array}{ccccccc}
+0 & 0 & 0 & 0 & 0 & 1 & 1 \\
+0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 0 & 1 & 1 & 0 & 0 \\
+0 & 1 & 1 & 0 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 & 0 & 0 & 0 \\
+1 & 0 & 0 & 0 & 0 & 0 & 0
+\end{array}\right)$$
 \begin{figure}[h!]
 \centering
-\includegraphics[width=100mm]{../img/walker.pdf}
-\caption{A histogram of a generated matrix avoiding pattern $P_1$.}
+\includegraphics[width=120mm]{../img/walker.pdf}
+\caption{A histogram of a generated matrix avoiding pattern~$P_1$.}
 \label{walker}
 \end{figure}
 
 \begin{figure}[h!]
 \centering
-\includegraphics[width=100mm]{../img/walker2.pdf}
-\caption{A histogram of a generated matrix avoiding pattern $P_2$ using a different random seed that previous picture.}
+\includegraphics[width=120mm]{../img/walker2.pdf}
+\caption{A histogram of a generated matrix avoiding pattern~$P_2$ using a different random seed than the previous picture.}
 \label{walker2}
 \end{figure}
