@@ -60,6 +60,6 @@ Release/
 # my files
 *.ipe
 *.png
-*.tex
-*.bib
+*.nav
+*.snm
 *.toc
