@@ -2,7 +2,6 @@
 \usetheme{Boadilla}
 
 \usepackage[utf8]{inputenc}
-%tohle nejak nefunguje, ale ceske znaky se kresli i bez toho\usepackage[czech]{babel}
 
 \title{Generování matic bez zakázaných vzorů}
 \author{Stanislav Kučera}
@@ -10,16 +9,15 @@
 \date{8.~9.~2016}
 
 \begin{document}
-
 \begin{frame}
 \titlepage
 % Dobrý den, jmenuji se Stanislav Kučera a vítám vás na své obhajobě.
-% Jako svou bakalářskou práci jsem se svým vedoucím, Vítem Jelínkem navrhl a implementoval několik algoritmů, které dohromady tvoří program generující matice bez zakázaných vzorů.
 \end{frame}
 
 \begin{frame}
-\frametitle{Obsah}
-\tableofcontents
+\frametitle{Zadání}
+Cílem bakálářské práce bylo navrhnout a implementovat postup, jak vytvořit aproximaci rovnoměrně náhodné binární matice bez daného zakázaného vzoru.
+% Jako svou bakalářskou práci jsem se svým vedoucím, Vítem Jelínkem navrhl a implementoval několik algoritmů, které dohromady tvoří program generující matice bez zakázaných vzorů.
 % Nejprve by asi stálo za zmínku, co to jsou matice bez zakázaných vzorů a proč vlastně chceme takové matice generovat.
 % Potom si ukážeme některé algoritmy a jejich vylepšení, které jsou v mé práci obsaženy.
 \end{frame}
@@ -29,7 +27,7 @@
 \begin{frame}
 \frametitle{Zakázaný vzor}
 \begin{block}{Definice}
-Binární matice $M\in\{0,1\}^{m\times n}$ \emph{obsahuje} binární matici $P\in\{0,1\}^{k\times l}$ \emph{jako podmatici}, pokud lze z~$M$ vynecháním některých řádků a~sloupečků získat matici $M'$ $k\times l$ takovou, že pokud má $P$ jedničku na~nějaké pozici, má na~téže pozici jedničku i~$M'$. Jinak řekneme, že $M$ \emph{neobsahuje (vyhýbá se)} $P$ \emph{jako podmatici}.
+Binární matice $M\in\{0,1\}^{m\times n}$ \alert{obsahuje} binární matici $P\in\{0,1\}^{k\times l}$ \alert{jako podmatici}, pokud lze z~$M$ vynecháním některých řádků a~sloupečků získat matici $M'$ $k\times l$ takovou, že pokud má $P$ jedničku na~nějaké pozici, má na~téže pozici jedničku i~$M'$. Jinak řekneme, že $M$ \emph{neobsahuje (vyhýbá se)} $P$ \emph{jako podmatici}.
 %. Přečtu?
 \end{block}
 \vspace{5mm}
@@ -60,7 +58,7 @@ Binární matice $M\in\{0,1\}^{m\times n}$ \emph{obsahuje} binární matici $P\i
 \begin{frame}
 \frametitle{Markovovy řetězce}
 \begin{block}{Definice (neformální)}
-Pro předepsané pravděpodobnosti $p_{i,j}$ je \emph{Markovův řetězec} posloupnost prvků $X_0,\dots$ ze~stavové množiny $\mathcal{X}$ dodržující $P[X_{t+1}=j|X_t=i]=p_{i,j}.$
+Pro předepsané pravděpodobnosti $p_{i,j}$ je \alert{Markovův řetězec} posloupnost prvků $X_0,\dots$ ze~stavové množiny $\mathcal{X}$ dodržující $P[X_{t+1}=j|X_t=i]=p_{i,j}.$
 \end{block}
 %. Přečtu svými slovy.
 \pause
@@ -78,7 +76,7 @@ Pokud chceme generovat matici neobsahující vzor $P$, postupujeme takto:
 \begin{enumerate}
 \item Zvolíme libovolnou matici $M$ neobahující $P$.
 \item Změníme uniformně náhodně vybraný bit $M$, čímž dostaneme $M'$.
-\item Pokud $M'$ neobsahuje $P$ jako podmatici, nastavíme $M:=M'$.
+\item \alert{Pokud $M'$ neobsahuje $P$ jako podmatici}, nastavíme $M:=M'$.
 \item Goto 2.
 \end{enumerate}
 %. Přečtu svými slovy.
@@ -92,7 +90,7 @@ Protože definovaný Markovův řetězec splňuje předpoklady věty z~minulého
 \begin{frame}
 \frametitle{Algoritmus pro testování speciálních vzorů}
 \begin{block}{Definice}
-O~matici řekneme, že je to Walking pattern, pokud existuje procházka z~levého horního rohu matice do~pravého dolního rohu obsahující všechny jedničky v~matici.
+O~matici řekneme, že je to \alert{Walking pattern}, pokud existuje procházka z~levého horního rohu matice do~pravého dolního rohu obsahující všechny jedničky v~matici.
 \end{block}
 %? Procházkový vzor?
 %. Přečtu a zmíním, že procházka je monotónní.
@@ -119,41 +117,18 @@ O~matici řekneme, že je to Walking pattern, pokud existuje procházka z~levéh
 \subsection{Algoritmus pro testování obecných vzorů}
 \begin{frame}
 \frametitle{Algoritmus pro testování obecných vzorů}
-Problém rozhodnout zda daná permutace obsahuje podpermutaci je NP-úplný. Stejný problém můžeme řešit jako otázku zda permutační matice obsahuje permutační vzor, čímž dostáváme, že rozhodování obsahování matice v~matici je NP-těžké.\\
+Rozhodnout, zda daná matice obsahuje daný vzor je NP-úplné (dokonce
+i~pro~permutační matice).\\
 %? Přečtu. Zase by se mohla hodit citace?
 \pause
 \vspace{1em}
-Dva možné brute-force přístupy:
-\pause
-\vspace{1mm}
-\begin{itemize}
-\setlength\itemsep{3mm}
-\item Vyzkoušet všechny možné podmatice správné velikosti.
-\pause
-\vspace{1mm}
-\begin{itemize}
-\item Implementuji jako Slow\_pattern.
-\end{itemize}
-\pause
-\item Postupně namapovat všechny linie (řádky a~sloupce) vzoru na~všechny možné linie testované matice.
-\begin{itemize}
-\pause
-\vspace{1mm}
-\item Implementuji jako General\_pattern s~použitím mnoha výpočetních i~paměťových optimalizací.
-\end{itemize}
-% Na třídu General_pattern se teď podíváme trochu více.
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{General\_pattern}
 Při testování obsahování vzoru postupně mapujeme všechny linie (řádky a~sloupce) vzoru na~všechny možné linie testované matice.\\
 \vspace{1em}
 Optimalizace:
 % Ve svém programu se samozřejmě snažím algoritmus mnoha způsoby optimalizovat, tady je seznam několika důležitých optimalizací.
 %. Bod vždy přečtu a pak k němu něco dodám.
 \begin{itemize}
-\item Některá částečná mapování můžeme sloučit do~jednoho a~tím ušetřit čas~i prostor.
+\item Některá částečná mapování můžeme sloučit a~tím ušetřit čas~i prostor.
 % To, která mapování můžeme sloučit přímo závisí na volbě pořadí linií, protože slučovat můžeme pouze ta mapování, která se liší pouze v namapování linií, které už jsou ze všech směrů omezeny.
 %? Chci to popsat pořádněji?
 \pause
@@ -169,6 +144,10 @@ Optimalizace:
 \end{frame}
 
 %? Paralelismus? Citace?
-%? Děkuji za pozornost?
+
+\begin{frame}
+\centering
+Děkuji za pozornost.
+\end{frame}
 
 \end{document}
