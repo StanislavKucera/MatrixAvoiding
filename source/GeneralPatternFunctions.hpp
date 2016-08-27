@@ -124,9 +124,6 @@ bool General_pattern<T>::avoid(const Matrix<bool>& big_matrix, const int r, cons
 
 		counter.maps = 0;
 		counter.tries = 0;
-		// I cannot even map the first (ordered) i lines of the pattern, I definitely cannot map all lines of the pattern
-		if (building_tree_[level_ % 2].size() == 0)
-			return true;
 
 		building_tree_[(level_ + 1) % 2].clear();
 
@@ -165,6 +162,10 @@ bool General_pattern<T>::avoid(const Matrix<bool>& big_matrix, const int r, cons
 
 		counter.uniques = building_tree_[(level_ + 1) % 2].size();
 		sizes.emplace_back(counter);
+
+		// I haven't found any partial mappings, the pattern cannot be mapped to the big matrix
+		if (building_tree_[(level_ + 1) % 2].size() == 0)
+			return true;
 	}
 
 	// after the last important line is mapped, I find a mapping of the whole pattern - matrix doesn't avoids the pattern

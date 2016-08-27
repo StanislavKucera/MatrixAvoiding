@@ -17,10 +17,11 @@ The algorithm can be improved in two ways. Firstly, we can try to recognize unex
 
 \section{Equivalent mappings}
 There is no need to remember two different partial mappings of the same level if they can be both extended exactly the same way, because our function is only supposed to check whether a pattern can be mapped to a big matrix not to find all such mappings.
+\pagebreak
 \begin{defn}
-We call a line~$l$ of a pattern~$P$ \emph{important at level~$k$}, with respect to a given permutation $(l_1,\dots,l_{w+h})$, if one of the conditions is met:
+We call a line~$l$ of a pattern~$P$ \emph{important at level~$k$}, with respect to a given permutation $(l_1,\dots,l_{w+h})$, if at least one of the conditions is met:
 \begin{itemize}
-\item The line~$l$ is adjacent to a line not in $(l_1,\dots,l_k)$.
+\item The line~$l$ is the predecessor or successor of a line not in $(l_1,\dots,l_k)$.
 \item There is a one-entry on the line~$l$ at the intersection with line $l'$ that is not in $(l_1,\dots,l_k)$.
 \end{itemize}
 Otherwise the line is \emph{unimportant at level~$k$} for the permutation.
@@ -29,7 +30,7 @@ Whether a line is important or not only depends on the permutation, so if we hav
 
 At the beginning, all lines are important. After $k$ lines get mapped, a line can become unimportant at level~$k$ as all lines that bound it are in $(l_1,\dots,l_k)$. If a line is unimportant at some level, it stays unimportant at any higher level.
 \begin{defn}
-We say two partial mappings of the same level~$l$ are \emph{equivalent} if all important lines at level~$l$ are mapped to the same lines of the big matrix in both mappings.
+We say two partial mappings of the same level~$k$ are \emph{equivalent} if all important lines at level~$k$ are mapped to the same lines of the big matrix in both mappings.
 \end{defn}
 \begin{figure}[h!]
 \centering

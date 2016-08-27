@@ -8,7 +8,7 @@ We start by improving the brute force algorithm from Chapter~\ref{chap:general}.
 \subsection{Improving memory consumption}
 The algorithm creates all possible partial mappings and checks whether at least one can be extended to a full mapping (mapping all lines of the pattern). To compute all the partial mappings of some level~$l$, it only uses mappings of level~$l-1$; therefore, it is enough to only store partial mappings of two levels in memory at any time.
 
-In Chapter~\ref{chap:general} we also introduced the notion of (un)important lines and equivalence based on not using unimportant lines at all (they are fully bounded by other already mapped lines). When a line becomes unimportant, it stays unimportant till the end of the test; as a result, we can forget where we mapped those lines to save memory and only remember where we mapped important lines.
+In Chapter~\ref{chap:general} we also introduced the notion of (un)important lines and equivalence based on not using unimportant lines at all (they are fully restricted by other already mapped lines). When a line becomes unimportant, it stays unimportant till the end of the test; as a result, we can forget where we mapped those lines to save memory and only remember where we mapped important lines.
 
 \subsection{Not mapping empty lines}
 \begin{defn}
@@ -129,7 +129,7 @@ When the parallel version of MCMC generator is chosen and it is assigned $n$ thr
 
 The job of a worker is only to check if its copy of the matrix still avoids the pattern when one bit is changed. On the other hand, all synchronization is left to the main thread. As mentioned before, one iteration of the MCMC process can be recomputed several times. We still want the generator to satisfy the conditions we have for the Markov chain (more in Section~\ref{sect:mmcmc}) in order to approximate a random matrix. To achieve that, if a computed iteration~$x$ succeeds (and changes the generated matrix), all the other computed iterations that would follow after the iteration~$x$ become invalid and they all have to be recomputed. The process ends when all iterations get computed.
 
-For the sake of clarity, from now on, we will not be talking about iterations but about tasks. A task is basically one iteration of the MCMC process. The usefulness of this notation comes with an ID - a number, unique per task, assigned to each task, starting with $1$ and always increasing. For a pair of consecutive iterations $x$ and $x+1$ it will always be the case that if task~$a$ is the last task to compute iteration~$x$ (which means the iteration does not get recomputed ever again after) and task~$b$ is the last task to compute iteration~$x+1$, then the ID of $a$ is lower then the ID of $b$. Also there is no point, in which two different tasks would be computing the same iteration at the same time. If tasks with IDs $c<d$ computed the same iteration, it must have been the case an earlier iteration succeeded when task with ID~$c$ was computed and after it got removed, task with ID~$d$ was assigned to recompute.
+For the sake of clarity, from now on, we will not be talking about iterations but about tasks. A task is basically one iteration of the MCMC process. The usefulness of this notation comes with an ID - a number, unique per task, assigned to each task, starting with $1$ and always increasing. For a pair of consecutive iterations $x$ and $x+1$ it will always be the case that if task~$a$ is the last task to compute iteration~$x$ (which means the iteration does not get recomputed ever again after) and task~$b$ is the last task to compute iteration~$x+1$, then the ID of $a$ is lower than the ID of $b$. Also there is no point, in which two different tasks would be computing the same iteration at the same time. If tasks with IDs $c<d$ computed the same iteration, it must have been the case an earlier iteration succeeded when task with ID~$c$ was computed and after it got removed, task with ID~$d$ was assigned to recompute.
 
 At any point in time, we only consider those tasks, that are being computed or those that wait to be processed (not those that have been processed), which means the lowest ID of tasks we consider increases in time.
 
@@ -144,7 +144,7 @@ When a task ends and it has the lowest ID (we can always wait for the task with 
 \begin{itemize}
 \item The main thread propagates the change tested by the task to the master copy of the generated matrix.
 \item All the other tasks get removed as they all had a higher ID -- they computed iterations that follow after the one just computed and they expected the task to fail, which it did not.
-\item This increases the lowest ID by more then one, because there are tasks that got removed and one that got processed.
+\item This increases the lowest ID by potentially more than one, because there are tasks that got removed and one that got processed.
 \end{itemize}
 \end{itemize}
 
