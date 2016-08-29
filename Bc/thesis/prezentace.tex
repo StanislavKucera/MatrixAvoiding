@@ -16,8 +16,8 @@
 
 \begin{frame}
 \frametitle{Zadání}
-Cílem bakálářské práce bylo navrhnout a implementovat postup, jak vytvořit aproximaci rovnoměrně náhodné binární matice bez daného zakázaného vzoru.
-% Jako svou bakalářskou práci jsem se svým vedoucím, Vítem Jelínkem navrhl a implementoval několik algoritmů, které dohromady tvoří program aproximující náhodné matice bez zakázaných vzorů. Nejprve by asi stálo za zmínku, co to jsou matice bez zakázaných vzorů a proč vlastně chceme takové matice generovat.
+Cílem bakálářské práce bylo navrhnout a implementovat postup, jak vytvořit aproximaci rovnoměrně náhodné binární matice neobsahující daný zakázaný vzor.
+% Jako svou bakalářskou práci jsem se svým vedoucím, Vítem Jelínkem, navrhl a implementoval několik algoritmů, které dohromady tvoří program aproximující náhodné matice bez zakázaných vzorů. Nejprve by asi stálo za zmínku, co to jsou matice bez zakázaných vzorů a proč vlastně chceme takové matice generovat.
 \end{frame}
 
 \section{Zakázané vzory}
@@ -25,13 +25,13 @@ Cílem bakálářské práce bylo navrhnout a implementovat postup, jak vytvoři
 \begin{frame}
 \frametitle{Zakázaný vzor}
 \begin{block}{Definice}
-Binární matice $M\in\{0,1\}^{m\times n}$ \alert{obsahuje} binární matici $P\in\{0,1\}^{k\times l}$ \alert{jako podmatici}, pokud lze z~$M$ vynecháním některých řádků a~sloupečků získat matici $M'$ $k\times l$ takovou, že pokud má $P$ jedničku na~nějaké pozici, má na~téže pozici jedničku i~$M'$. Jinak řekneme, že $M$ \emph{neobsahuje (vyhýbá se)} $P$ \emph{jako podmatici}.
+Binární matice $M\in\{0,1\}^{m\times n}$ \alert{obsahuje} binární matici $P\in\{0,1\}^{k\times l}$ \alert{jako podmatici}, pokud lze z~$M$ vynecháním některých řádků a~sloupečků získat matici $M'$ velikosti $k\times l$ takovou, že pokud má $P$ jedničku na~nějaké pozici, má na~téže pozici jedničku i~$M'$. Jinak řekneme, že $M$ \emph{neobsahuje (vyhýbá se)} $P$ \emph{jako podmatici}.
 %. Přečtu?
 \end{block}
 \vspace{5mm}
 \centering
 \includegraphics{../img/example.pdf}<1>
-% Nejlépe je to vidět na obrázku, kde matice M_1 obsahuje P, protože vynecháním prostředního řádku a posledního sloupce dostaneme podmatici, která má jedničky tam, kde je má vzor. Naopak matice M_2 vzor P neobsahuje
+% Nejlépe je to vidět na obrázku, kde matice M_1 obsahuje P, protože vynecháním prostředního řádku a posledního sloupce dostaneme podmatici, která má jedničky tam, kde je má vzor. Naopak matice M_2 vzor P neobsahuje.
 \includegraphics{../img/example2.pdf}<2>
 \end{frame}
 
@@ -52,8 +52,9 @@ Binární matice $M\in\{0,1\}^{m\times n}$ \alert{obsahuje} binární matici $P\
 \begin{frame}
 \frametitle{Markovovy řetězce}
 \begin{block}{Definice (neformální)}
-Pro předepsané pravděpodobnosti $p_{i,j}$ je \alert{Markovův řetězec} posloupnost náhodných veličin $X_0,X_1,\dots$ prvků ze~stavové množiny $\mathcal{X}$ dodržující $P[X_{t+1}=j|X_t=i]=p_{i,j}.$
+Pro předepsané pravděpodobnosti $p_{i,j}$ je \alert{Markovův řetězec} posloupnost $X_0,X_1,\dots$ prvků ze~stavové množiny $\mathcal{X}$ dodržující $P[X_{t+1}=j|X_t=i]=p_{i,j}.$
 \end{block}
+% K tomu použijeme teorii Markovoých řetězců a náhodných procesů nad nimi.
 %. Přečtu.
 % Následuje klíčová věta, na které stojí můj celý program.
 \pause
@@ -115,11 +116,13 @@ O~matici řekneme, že je to \alert{Walking pattern}, pokud existuje procházka 
 Rozhodnout, zda daná matice obsahuje daný vzor je NP-úplné (dokonce
 i~pro~permutační matice).\\
 %. Přečtu.
+% Proto použijeme brute-force algoritmus, ve kterém ...
 \pause
 \vspace{1em}
 Při testování obsahování vzoru postupně mapujeme všechny linie (řádky a~sloupce) vzoru na~všechny možné linie testované matice.\\
 %. Přečtu.
-% Ve svém programu se samozřejmě snažím tento brute-force algoritmus mnoha způsoby optimalizovat, tady je seznam několika důležitých optimalizací.
+% Ve svém programu se samozřejmě snažím tento brute-force algoritmus mnoha způsoby optimalizovat. Tady je seznam několika důležitých optimalizací.
+\pause
 \vspace{1em}
 Optimalizace:
 %. Bod vždy přečtu a pak k němu něco dodám.
@@ -130,7 +133,7 @@ Optimalizace:
 \item Program poskytuje mnoho různých způsobů jak zvolit pořadí, ve~kterém se budou linie mapovat.
 % Ač se to tak nemusí na první pohled jevit, volba pořadí je zásadní pro rychlost testování a to hlavně kvůli předchozímu bodu. Efektivita různých voleb se liší vzor od vzoru a uživatel si pořadí může zvolit.
 \pause
-\item Volitelně program při mapování linie testuje, také jestli je dost jedniček tam, kam se budou později mapovat dosud nenamapované linie.
+\item Volitelně program při mapování linie testuje, jestli je dost jedniček tam, kam se budou později mapovat dosud nenamapované linie.
 \pause
 % Tento popis obsahuje několikero různých heuristik, které může uživatel podle uvážení zapnout nebo vypnout a jejichž důsledkem je, že sice mapování jedné linie trvá déle, ale zase daleko rychleji poznáme, že vytvořené částečné mapování již nepůjde rozšířit na mapování celého vzoru.
 \item Protože známe generující proces a již víme, že matice před změnou bitu vzor neobsahovala, víme také, že pokud ho po~změně obsahuje, tak jedině proto, že právě změněný bit je součástí mapování vzoru.
@@ -158,7 +161,7 @@ Optimalizace:
  &  &  & 500 & 10 000 & \alert<1>{DESC} & \alert<2>{ne} & \alert<2>{ne} & \alert<2>{ne} & \alert<1,2>{195,15} \\ \hline
 \end{tabular}
 \end{table}
-% Efekt zmíněných vylepšení si ukážeme na této tabulce naměřených hodnot pro tentýž vzor. Vše je spočítané se stejným seedem, což také znamená, že všechny odpovídající si výpočty vygenerovali stejnou matici. Červeně jsem označil 2 řádky, které se liší pouze ve volbě pořadí mapování řádků a sloupců a vidíme, že rozdíl je obrovský. Tady ještě zmíním, že pro jiné vzory může naopak první pořadí zase rychlejší než to druhé. Pak se zaměřme na zapnutí různých heuristik. Znovu počítáme totéž, ale zkoušíme různé kombinace zapnutých heuristik. Vidíme, že výpočet doběhne nejrychleji pokud žádkou z heuristik nepoužijeme. Naopak když budeme generovat menší matici, nejlépe to dopadne, pokud použijeme všechny heuristiky.
+% Efekt zmíněných vylepšení si ukážeme na této tabulce naměřených hodnot pro konkrétní vzor. Vše je spočítané se stejným seedem, což také znamená, že všechny odpovídající si výpočty vygenerovali stejnou matici. Červeně jsem označil 2 řádky, které se liší pouze ve volbě pořadí mapování řádků a sloupců a vidíme, že rozdíl je obrovský. Tady ještě zmíním, že pro jiné vzory může být naopak první pořadí zase rychlejší než to druhé. Pak se zaměřme na zapnutí různých heuristik. Znovu počítáme totéž, ale zkoušíme různé kombinace zapnutých heuristik. Vidíme, že výpočet doběhne nejrychleji pokud žádkou z heuristik nepoužijeme. Naopak, když budeme generovat menší matici, nejlépe to dopadne, pokud použijeme všechny heuristiky.
 %? Heuristiky možná není správné slovo, protože já tím ořezávám prohledávaný prostor.
 %? Chybí tu pointa, ale to si snad všichni domyslí v kombinaci s tím, že vše jde zapnout a vypnout.
 \end{frame}
@@ -166,9 +169,10 @@ Optimalizace:
 \subsection{Paralelní počítání}
 \begin{frame}
 \frametitle{Vícevláknové generování}
-Pokud generujeme dostatečně velkou matici a už je dostatečně zahuštěná, potom pravděpodobnost, že nějaká změna bitu uspěje je malá a tedy většina iterací neuspěje (matice zůstane taková, jaká byla před iterací).\\
+Pokud generujeme dostatečně velkou matici a už je dostatečně zahuštěná, potom pravděpodobnost, že nějaká změna bitu uspěje, je malá, a tedy většina iterací neuspěje (matice zůstane taková, jaká byla před iterací).\\
 \vspace{1em}
-\onslide<2,3> Idea: místo abychom provedli jen jednu jednobitovou změnu v generované matici a testovali obsahování vzoru, provedeme jednobitových změn několik (paralelně) a výsledek získáme \alert<3>{výběrem některých změn} ze všech provedených (některé výpočty tedy poběží aniž by měly vliv na generovanou matici).\\
+\onslide<2,3> Idea: pro generovanou matici $M$ si místo jedné vybere $p$ pozic, pro~každou samostatně změníme určených bit $M$, čímž dostaneme $p$ matic $M'$. Pro~každou z~nich otestujeme obsahování vzoru, a podle výsledků vybereme, které změny na~matici $M$ provedeme.\\
+% místo abychom provedli jen jednu jednobitovou změnu v generované matici a testovali obsahování vzoru, provedeme jednobitových změn několik (paralelně) a výsledek získáme \alert<3>{výběrem některých změn} ze všech provedených (některé výpočty tedy poběží aniž by měly vliv na generovanou matici).\\
 \vspace{1em}
 \onslide<3> Výběr změn, které ovlivní generovanou matici musíme dělat opatrně, aby stále neobsahovala zakázaný vzor a zároveň se proces držel definovaného Markovova řetězce a tedy konvergoval k náhodné matici.
 % Program si poradí i s více vlákny. Využívá při tom toho, že ...
@@ -209,16 +213,16 @@ Pokud generujeme dostatečně velkou matici a už je dostatečně zahuštěná, 
 % Podívejme se ještě jednou na tabulku naměřených hodnot pro tento vzor. Na vyznačených řádcích vidíme, že když použijeme místo sériového výpočtu 8 workerů, kde počet workerů zhruba odpovídá počtu vláken, nedosáhneme sice 8x rychlejšího výpočtu, ale docela se tomu přiblížíme. Pro větší generovanou matici a menší počet iterací už zrychlení není tak markantní, ale zase je dobře vidět, že spekulativní výpočet přinesl své ovoce.
 \end{frame}
 
-\begin{frame}
-\frametitle{Poděkování}
-\centering
-Děkuji svému vedoucímu za ochotu se vším mi pomoci a čas a úsilí, které mé práci věnoval.\\
-\vspace{1em}
-Děkuji svému oponentovi, že posudek odevzdal dříve než včas.\\
-\vspace{1em}
-Děkuji katedrám KAM a IÚUK za možnost pro své experimenty používat jejich výpočetní servery.
+%\begin{frame}
+%\frametitle{Poděkování}
+%\centering
+%Děkuji svému vedoucímu za ochotu se vším mi pomoci a čas a úsilí, které mé práci věnoval.\\
+%\vspace{1em}
+%Děkuji svému oponentovi, že posudek odevzdal dříve než včas.\\
+%\vspace{1em}
+%Děkuji katedrám KAM a IÚUK za možnost pro své experimenty používat jejich výpočetní servery.
 % Děkuji hlavně svému vedoucímu, že mi pomohl vytvořit program, na který můžu být hrdý.
-\end{frame}
+%\end{frame}
 
 \begin{frame}
 \centering
