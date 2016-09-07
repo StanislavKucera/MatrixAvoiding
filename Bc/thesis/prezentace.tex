@@ -17,7 +17,7 @@
 \begin{frame}
 \frametitle{Zadání}
 Cílem bakálářské práce bylo navrhnout a implementovat postup, jak vytvořit aproximaci rovnoměrně náhodné binární matice neobsahující daný zakázaný vzor.
-% Jako svou bakalářskou práci jsem se svým vedoucím, Vítem Jelínkem, navrhl a implementoval několik algoritmů, které dohromady tvoří program aproximující náhodné matice bez zakázaných vzorů. Nejprve by asi stálo za zmínku, co to jsou matice bez zakázaných vzorů a proč vlastně chceme takové matice generovat.
+% Jako svou bakalářskou práci jsem se svým vedoucím, Vítem Jelínkem, navrhl a implementoval postup, jak vytvořit aproximaci rovnoměrně náhodné binární matice neobsahující daný zakázaný vzor. Nejprve se podívejme, co to jsou matice bez zakázaných vzorů a proč vlastně chceme takové matice generovat.
 \end{frame}
 
 \section{Zakázané vzory}
@@ -26,7 +26,7 @@ Cílem bakálářské práce bylo navrhnout a implementovat postup, jak vytvoři
 \frametitle{Zakázaný vzor}
 \begin{block}{Definice}
 Binární matice $M\in\{0,1\}^{m\times n}$ \alert{obsahuje} binární matici $P\in\{0,1\}^{k\times l}$ \alert{jako podmatici}, pokud lze z~$M$ vynecháním některých řádků a~sloupečků získat matici $M'$ velikosti $k\times l$ takovou, že pokud má $P$ jedničku na~nějaké pozici, má na~téže pozici jedničku i~$M'$. Jinak řekneme, že $M$ \emph{neobsahuje (vyhýbá se)} $P$ \emph{jako podmatici}.
-%. Přečtu?
+%. Přečtu.
 \end{block}
 \vspace{5mm}
 \centering
@@ -62,6 +62,7 @@ Pro předepsané pravděpodobnosti $p_{i,j}$ je \alert{Markovův řetězec} posl
 Pokud je Markovův řetězec aperiodický, nerozložitelný a~symetrický, potom je jeho limita uniformně náhodně rozložena na stavové množině $\mathcal{X}$.
 \end{block}
 %. Přečtu.
+% Mým cílem je tedy navrhnout Markovův řetězec s témito vlastnostmi.
 \end{frame}
 
 \begin{frame}
@@ -70,16 +71,18 @@ Pokud chceme generovat matici neobsahující vzor $P$, postupujeme takto:
 \begin{enumerate}
 \item Zvolíme libovolnou matici $M$ neobahující $P$.
 \item Změníme uniformně náhodně vybraný bit $M$, čímž dostaneme $M'$.
-\item \alert{Pokud $M'$ neobsahuje $P$ jako podmatici}, nastavíme $M:=M'$.
+\item \alert<3>{Pokud $M'$ neobsahuje $P$ jako podmatici}, nastavíme $M:=M'$.
 \item Goto 2.
 \end{enumerate}
 %. Přečtu svými slovy.
-% Zvýrazněná část je tou algoritmicky nejsložitější a zbytek prezentace bude věnován jí.
+% 2. Uniformně náhodně vybereme řádek a sloupeček matice a příslušný bit změníme.
+% 3. Pokud ... potom M' bude nové M.
+% 4. Kroky 2 a 3 tvoří jednu iteraci procesu a my ho budeme opakovat mnohokrát.
 \vspace{1em}
-\pause
-Protože definovaný Markovův řetězec splňuje předpoklady věty z~minulého slidu, je jeho limita náhodná matice neobsahující vzor $P$ jako podmatici. My nemáme čas čekat nekonečně dlouho, a~zároveň zmíněná věta ani~žádná jiná (pro obecné Markovovy řetězce) nedává odhad na~dostačující počet iterací (mixing time), proto volbu počtu iterací necháme na~uživateli.
+\onslide<2,3>
+Protože definovaný Markovův řetězec splňuje předpoklady věty z~minulého slidu, je jeho limita náhodná matice neobsahující vzor $P$ jako podmatici. Bohužel zmíněná věta ani~žádná jiná (pro obecné Markovovy řetězce) nedává odhad na~dostačující počet iterací (mixing time), proto volbu počtu iterací necháme na~uživateli.
 %. Přečtu.
-% Nyní si ukážeme jak testovat obsahování matice, která má speciální tvar.
+% Zvýrazněná podmínka je tou algoritmicky nejsložitější a zbytek prezentace až na výjimky bude věnován jí. Nyní si ukážeme jak ji testovat pro matice, které mají speciální tvar.
 \end{frame}
 
 \subsection{Algoritmus pro testování speciálních vzorů}
@@ -95,7 +98,7 @@ O~matici řekneme, že je to \alert{Walking pattern}, pokud existuje procházka 
 \includegraphics{../img/walkingexample2.pdf}<2>
 \includegraphics{../img/walkingexample3.pdf}<3>
 \includegraphics{../img/walkingexample4.pdf}<4>
-% Na obrázku máme jeden takový vzor. Ona procházka je vyznačena v rámečku a všechny prvky procházky se ještě naznačeným způsobem oindexujeme. Když mluvíme o části vzoru až po 5-tý prvek, myslíme tím pro 5-tý prvek procházky a máme tím na mysli vyznačenou podmatici vzoru.
+% Na obrázku máme jeden takový vzor. Ona procházka je vyznačena v rámečku a všechny prvky procházky se ještě naznačeným způsobem oindexujeme. Když mluvíme o části vzoru až po 5-tý prvek, myslíme tím po 5-tý prvek procházky a máme tím na mysli vyznačenou podmatici vzoru.
 \end{frame}
 
 \begin{frame}
@@ -105,9 +108,9 @@ O~matici řekneme, že je to \alert{Walking pattern}, pokud existuje procházka 
 \includegraphics[scale=1.5]{../img/walkingalg1.pdf}<2>
 \includegraphics[scale=1.5]{../img/walkingalg2.pdf}<3>
 \includegraphics[scale=1.5]{../img/walkingalg3.pdf}<4>
-% Mejme matici, pro kterou testujeme, zda obsahuje walking_pattern. Budeme postupovat po naznačených diagonálách ve směru šipky a pro každou diagonálu a každý její prvek budeme chtít spočítat, jaká nejdelší část vzoru se vejde do podmatice určené tímto prvkem a prvním prvkem matice. Z hodnot spočítaných pro šedé matice už dokážeme v konstatním čase spočítat správnou hodnotu i pro počítaný prvek, čímž jeden test trvá lineárně dlouho s velikostí matice. Když během výpočtu narazíme na podmatici, do které lze namapovat i poslední prvek vzoru, pak je vzor obsažen a v opačném případě obsažen není.
-% Lineární složitost vůbec není špatná, když ale vezmeme v potaz že matice je velká a iterací bude hodně, je ku prospěchu nepočítat nic, co počítat nemusíme a když využijeme toho, že každá nová iterace na Markovově řetězci změní pouze jeden bit, můžeme si spočítané hodnoty pamatovat i mezi iteracemi a přepočítat jen prvky, kterým se hodnota změní, což celý test ještě uspíší.
-% Teď se podívejme na pomalejší algoritmu, který ale funguje na všechny vzory.
+% Mějme matici, pro kterou testujeme, zda obsahuje walking_pattern. Budeme postupovat po naznačených diagonálách ve směru šipky a pro každý prvek budeme chtít spočítat, jaká nejdelší část vzoru se vejde do podmatice určené tímto prvkem. Z hodnot spočítaných pro šedé podmatice už dokážeme v konstatním čase spočítat správnou hodnotu i pro počítaný prvek. Když během výpočtu narazíme na podmatici, do které lze namapovat i poslední prvek vzoru, pak je vzor obsažen a v opačném případě obsažen není.
+% Dosáhli jsme tedy složitosti lineární s velikostí matice. Když si budeme pamatovat spočítané hodnoty i mezi iteracemi, můžeme iteraci ještě zrychlit, protože nebudeme přepočítávat celou matici, ale jen její změněnou část.
+% Teď se podívejme na pomalejší algoritmus, který ale funguje pro všechny vzory.
 \end{frame}
 
 \subsection{Algoritmus pro testování obecných vzorů}
@@ -121,14 +124,14 @@ i~pro~permutační matice).\\
 \vspace{1em}
 Při testování obsahování vzoru postupně mapujeme všechny linie (řádky a~sloupce) vzoru na~všechny možné linie testované matice.\\
 %. Přečtu.
-% Ve svém programu se samozřejmě snažím tento brute-force algoritmus mnoha způsoby optimalizovat. Tady je seznam několika důležitých optimalizací.
+% Řádky samozřejmě mapujeme na řádky a sloupce na sloupce, navíc zachováváme pořadí linií. Ve svém programu se samozřejmě snažím tento brute-force algoritmus mnoha způsoby optimalizovat. Tady je seznam několika důležitých optimalizací.
 \pause
 \vspace{1em}
 Optimalizace:
 %. Bod vždy přečtu a pak k němu něco dodám.
 \begin{itemize}
 \item Některá částečná mapování můžeme sloučit a~tím ušetřit čas~i prostor.
-% To, která mapování můžeme sloučit přímo závisí na volbě pořadí linií, ve kterém se budou mapovat, protože slučovat můžeme pouze ta mapování, která se liší pouze v namapování těch linií, které už jsou ze všech směrů omezeny.
+% To, která mapování můžeme sloučit přímo závisí na volbě pořadí linií, ve kterém se budou mapovat, protože slučovat můžeme pouze ta mapování, která se liší pouze v namapování těch linií, které už jsou ze všech směrů omezeny. Tím myslím, že je namapována předchodchozí a následující linie, a také linie, které ji protínají v jedničce.
 \pause
 \item Program poskytuje mnoho různých způsobů jak zvolit pořadí, ve~kterém se budou linie mapovat.
 % Ač se to tak nemusí na první pohled jevit, volba pořadí je zásadní pro rychlost testování a to hlavně kvůli předchozímu bodu. Efektivita různých voleb se liší vzor od vzoru a uživatel si pořadí může zvolit.
@@ -161,9 +164,7 @@ Optimalizace:
  &  &  & 500 & 10 000 & \alert<1>{DESC} & \alert<2>{ne} & \alert<2>{ne} & \alert<2>{ne} & \alert<1,2>{195,15} \\ \hline
 \end{tabular}
 \end{table}
-% Efekt zmíněných vylepšení si ukážeme na této tabulce naměřených hodnot pro konkrétní vzor. Vše je spočítané se stejným seedem, což také znamená, že všechny odpovídající si výpočty vygenerovali stejnou matici. Červeně jsem označil 2 řádky, které se liší pouze ve volbě pořadí mapování řádků a sloupců a vidíme, že rozdíl je obrovský. Tady ještě zmíním, že pro jiné vzory může být naopak první pořadí zase rychlejší než to druhé. Pak se zaměřme na zapnutí různých heuristik. Znovu počítáme totéž, ale zkoušíme různé kombinace zapnutých heuristik. Vidíme, že výpočet doběhne nejrychleji pokud žádkou z heuristik nepoužijeme. Naopak, když budeme generovat menší matici, nejlépe to dopadne, pokud použijeme všechny heuristiky.
-%? Heuristiky možná není správné slovo, protože já tím ořezávám prohledávaný prostor.
-%? Chybí tu pointa, ale to si snad všichni domyslí v kombinaci s tím, že vše jde zapnout a vypnout.
+% Efekt zmíněných vylepšení si ukážeme na této tabulce naměřených hodnot pro konkrétní vzor. Vše je spočítané se stejným seedem, což také znamená, že všechny odpovídající si výpočty vygenerovali stejnou matici. Červeně jsem označil 2 řádky, které se liší pouze ve volbě pořadí mapování řádků a sloupců, a vidíme, že rozdíl je obrovský. Tady ještě zmíním, že pro jiné vzory může být naopak první pořadí rychlejší než to druhé. Pak se zaměřme na zapnutí různých heuristik. Vidíme, že výpočet doběhne nejrychleji pokud žádnou z heuristik nepoužijeme. Naopak ale, když budeme generovat menší matici, nejlépe to dopadne, pokud použijeme všechny heuristiky.
 \end{frame}
 
 \subsection{Paralelní počítání}
@@ -174,10 +175,10 @@ Pokud generujeme dostatečně velkou matici a už je dostatečně zahuštěná, 
 \onslide<2,3> Idea: pro generovanou matici $M$ si místo jedné vybere $p$ pozic, pro~každou samostatně změníme určených bit $M$, čímž dostaneme $p$ matic $M'$. Pro~každou z~nich otestujeme obsahování vzoru, a podle výsledků vybereme, které změny na~matici $M$ provedeme.\\
 % místo abychom provedli jen jednu jednobitovou změnu v generované matici a testovali obsahování vzoru, provedeme jednobitových změn několik (paralelně) a výsledek získáme \alert<3>{výběrem některých změn} ze všech provedených (některé výpočty tedy poběží aniž by měly vliv na generovanou matici).\\
 \vspace{1em}
-\onslide<3> Výběr změn, které ovlivní generovanou matici musíme dělat opatrně, aby stále neobsahovala zakázaný vzor a zároveň se proces držel definovaného Markovova řetězce a tedy konvergoval k náhodné matici.
+\onslide<3> Výběr změn, které ovlivní generovanou matici musíme dělat opatrně, aby stále neobsahovala zakázaný vzor, a zároveň se proces držel definovaného Markovova řetězce, a tedy konvergoval k náhodné matici.
 % Program si poradí i s více vlákny. Využívá při tom toho, že ...
-%. Už jsen přečíst tohle zabere spoustu času. uspěje, tedy M' neobsahuje P jako podmatici.
-% Vysvětlení do hloubky by zabralo příliš mnoho času, proto ho vynechám. Zmíním jen to, že součástí implementace je optimalize v podobě spekulativního počítání, kdy považujeme nějakou změnu bitu za provedenou i ve chvíli, kdy ještě nevíme, že tuto změnu smíme provést.
+% ... uspěje, tedy M' neobsahuje P jako podmatici.
+% Přesnější vysvětlení by zabralo příliš mnoho času, proto ho vynechám. Zmíním jen to, že součástí implementace je optimalize v podobě spekulativního počítání, kdy považujeme nějakou změnu bitu za provedenou i ve chvíli, kdy ještě nevíme, že tuto změnu smíme provést.
 \end{frame}
 
 %\begin{frame}
@@ -231,14 +232,14 @@ Děkuji za pozornost.
 
 \begin{frame}
 \frametitle{Pravděpodobnost úspěchu iterace}
-``Heuristicky, pokud se dívám na vzor, který má lineární extremální funkci, tj. každá vygenerovaná matice tvaru $N\times N$ má nejvýš $cN$ jedniček pro nějakou konstantu $c$, tak to znamená, že v dlouhodobém průměru s pravděpodobností nejvýš $cN/N^2=c/N$ program jedničku změní na nulu, a tedy v průměru také s pravděpodobností nejvýš $c/N$ program úspěšně změní nulu na jedničku, protože počet jedniček bude zhruba konstantní. A tedy pravděpodobnost neúspěšné změny by měla být aspoň $1-2c/N$. Podíl neúspěšných kroků tedy poroste s $N$. Já bych si přál, aby ten program šlo použít i v situacích, kdy $N$ jsou řádově stovky, a potom pravděpodobnost úspěšné změny bude v jednotkách procent (pro vzory s lineární extremální funkcí).'' Vít Jelínek, 2016
+Pokud se dívám na vzor, kde každá vygenerovaná matice velikosti $N\times N$ má nejvýš $cN$ jedniček, potom v~dlouhodobém průměru s~pravděpodobností nejvýš $cN/N^2=c/N$ program jedničku změní na~nulu, a~tedy v~průměru také s~pravděpodobností nejvýš $c/N$ program úspěšně změní nulu na~jedničku, protože počet jedniček bude zhruba konstantní. Pravděpodobnost neúspěšné změny by měla být aspoň $1-2c/N$, čímž podíl neúspěšných kroků poroste s~$N$.
 \end{frame}
 
 %. Citace přidávat nebudu.
 
 %. Otazky oponenta:
 %Q: Jedine, co mi chybelo, bylo v zaveru Kap. 4 podobnejsı rozbor pouzitych metod. Napr.: jaky je prınos spekulativnıch vypoctu (Sekce 4.2.2)? Jaky je optimalnı pocet vlaken? Jaky pocet iteracı je potreba pro dostatecne presnou aproximaci uniformnıho rozdelenı? (Zde by asi byla potreba kvantitativnı verze Vety 2.)
-%A: Do prezentace jsem přidal tabulku s porovnáním paralelismu s a bez spekulace. Verzi bez spekulace jsem udelal ze soucasne verze projektu, takze je trochu pomalejsi nez by byt mohla, ale pro ilustraci to snad postaci. Optimalni pocet vlaken neznam. Program jsem zkousel pouze na kamenolomu (na kamenozroutu nikdy nebylo uplne volno a nikde jinde vice jader neni) a podle dat namerenych tam ani pro maximum (16) workeru vykon neklesa. Jaky je dostatecny pocet iteraci neumime my ani panove Liu s Madrasem vetou na zpusob Vety 2 zodpovedet. Madras a Liu zkoumali tuto velicinu experimentalne (precetl jsem si tu stranku, na ktere popisuji jak ziskavaji data, kde se vzalo 10^7 jsem z toho nevykoukal a prijde mi, ze neni duvod si myslet, ze stejne cislo bude fungovat u matic, ale minimalne sem muzu oponenta odkazat).
+%A: Do prezentace jsem přidal tabulku s porovnáním paralelismu s a bez spekulace. Verzi bez spekulace jsem udelal ze soucasne verze projektu, takze je trochu pomalejsi nez by byt mohla, ale pro ilustraci to snad postaci. Optimalni pocet vlaken neznam. Program jsem zkousel pouze na kamenolomu (na kamenozroutu nikdy nebylo uplne volno a nikde jinde vice jader neni), a podle dat namerenych tam ani pro maximum (16) workeru vykon neklesa. Jaky je dostatecny pocet iteraci neumime my ani panove Liu s Madrasem vetou na zpusob Vety 2 zodpovedet. Madras a Liu zkoumali tuto velicinu experimentalne (precetl jsem si tu stranku, na ktere popisuji jak ziskavaji data, kde se vzalo 10^7 jsem z toho nevykoukal a prijde mi, ze neni duvod si myslet, ze stejne cislo bude fungovat u matic, ale minimalne sem muzu oponenta odkazat).
 
 %Q: str. 8, Irreducibility: textu by odpovıdalo “we can always reach M1 from M2”
 %A: Prohodil jsem M_1 a M_2.
